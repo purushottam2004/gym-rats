@@ -66,20 +66,30 @@ export default function GroupScreen() {
       </View>
       {error ? <Text style={screen.error}>{error}</Text> : null}
       <View style={screen.card}>
-        {members.map((member, index) => (
-          <Pressable
-            key={member.id}
-            onPress={() => router.push({ pathname: '/member/[id]', params: { id: member.id } })}
-            style={[screen.row, index === 0 && screen.rowFirst]}
-          >
-            <Text style={screen.rowTitle}>{member.display_name ?? 'Unnamed'}</Text>
-            {creator && member.id !== session?.user.id ? (
-              <Pressable onPress={() => void run(() => removeMember(id, member.id))}>
-                <Text style={screen.error}>Remove</Text>
+        {members.map((member, index) => {
+          const isYou = member.id === session?.user.id
+          return (
+            <View key={member.id} style={[screen.row, index === 0 && screen.rowFirst, isYou && screen.rowSelected]}>
+              <Pressable
+                onPress={() => router.push({ pathname: '/member/[id]', params: { id: member.id } })}
+                style={screen.rowMain}
+              >
+                <Text style={[screen.rowTitle, isYou && screen.rowTitleSelected]}>
+                  {member.display_name ?? 'Unnamed'}
+                </Text>
               </Pressable>
-            ) : null}
-          </Pressable>
-        ))}
+              <View style={screen.choiceTrail}>
+                {isYou ? <Text style={screen.youLabel}>You</Text> : null}
+                {member.id === group?.creator_id ? <Text style={screen.muted}>Creator</Text> : null}
+                {creator && !isYou ? (
+                  <Pressable onPress={() => void run(() => removeMember(id, member.id))}>
+                    <Text style={screen.leaveText}>Remove</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            </View>
+          )
+        })}
       </View>
       {creator ? (
         <>
@@ -99,9 +109,9 @@ export default function GroupScreen() {
             .then(() => router.back())
             .catch((err: unknown) => setError(err instanceof Error ? err.message : 'Could not leave'))
         }
-        style={screen.secondaryButton}
+        style={({ pressed }) => [screen.leave, pressed && screen.rowPressed]}
       >
-        <Text style={screen.secondaryButtonText}>Leave group</Text>
+        <Text style={screen.leaveText}>Leave group</Text>
       </Pressable>
     </SafeAreaView>
   )

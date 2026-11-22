@@ -51,36 +51,47 @@ export default function GroupsScreen() {
         </Pressable>
       </View>
       {error ? <Text style={screen.error}>{error}</Text> : null}
-      <View style={screen.card}>
-        <TextInput
-          autoCapitalize="characters"
-          onChangeText={setCode}
-          placeholder="Invite code"
-          style={screen.input}
-          value={code}
-        />
-        <Pressable onPress={() => void join()} style={screen.add}>
-          <Text style={screen.addText}>Join with code</Text>
-        </Pressable>
-      </View>
+      <Text style={screen.label}>Invite code</Text>
+      <TextInput
+        autoCapitalize="characters"
+        onChangeText={setCode}
+        placeholder="Invite code"
+        style={screen.input}
+        value={code}
+      />
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => void join()}
+        style={({ pressed }) => [screen.addCard, pressed && screen.rowPressed]}
+      >
+        <Text style={screen.addText}>Join with code</Text>
+      </Pressable>
       {groups.map((group) => (
-        <View key={group.id} style={{ gap: 8 }}>
+        <View key={group.id} style={screen.groupBlock}>
           <Pressable onPress={() => router.push({ pathname: '/group/[id]', params: { id: group.id } })} style={screen.codeCard}>
             <Text style={screen.muted}>{group.name}</Text>
             <Text style={screen.codeValue}>{group.invite_code}</Text>
           </Pressable>
           <View style={screen.card}>
-            {(members[group.id] ?? []).map((member, index) => (
-              <Pressable
-                key={member.id}
-                disabled={member.id === session?.user.id}
-                onPress={() => router.push({ pathname: '/member/[id]', params: { id: member.id } })}
-                style={[screen.row, index === 0 && screen.rowFirst]}
-              >
-                <Text style={screen.rowTitle}>{member.display_name ?? 'Unnamed'}</Text>
-                {member.id === group.creator_id ? <Text style={screen.muted}>Creator</Text> : null}
-              </Pressable>
-            ))}
+            {(members[group.id] ?? []).map((member, index) => {
+              const isYou = member.id === session?.user.id
+              return (
+                <Pressable
+                  key={member.id}
+                  disabled={isYou}
+                  onPress={() => router.push({ pathname: '/member/[id]', params: { id: member.id } })}
+                  style={[screen.row, index === 0 && screen.rowFirst, isYou && screen.rowSelected]}
+                >
+                  <Text style={[screen.rowTitle, isYou && screen.rowTitleSelected]}>
+                    {member.display_name ?? 'Unnamed'}
+                  </Text>
+                  <View style={screen.choiceTrail}>
+                    {isYou ? <Text style={screen.youLabel}>You</Text> : null}
+                    {member.id === group.creator_id ? <Text style={screen.muted}>Creator</Text> : null}
+                  </View>
+                </Pressable>
+              )
+            })}
           </View>
         </View>
       ))}

@@ -1,5 +1,6 @@
 import * as ImagePicker from 'expo-image-picker'
 import { useFocusEffect, useRouter } from 'expo-router'
+import { Circle, CircleCheck } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
 import { Pressable, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -64,20 +65,47 @@ export default function NewPostScreen() {
       </Pressable>
       <Text style={screen.muted}>Who can see it</Text>
       <View style={screen.card}>
-        <Pressable onPress={() => setProfile((current) => !current)} style={[screen.row, screen.rowFirst]}>
-          <Text style={screen.rowTitle}>Profile</Text>
-          <Text style={screen.muted}>{profile ? 'On' : 'Off'}</Text>
+        <Pressable
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: profile }}
+          onPress={() => setProfile((current) => !current)}
+          style={({ pressed }) => [
+            screen.row,
+            screen.rowFirst,
+            profile && screen.rowSelected,
+            pressed && (profile ? screen.rowSelectedPressed : screen.rowPressed),
+          ]}
+        >
+          <Text style={[screen.rowTitle, profile && screen.rowTitleSelected]}>Profile</Text>
+          {profile ? (
+            <CircleCheck color="#c2410c" size={20} strokeWidth={2.25} />
+          ) : (
+            <Circle color="#d6d3d1" size={20} strokeWidth={1.75} />
+          )}
         </Pressable>
-        {groups.map((group) => (
-          <Pressable
-            key={group.id}
-            onPress={() => setSelected((current) => ({ ...current, [group.id]: !current[group.id] }))}
-            style={screen.row}
-          >
-            <Text style={screen.rowTitle}>{group.name}</Text>
-            <Text style={screen.muted}>{selected[group.id] ? 'On' : 'Off'}</Text>
-          </Pressable>
-        ))}
+        {groups.map((group) => {
+          const checked = Boolean(selected[group.id])
+          return (
+            <Pressable
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked }}
+              key={group.id}
+              onPress={() => setSelected((current) => ({ ...current, [group.id]: !current[group.id] }))}
+              style={({ pressed }) => [
+                screen.row,
+                checked && screen.rowSelected,
+                pressed && (checked ? screen.rowSelectedPressed : screen.rowPressed),
+              ]}
+            >
+              <Text style={[screen.rowTitle, checked && screen.rowTitleSelected]}>{group.name}</Text>
+              {checked ? (
+                <CircleCheck color="#c2410c" size={20} strokeWidth={2.25} />
+              ) : (
+                <Circle color="#d6d3d1" size={20} strokeWidth={1.75} />
+              )}
+            </Pressable>
+          )
+        })}
       </View>
       <Pressable onPress={() => void save()} style={screen.save}>
         <Text style={screen.buttonText}>Post</Text>

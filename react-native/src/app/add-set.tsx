@@ -1,4 +1,5 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
+import { Circle, CircleCheck } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
 import { Pressable, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -55,21 +56,41 @@ export default function AddSetScreen() {
       <Text style={screen.title}>Add a set</Text>
       <Text style={screen.muted}>{day}</Text>
       {error ? <Text style={screen.error}>{error}</Text> : null}
-      <View style={screen.card}>
-        {lifts.map((lift, index) => (
-          <Pressable
-            key={lift.id}
-            onPress={() => setLiftId(lift.id)}
-            style={[screen.row, index === 0 && screen.rowFirst]}
-          >
-            <Text style={screen.rowTitle}>{lift.name}</Text>
-            <Text style={screen.muted}>{liftId === lift.id ? 'Selected' : ''}</Text>
-          </Pressable>
-        ))}
-        <Pressable onPress={() => router.push('/new-lift')} style={screen.add}>
-          <Text style={screen.addText}>New lift</Text>
-        </Pressable>
-      </View>
+      {lifts.length > 0 ? (
+        <View style={screen.card}>
+          {lifts.map((lift, index) => {
+            const selectedLift = liftId === lift.id
+            return (
+              <Pressable
+                accessibilityRole="radio"
+                accessibilityState={{ selected: selectedLift }}
+                key={lift.id}
+                onPress={() => setLiftId(lift.id)}
+                style={({ pressed }) => [
+                  screen.row,
+                  index === 0 && screen.rowFirst,
+                  selectedLift && screen.rowSelected,
+                  pressed && (selectedLift ? screen.rowSelectedPressed : screen.rowPressed),
+                ]}
+              >
+                <Text style={[screen.rowTitle, selectedLift && screen.rowTitleSelected]}>{lift.name}</Text>
+                {selectedLift ? (
+                  <CircleCheck color="#c2410c" size={20} strokeWidth={2.25} />
+                ) : (
+                  <Circle color="#d6d3d1" size={20} strokeWidth={1.75} />
+                )}
+              </Pressable>
+            )
+          })}
+        </View>
+      ) : null}
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => router.push('/new-lift')}
+        style={({ pressed }) => [screen.addCard, pressed && screen.rowPressed]}
+      >
+        <Text style={screen.addText}>New lift</Text>
+      </Pressable>
       <Text style={screen.label}>Attempt</Text>
       <TextInput keyboardType="number-pad" onChangeText={setAttempt} style={screen.input} value={attempt} />
       <Text style={screen.label}>Reps</Text>

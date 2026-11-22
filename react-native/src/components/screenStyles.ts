@@ -51,7 +51,32 @@ export const screen = StyleSheet.create({
     fontWeight: '600',
   },
   secondaryButton: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  leave: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  leaveText: {
+    color: '#e5484d',
+    fontSize: 17,
+    fontWeight: '600',
+  },
+  youLabel: {
+    fontSize: 15,
+    color: '#9a3412',
+    fontWeight: '600',
+  },
+  groupBlock: {
+    gap: 12,
+  },
+  rowMain: {
+    flex: 1,
   },
   secondaryButtonText: {
     color: '#111827',
@@ -87,10 +112,27 @@ export const screen = StyleSheet.create({
   rowFirst: {
     borderTopWidth: 0,
   },
+  rowSelected: {
+    backgroundColor: '#fff7ed',
+  },
+  rowPressed: {
+    backgroundColor: '#fafaf9',
+  },
+  rowSelectedPressed: {
+    backgroundColor: '#ffedd5',
+  },
   rowTitle: {
     fontSize: 17,
     color: '#1c1917',
     fontWeight: '600',
+  },
+  rowTitleSelected: {
+    color: '#9a3412',
+  },
+  choiceTrail: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   rowMeta: {
     fontSize: 17,
@@ -106,6 +148,12 @@ export const screen = StyleSheet.create({
     paddingVertical: 14,
     borderTopWidth: 1,
     borderTopColor: '#f0eeeb',
+  },
+  addCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   addText: {
     color: '#c2410c',
