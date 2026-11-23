@@ -252,6 +252,13 @@ export async function createLift(name: string): Promise<void> {
   fail(error)
 }
 
+export async function deleteLift(liftId: string): Promise<void> {
+  const { error } = await db().from('lifts').delete().eq('id', liftId)
+  fail(error)
+}
+
+export { isLiftInUseError } from './liftDelete'
+
 export async function loadSets(userId: string, day: string): Promise<SetLog[]> {
   const { data, error } = await db()
     .from('sets')

@@ -11,7 +11,7 @@
     "web": "expo start --web",
     "lint": "eslint .",
     "type-check": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
-    "test": "node --experimental-strip-types --test src/lib/devHost.test.ts src/lib/fileId.test.ts src/lib/foodDelete.test.ts src/lib/localDate.test.ts src/lib/measure.test.ts src/lib/nutrition.test.ts src/lib/ordinal.test.ts src/lib/voiceSet.test.ts"
+    "test": "node --experimental-strip-types --test src/lib/devHost.test.ts src/lib/fileId.test.ts src/lib/foodDelete.test.ts src/lib/liftDelete.test.ts src/lib/localDate.test.ts src/lib/measure.test.ts src/lib/nutrition.test.ts src/lib/ordinal.test.ts src/lib/voiceSet.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.2",

@@ -179,26 +179,6 @@ export const screen = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
   },
-  addSetActionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  addSetButton: {
-    flex: 1,
-    backgroundColor: '#1c1917',
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  micButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    backgroundColor: '#1c1917',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   micButtonActive: {
     backgroundColor: '#fff7ed',
     borderWidth: 1,
@@ -320,6 +300,9 @@ export const screen = StyleSheet.create({
     gap: 12,
     borderTopWidth: 1,
     borderTopColor: '#f0eeeb',
+  },
+  addRowFirst: {
+    borderTopWidth: 0,
   },
   dietActionSide: {
     flex: 1,

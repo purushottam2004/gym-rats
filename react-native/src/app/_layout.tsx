@@ -43,6 +43,7 @@ function Navigation() {
       <Stack.Screen name="food-catalog" />
       <Stack.Screen name="new-food" />
       <Stack.Screen name="add-set" />
+      <Stack.Screen name="lift-catalog" />
       <Stack.Screen name="new-lift" />
       <Stack.Screen name="new-group" />
       <Stack.Screen name="new-post" />

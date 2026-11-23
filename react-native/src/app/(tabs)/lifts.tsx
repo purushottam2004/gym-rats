@@ -142,27 +142,36 @@ export default function LiftsScreen() {
               ))}
           </View>
         ))}
-        <View style={screen.addSetActionRow}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push({ pathname: '/add-set', params: { day } })}
-            style={screen.addSetButton}
-          >
-            <Text style={screen.buttonText}>Add a set</Text>
-          </Pressable>
-          <Pressable
-            accessibilityLabel={recording ? 'Stop recording and add set' : 'Speak a set'}
-            accessibilityRole="button"
-            disabled={voiceBusy}
-            onPress={() => void toggleVoice()}
-            style={({ pressed }) => [
-              screen.micButton,
-              recording && screen.micButtonActive,
-              (pressed || voiceBusy) && screen.buttonDisabled,
-            ]}
-          >
-            <Mic color={recording ? '#9a3412' : '#fafaf9'} size={22} strokeWidth={2.25} />
-          </Pressable>
+        <View style={screen.card}>
+          <View style={[screen.addRow, screen.addRowFirst]}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push({ pathname: '/add-set', params: { day } })}
+              style={screen.dietActionSide}
+            >
+              <Text style={screen.addText}>Add a set</Text>
+            </Pressable>
+            <Pressable
+              accessibilityLabel={recording ? 'Stop recording and add set' : 'Speak a set'}
+              accessibilityRole="button"
+              disabled={voiceBusy}
+              onPress={() => void toggleVoice()}
+              style={({ pressed }) => [
+                screen.dietMicButton,
+                recording && screen.micButtonActive,
+                (pressed || voiceBusy) && screen.buttonDisabled,
+              ]}
+            >
+              <Mic color={recording ? '#9a3412' : '#1c1917'} size={20} strokeWidth={2.25} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/lift-catalog')}
+              style={[screen.dietActionSide, screen.dietActionSideEnd]}
+            >
+              <Text style={screen.addText}>View Catalogue</Text>
+            </Pressable>
+          </View>
         </View>
       </Screen>
       <Toast
