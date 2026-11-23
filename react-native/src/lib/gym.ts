@@ -119,19 +119,42 @@ export async function loadNutrients(): Promise<Nutrient[]> {
 }
 
 export async function loadFoods(): Promise<Food[]> {
+  const { data: userData, error: userError } = await db().auth.getUser()
+  fail(userError)
+  const userId = userData.user?.id
+  if (!userId) throw new Error('Not signed in')
   const { data, error } = await db()
     .from('foods')
-    .select('id, name, measure, basis')
+    .select(
+      'id, name, measure, basis, food_nutrients(amount, nutrient:nutrients(id, name, unit))',
+    )
+    .eq('user_id', userId)
     .order('name')
   fail(error)
-  return (data ?? []).map((row) => ({
-    id: row.id as string,
-    name: row.name as string,
-    measure: row.measure as Measure,
-    basis: row.basis as Basis,
-    nutrients: [],
-  }))
+  return (data ?? []).map((row) => {
+    const nutrients = (row.food_nutrients ?? []) as unknown as {
+      amount: number
+      nutrient: Nutrient
+    }[]
+    return {
+      id: row.id as string,
+      name: row.name as string,
+      measure: row.measure as Measure,
+      basis: row.basis as Basis,
+      nutrients: nutrients.map((item) => ({
+        amount: Number(item.amount),
+        nutrient: item.nutrient,
+      })),
+    }
+  })
 }
+
+export async function deleteFood(foodId: string): Promise<void> {
+  const { error } = await db().rpc('delete_food', { p_food_id: foodId })
+  fail(error)
+}
+
+export { isFoodInUseError } from './foodDelete'
 
 export async function createFood(input: {
   name: string

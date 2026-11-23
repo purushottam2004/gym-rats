@@ -112,12 +112,14 @@ export default function DietScreen() {
             </View>
           </View>
         ))}
-        <Pressable
-          onPress={() => router.push({ pathname: '/add-food', params: { day } })}
-          style={screen.add}
-        >
-          <Text style={screen.addText}>Add food</Text>
-        </Pressable>
+        <View style={screen.addRow}>
+          <Pressable onPress={() => router.push({ pathname: '/add-food', params: { day } })}>
+            <Text style={screen.addText}>Add food</Text>
+          </Pressable>
+          <Pressable onPress={() => router.push('/food-catalog')}>
+            <Text style={screen.addText}>View Catalog</Text>
+          </Pressable>
+        </View>
       </View>
       <View style={screen.section}>
         <Text style={screen.sectionTitle}>{nutritionSummaryTitle(day, today)}</Text>

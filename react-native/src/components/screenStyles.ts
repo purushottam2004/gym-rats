@@ -227,4 +227,73 @@ export const screen = StyleSheet.create({
   modalScroll: {
     flexGrow: 0,
   },
+  confirmCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 20,
+    gap: 12,
+  },
+  confirmActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  confirmCancel: {
+    flex: 1,
+    backgroundColor: '#f5f5f4',
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  confirmDelete: {
+    flex: 1,
+    backgroundColor: '#fff1f2',
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  toast: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    bottom: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    zIndex: 20,
+  },
+  toastSuccess: {
+    backgroundColor: '#ecfdf3',
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  toastError: {
+    backgroundColor: '#fef2f2',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  toastText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  toastTextSuccess: {
+    color: '#166534',
+  },
+  toastTextError: {
+    color: '#991b1b',
+  },
+  addRow: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f0eeeb',
+  },
 })
