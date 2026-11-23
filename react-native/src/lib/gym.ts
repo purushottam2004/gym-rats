@@ -26,11 +26,17 @@ export type Nutrient = {
   unit: string
 }
 
+export type FoodNutrient = {
+  amount: number
+  nutrient: Nutrient
+}
+
 export type Food = {
   id: string
   name: string
   measure: Measure
   basis: Basis
+  nutrients: FoodNutrient[]
 }
 
 export type Intake = {
@@ -118,7 +124,13 @@ export async function loadFoods(): Promise<Food[]> {
     .select('id, name, measure, basis')
     .order('name')
   fail(error)
-  return (data ?? []) as Food[]
+  return (data ?? []).map((row) => ({
+    id: row.id as string,
+    name: row.name as string,
+    measure: row.measure as Measure,
+    basis: row.basis as Basis,
+    nutrients: [],
+  }))
 }
 
 export async function createFood(input: {
@@ -140,17 +152,37 @@ export async function createFood(input: {
 export async function loadIntakes(userId: string, day: string): Promise<Intake[]> {
   const { data, error } = await db()
     .from('intakes')
-    .select('id, amount, logged_on, food:foods!intakes_food_id_fkey(id, name, measure, basis)')
+    .select(
+      'id, amount, logged_on, food:foods!intakes_food_id_fkey(id, name, measure, basis, food_nutrients(amount, nutrient:nutrients(id, name, unit)))',
+    )
     .eq('user_id', userId)
     .eq('logged_on', day)
     .order('created_at')
   fail(error)
-  return (data ?? []).map((row) => ({
-    id: row.id as string,
-    amount: Number(row.amount),
-    logged_on: row.logged_on as string,
-    food: row.food as unknown as Food,
-  }))
+  return (data ?? []).map((row) => {
+    const food = row.food as unknown as {
+      id: string
+      name: string
+      measure: Measure
+      basis: Basis
+      food_nutrients?: { amount: number; nutrient: Nutrient }[]
+    }
+    return {
+      id: row.id as string,
+      amount: Number(row.amount),
+      logged_on: row.logged_on as string,
+      food: {
+        id: food.id,
+        name: food.name,
+        measure: food.measure,
+        basis: food.basis,
+        nutrients: (food.food_nutrients ?? []).map((item) => ({
+          amount: Number(item.amount),
+          nutrient: item.nutrient,
+        })),
+      },
+    }
+  })
 }
 
 export async function logIntake(foodId: string, amount: number, day: string): Promise<void> {

@@ -196,4 +196,13 @@ export const screen = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  section: {
+    marginTop: 12,
+    gap: 12,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#111827',
+  },
 })

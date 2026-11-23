@@ -7,6 +7,11 @@ import { Screen } from '../../components/Screen'
 import { screen } from '../../components/screenStyles'
 import { deleteIntake, loadIntakes, measureLabel, type Intake } from '../../lib/gym'
 import { formatDay, localDate, shiftDate } from '../../lib/localDate'
+import {
+  formatNutrientTotal,
+  nutritionSummaryTitle,
+  summarizeNutrition,
+} from '../../lib/nutrition'
 
 export default function DietScreen() {
   const { session } = useAuth()
@@ -15,6 +20,8 @@ export default function DietScreen() {
   const [day, setDay] = useState(localDate)
   const [rows, setRows] = useState<Intake[]>([])
   const [error, setError] = useState<string | null>(null)
+  const today = localDate()
+  const summary = summarizeNutrition(rows)
 
   const load = useCallback(async () => {
     if (!userId) return
@@ -69,6 +76,25 @@ export default function DietScreen() {
         >
           <Text style={screen.addText}>Add food</Text>
         </Pressable>
+      </View>
+      <View style={screen.section}>
+        <Text style={screen.sectionTitle}>{nutritionSummaryTitle(day, today)}</Text>
+        <View style={screen.card}>
+          {summary.length > 0 ? (
+            summary.map((line, index) => (
+              <View key={line.id} style={[screen.row, index === 0 && screen.rowFirst]}>
+                <Text style={screen.rowTitle}>{line.name}</Text>
+                <Text style={screen.rowMeta}>
+                  {formatNutrientTotal(line.total)} {line.unit}
+                </Text>
+              </View>
+            ))
+          ) : (
+            <View style={[screen.row, screen.rowFirst]}>
+              <Text style={screen.muted}>No nutrition logged for this day.</Text>
+            </View>
+          )}
+        </View>
       </View>
     </Screen>
   )
