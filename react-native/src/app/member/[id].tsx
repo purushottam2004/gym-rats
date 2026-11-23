@@ -1,6 +1,7 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
+import { OrdinalNumber } from '../../components/OrdinalNumber'
 import { Screen } from '../../components/Screen'
 import { screen } from '../../components/screenStyles'
 import {
@@ -74,7 +75,7 @@ export default function MemberScreen() {
         {sets.map((row) => (
           <View key={row.id} style={screen.row}>
             <Text style={screen.rowTitle}>
-              {row.lift.name} · {row.attempt} · {row.reps} reps
+              {row.lift.name} · <OrdinalNumber value={row.attempt} /> {row.reps} reps
             </Text>
             <Text style={screen.rowMeta}>{row.load_kg} kg</Text>
           </View>

@@ -296,4 +296,34 @@ export const screen = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#f0eeeb',
   },
+  setNumberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  setNumberCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1.5,
+    borderColor: '#d1d5db',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff',
+  },
+  setNumberCircleSelected: {
+    backgroundColor: '#2563eb',
+    borderColor: '#2563eb',
+  },
+  setNumberCirclePressed: {
+    backgroundColor: '#f5f5f4',
+  },
+  setNumberCircleText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#1c1917',
+  },
+  setNumberCircleTextSelected: {
+    color: '#ffffff',
+  },
 })

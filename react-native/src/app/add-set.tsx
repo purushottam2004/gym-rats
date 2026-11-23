@@ -6,12 +6,14 @@ import { Screen } from '../components/Screen'
 import { screen } from '../components/screenStyles'
 import { loadLifts, logSet, type Lift } from '../lib/gym'
 
+const SET_NUMBERS = [1, 2, 3, 4, 5] as const
+
 export default function AddSetScreen() {
   const { day } = useLocalSearchParams<{ day: string }>()
   const router = useRouter()
   const [lifts, setLifts] = useState<Lift[]>([])
   const [liftId, setLiftId] = useState<string | null>(null)
-  const [attempt, setAttempt] = useState('1')
+  const [setNumber, setSetNumber] = useState<(typeof SET_NUMBERS)[number]>(1)
   const [reps, setReps] = useState('')
   const [loadKg, setLoadKg] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -28,11 +30,10 @@ export default function AddSetScreen() {
   )
 
   async function save() {
-    const attemptValue = Number(attempt)
     const repsValue = Number(reps)
     const loadValue = Number(loadKg)
-    if (!liftId || !day || !Number.isInteger(attemptValue) || attemptValue < 1) {
-      setError('Attempt is a whole number, 1 or more')
+    if (!liftId || !day) {
+      setError('Pick a lift and day first')
       return
     }
     if (!Number.isInteger(repsValue) || repsValue < 1) {
@@ -44,7 +45,7 @@ export default function AddSetScreen() {
       return
     }
     try {
-      await logSet({ liftId, day, attempt: attemptValue, reps: repsValue, loadKg: loadValue })
+      await logSet({ liftId, day, attempt: setNumber, reps: repsValue, loadKg: loadValue })
       router.back()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save')
@@ -91,8 +92,27 @@ export default function AddSetScreen() {
       >
         <Text style={screen.addText}>New lift</Text>
       </Pressable>
-      <Text style={screen.label}>Attempt</Text>
-      <TextInput keyboardType="number-pad" onChangeText={setAttempt} style={screen.input} value={attempt} />
+      <Text style={screen.label}>Set Number</Text>
+      <View style={screen.setNumberRow}>
+        {SET_NUMBERS.map((n) => {
+          const selected = setNumber === n
+          return (
+            <Pressable
+              accessibilityRole="radio"
+              accessibilityState={{ selected }}
+              key={n}
+              onPress={() => setSetNumber(n)}
+              style={({ pressed }) => [
+                screen.setNumberCircle,
+                selected && screen.setNumberCircleSelected,
+                pressed && !selected && screen.setNumberCirclePressed,
+              ]}
+            >
+              <Text style={[screen.setNumberCircleText, selected && screen.setNumberCircleTextSelected]}>{n}</Text>
+            </Pressable>
+          )
+        })}
+      </View>
       <Text style={screen.label}>Reps</Text>
       <TextInput keyboardType="number-pad" onChangeText={setReps} style={screen.input} value={reps} />
       <Text style={screen.label}>Kilograms</Text>

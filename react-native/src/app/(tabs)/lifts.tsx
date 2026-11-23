@@ -3,8 +3,10 @@ import { useCallback, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
 import { DeleteConfirmButton } from '../../components/DeleteConfirmButton'
+import { OrdinalNumber } from '../../components/OrdinalNumber'
 import { Screen } from '../../components/Screen'
 import { screen } from '../../components/screenStyles'
+import { ordinalSuffix } from '../../lib/ordinal'
 import { deleteSet, loadSets, type SetLog } from '../../lib/gym'
 import { formatDay, localDate, shiftDate } from '../../lib/localDate'
 
@@ -58,14 +60,14 @@ export default function LiftsScreen() {
               <View key={row.id} style={screen.row}>
                 <View style={screen.rowMain}>
                   <Text style={screen.rowTitle}>
-                    {row.attempt} · {row.reps} reps
+                    <OrdinalNumber value={row.attempt} /> {row.reps} reps
                   </Text>
                 </View>
                 <View style={screen.choiceTrail}>
                   <Text style={screen.rowMeta}>{row.load_kg} kg</Text>
                   <DeleteConfirmButton
                     title="Delete set?"
-                    message={`Remove attempt ${row.attempt} (${row.reps} reps · ${row.load_kg} kg)?`}
+                    message={`Remove ${row.attempt}${ordinalSuffix(row.attempt)} set (${row.reps} reps · ${row.load_kg} kg)?`}
                     onConfirm={() => void deleteSet(row.id).then(load)}
                   />
                 </View>
