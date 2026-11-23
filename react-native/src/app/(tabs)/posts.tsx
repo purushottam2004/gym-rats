@@ -1,8 +1,8 @@
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useState } from 'react'
 import { Image, Pressable, Text, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../../auth/AuthProvider'
+import { Screen } from '../../components/Screen'
 import { screen } from '../../components/screenStyles'
 import { deletePost, loadGroups, loadPosts, publicImageUrl, type Post } from '../../lib/gym'
 
@@ -31,7 +31,7 @@ export default function PostsScreen() {
   )
 
   return (
-    <SafeAreaView style={screen.page}>
+    <Screen>
       <View style={screen.dayRow}>
         <Text style={screen.title}>Posts</Text>
         <Pressable onPress={() => router.push('/new-post')}>
@@ -63,6 +63,6 @@ export default function PostsScreen() {
         )
       })}
       <Text style={screen.muted}>Tap your own post to delete it.</Text>
-    </SafeAreaView>
+    </Screen>
   )
 }

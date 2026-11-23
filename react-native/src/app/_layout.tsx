@@ -12,7 +12,8 @@ function Navigation() {
   useEffect(() => {
     if (!ready || configError) return
     const onLogin = segments[0] === 'login'
-    if (!session && !onLogin) router.replace('/login')
+    const onScrollSmoke = __DEV__ && segments[0] === 'scroll-smoke'
+    if (!session && !onLogin && !onScrollSmoke) router.replace('/login')
     if (session && onLogin) router.replace('/diet')
   }, [ready, session, configError, segments, router])
 
@@ -35,6 +36,7 @@ function Navigation() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="login" />
+      <Stack.Screen name="scroll-smoke" />
       <Stack.Screen name="index" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="add-food" />

@@ -1,9 +1,9 @@
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../../auth/AuthProvider'
 import { DeleteConfirmButton } from '../../components/DeleteConfirmButton'
+import { Screen } from '../../components/Screen'
 import { screen } from '../../components/screenStyles'
 import { deleteIntake, loadIntakes, measureLabel, type Intake } from '../../lib/gym'
 import { formatDay, localDate, shiftDate } from '../../lib/localDate'
@@ -33,7 +33,7 @@ export default function DietScreen() {
   )
 
   return (
-    <SafeAreaView style={screen.page}>
+    <Screen>
       <Text style={screen.title}>Diet</Text>
       <View style={screen.dayRow}>
         <Pressable onPress={() => setDay((current) => shiftDate(current, -1))}>
@@ -70,6 +70,6 @@ export default function DietScreen() {
           <Text style={screen.addText}>Add food</Text>
         </Pressable>
       </View>
-    </SafeAreaView>
+    </Screen>
   )
 }

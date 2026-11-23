@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { Pressable, Text, TextInput } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { Screen } from '../components/Screen'
 import { screen } from '../components/screenStyles'
 import { createGroup } from '../lib/gym'
 
@@ -20,7 +20,7 @@ export default function NewGroupScreen() {
   }
 
   return (
-    <SafeAreaView style={screen.page}>
+    <Screen>
       <Text style={screen.title}>New group</Text>
       <Text style={screen.muted}>You name it. A code is issued when you create it.</Text>
       {error ? <Text style={screen.error}>{error}</Text> : null}
@@ -29,6 +29,6 @@ export default function NewGroupScreen() {
       <Pressable onPress={() => void save()} style={screen.save}>
         <Text style={screen.buttonText}>Create group</Text>
       </Pressable>
-    </SafeAreaView>
+    </Screen>
   )
 }

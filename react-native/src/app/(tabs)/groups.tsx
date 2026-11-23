@@ -1,8 +1,8 @@
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useState } from 'react'
 import { Pressable, Text, TextInput, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../../auth/AuthProvider'
+import { Screen } from '../../components/Screen'
 import { screen } from '../../components/screenStyles'
 import { joinGroup, loadGroups, loadMembers, type Group, type Member } from '../../lib/gym'
 
@@ -43,7 +43,7 @@ export default function GroupsScreen() {
   }
 
   return (
-    <SafeAreaView style={screen.page}>
+    <Screen>
       <View style={screen.dayRow}>
         <Text style={screen.title}>Groups</Text>
         <Pressable onPress={() => router.push('/new-group')}>
@@ -95,6 +95,6 @@ export default function GroupsScreen() {
           </View>
         </View>
       ))}
-    </SafeAreaView>
+    </Screen>
   )
 }

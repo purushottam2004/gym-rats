@@ -2,7 +2,7 @@ import * as ImagePicker from 'expo-image-picker'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { Pressable, Text } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { Screen } from '../components/Screen'
 import { useAuth } from '../auth/AuthProvider'
 import { screen } from '../components/screenStyles'
 import { saveAvatarPath, uploadImage } from '../lib/gym'
@@ -32,12 +32,12 @@ export default function EditPhotoScreen() {
   }
 
   return (
-    <SafeAreaView style={screen.page}>
+    <Screen>
       <Text style={screen.title}>Edit photo</Text>
       {error ? <Text style={screen.error}>{error}</Text> : null}
       <Pressable onPress={() => void pick()} style={screen.save}>
         <Text style={screen.buttonText}>Choose a photo</Text>
       </Pressable>
-    </SafeAreaView>
+    </Screen>
   )
 }

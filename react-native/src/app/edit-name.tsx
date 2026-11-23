@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { Pressable, Text, TextInput } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { Screen } from '../components/Screen'
 import { useAuth } from '../auth/AuthProvider'
 import { screen } from '../components/screenStyles'
 import { loadProfile, saveDisplayName } from '../lib/gym'
@@ -32,7 +32,7 @@ export default function EditNameScreen() {
   }
 
   return (
-    <SafeAreaView style={screen.page}>
+    <Screen>
       <Text style={screen.title}>Edit name</Text>
       {error ? <Text style={screen.error}>{error}</Text> : null}
       <Text style={screen.label}>Display name</Text>
@@ -40,6 +40,6 @@ export default function EditNameScreen() {
       <Pressable onPress={() => void save()} style={screen.save}>
         <Text style={screen.buttonText}>Save</Text>
       </Pressable>
-    </SafeAreaView>
+    </Screen>
   )
 }

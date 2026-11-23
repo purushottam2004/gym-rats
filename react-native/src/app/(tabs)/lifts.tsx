@@ -1,9 +1,9 @@
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../../auth/AuthProvider'
 import { DeleteConfirmButton } from '../../components/DeleteConfirmButton'
+import { Screen } from '../../components/Screen'
 import { screen } from '../../components/screenStyles'
 import { deleteSet, loadSets, type SetLog } from '../../lib/gym'
 import { formatDay, localDate, shiftDate } from '../../lib/localDate'
@@ -35,7 +35,7 @@ export default function LiftsScreen() {
   const names = [...new Set(rows.map((row) => row.lift.name))]
 
   return (
-    <SafeAreaView style={screen.page}>
+    <Screen>
       <Text style={screen.title}>Lifts</Text>
       <View style={screen.dayRow}>
         <Pressable onPress={() => setDay((current) => shiftDate(current, -1))}>
@@ -76,6 +76,6 @@ export default function LiftsScreen() {
       <Pressable onPress={() => router.push({ pathname: '/add-set', params: { day } })} style={screen.save}>
         <Text style={screen.buttonText}>Add a set</Text>
       </Pressable>
-    </SafeAreaView>
+    </Screen>
   )
 }

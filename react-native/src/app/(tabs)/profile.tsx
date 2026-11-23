@@ -1,8 +1,8 @@
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useState } from 'react'
 import { Image, Pressable, Text, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../../auth/AuthProvider'
+import { Screen } from '../../components/Screen'
 import { screen } from '../../components/screenStyles'
 import { loadProfile, publicImageUrl, type Profile } from '../../lib/gym'
 
@@ -32,7 +32,7 @@ export default function ProfileScreen() {
   const photo = publicImageUrl('avatars', profile?.avatar_path ?? null)
 
   return (
-    <SafeAreaView style={screen.page}>
+    <Screen>
       <Text style={screen.title}>Profile</Text>
       {error ? <Text style={screen.error}>{error}</Text> : null}
       <View style={{ alignItems: 'center', gap: 8 }}>
@@ -55,6 +55,6 @@ export default function ProfileScreen() {
         </Pressable>
       </View>
       <Text style={screen.muted}>{session?.user.email}</Text>
-    </SafeAreaView>
+    </Screen>
   )
 }

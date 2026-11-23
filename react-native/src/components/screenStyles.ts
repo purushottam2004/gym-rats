@@ -7,6 +7,19 @@ export const screen = StyleSheet.create({
     padding: 16,
     gap: 12,
   },
+  safe: {
+    flex: 1,
+    backgroundColor: '#f5f5f4',
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+    gap: 12,
+    flexGrow: 1,
+    paddingBottom: 24,
+  },
   centered: {
     flex: 1,
     backgroundColor: '#ffffff',

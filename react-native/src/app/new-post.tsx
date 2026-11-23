@@ -3,8 +3,8 @@ import { useFocusEffect, useRouter } from 'expo-router'
 import { Circle, CircleCheck } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
 import { Pressable, Text, TextInput, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../auth/AuthProvider'
+import { Screen } from '../components/Screen'
 import { screen } from '../components/screenStyles'
 import { createPost, loadGroups, uploadImage, type Group } from '../lib/gym'
 
@@ -55,7 +55,7 @@ export default function NewPostScreen() {
   }
 
   return (
-    <SafeAreaView style={screen.page}>
+    <Screen>
       <Text style={screen.title}>New post</Text>
       {error ? <Text style={screen.error}>{error}</Text> : null}
       <Text style={screen.label}>Text</Text>
@@ -110,6 +110,6 @@ export default function NewPostScreen() {
       <Pressable onPress={() => void save()} style={screen.save}>
         <Text style={screen.buttonText}>Post</Text>
       </Pressable>
-    </SafeAreaView>
+    </Screen>
   )
 }

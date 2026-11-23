@@ -1,7 +1,7 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { Screen } from '../../components/Screen'
 import { screen } from '../../components/screenStyles'
 import {
   loadIntakes,
@@ -47,7 +47,7 @@ export default function MemberScreen() {
   )
 
   return (
-    <SafeAreaView style={screen.page}>
+    <Screen>
       <Pressable onPress={() => router.back()}>
         <Text style={screen.addText}>Back</Text>
       </Pressable>
@@ -80,6 +80,6 @@ export default function MemberScreen() {
           </View>
         ))}
       </View>
-    </SafeAreaView>
+    </Screen>
   )
 }

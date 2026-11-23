@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { Pressable, Text, TextInput } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { Screen } from '../components/Screen'
 import { screen } from '../components/screenStyles'
 import { createLift } from '../lib/gym'
 
@@ -24,7 +24,7 @@ export default function NewLiftScreen() {
   }
 
   return (
-    <SafeAreaView style={screen.page}>
+    <Screen>
       <Text style={screen.title}>New lift</Text>
       <Text style={screen.muted}>A name only. It cannot be edited later.</Text>
       {error ? <Text style={screen.error}>{error}</Text> : null}
@@ -33,6 +33,6 @@ export default function NewLiftScreen() {
       <Pressable onPress={() => void save()} style={screen.save}>
         <Text style={screen.buttonText}>Create lift</Text>
       </Pressable>
-    </SafeAreaView>
+    </Screen>
   )
 }

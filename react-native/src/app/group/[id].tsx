@@ -1,8 +1,8 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useState } from 'react'
 import { Pressable, Text, TextInput, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../../auth/AuthProvider'
+import { Screen } from '../../components/Screen'
 import { screen } from '../../components/screenStyles'
 import {
   leaveGroup,
@@ -56,7 +56,7 @@ export default function GroupScreen() {
   }
 
   return (
-    <SafeAreaView style={screen.page}>
+    <Screen>
       <Pressable onPress={() => router.back()}>
         <Text style={screen.addText}>Back</Text>
       </Pressable>
@@ -113,6 +113,6 @@ export default function GroupScreen() {
       >
         <Text style={screen.leaveText}>Leave group</Text>
       </Pressable>
-    </SafeAreaView>
+    </Screen>
   )
 }

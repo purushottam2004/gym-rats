@@ -2,7 +2,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { Circle, CircleCheck } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
 import { Pressable, Text, TextInput, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { Screen } from '../components/Screen'
 import { screen } from '../components/screenStyles'
 import { loadLifts, logSet, type Lift } from '../lib/gym'
 
@@ -52,7 +52,7 @@ export default function AddSetScreen() {
   }
 
   return (
-    <SafeAreaView style={screen.page}>
+    <Screen>
       <Text style={screen.title}>Add a set</Text>
       <Text style={screen.muted}>{day}</Text>
       {error ? <Text style={screen.error}>{error}</Text> : null}
@@ -100,6 +100,6 @@ export default function AddSetScreen() {
       <Pressable onPress={() => void save()} style={screen.save}>
         <Text style={screen.buttonText}>Save</Text>
       </Pressable>
-    </SafeAreaView>
+    </Screen>
   )
 }

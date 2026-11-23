@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { Pressable, Text, TextInput, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { Screen } from '../components/Screen'
 import { screen } from '../components/screenStyles'
 import {
   basisForMeasure,
@@ -44,7 +44,7 @@ export default function NewFoodScreen() {
   }
 
   return (
-    <SafeAreaView style={screen.page}>
+    <Screen>
       <Text style={screen.title}>New food</Text>
       <Text style={screen.muted}>This cannot be edited later.</Text>
       {error ? <Text style={screen.error}>{error}</Text> : null}
@@ -90,6 +90,6 @@ export default function NewFoodScreen() {
       <Pressable onPress={() => void save()} style={screen.save}>
         <Text style={screen.buttonText}>Create food</Text>
       </Pressable>
-    </SafeAreaView>
+    </Screen>
   )
 }

@@ -31,11 +31,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const supabase = getSupabaseClient()
     let active = true
-    void supabase.auth.getSession().then(({ data }) => {
-      if (!active) return
-      setSession(data.session)
-      setReady(true)
-    })
+    void supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!active) return
+        setSession(data.session)
+        setReady(true)
+      })
+      .catch(() => {
+        if (!active) return
+        setSession(null)
+        setReady(true)
+      })
     const { data } = supabase.auth.onAuthStateChange((_event, next) => {
       setSession(next)
       setReady(true)
