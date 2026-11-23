@@ -96,10 +96,11 @@ export default function AddSetScreen() {
           setToast({ kind: 'error', message: result.error })
         }
       } catch (err) {
-        setToast({
-          kind: 'error',
-          message: err instanceof Error ? err.message : 'Could not add set from voice',
-        })
+        const detail =
+          err instanceof Error && err.message.trim()
+            ? err.message.trim()
+            : 'Could not add set from voice'
+        setToast({ kind: 'error', message: detail })
       } finally {
         setVoiceBusy(false)
       }
@@ -209,6 +210,7 @@ export default function AddSetScreen() {
         visible={toast !== null}
         kind={toast?.kind ?? 'success'}
         message={toast?.message ?? ''}
+        durationMs={toast?.kind === 'error' ? 5600 : 2800}
         onHide={() => setToast(null)}
       />
     </View>

@@ -33,7 +33,8 @@ function jsonOk(body: OkBody, status = 200): Response {
   return Response.json(body, { status });
 }
 
-function jsonErr(error: string, status = 400): Response {
+/** Prefer HTTP 200 for user-facing failures so the app toast can read `error` from `data`. */
+function jsonErr(error: string, status = 200): Response {
   const body: ErrBody = { ok: false, error };
   return Response.json(body, { status });
 }
@@ -220,7 +221,7 @@ export default {
 
     const apiKey = Deno.env.get("OPENAI_API_KEY");
     if (!apiKey) {
-      return jsonErr("OPENAI_API_KEY is not configured on the Edge Function", 503);
+      return jsonErr("OPENAI_API_KEY is not configured on the Edge Function");
     }
 
     const userId = ctx.userClaims?.id;
@@ -238,7 +239,7 @@ export default {
       .eq("user_id", userId)
       .order("name");
     if (liftsError) {
-      return jsonErr(liftsError.message, 500);
+      return jsonErr(liftsError.message);
     }
     const liftRows = (lifts ?? []) as LiftRow[];
     if (liftRows.length === 0) {
@@ -255,10 +256,7 @@ export default {
       parsed = await parseSetFromTranscript(apiKey, transcript, liftRows);
     } catch (err) {
       console.error(err);
-      return jsonErr(
-        err instanceof Error ? err.message : "OpenAI request failed",
-        502,
-      );
+      return jsonErr(err instanceof Error ? err.message : "OpenAI request failed");
     }
 
     if (!parsed.understood) {
@@ -301,7 +299,7 @@ export default {
       .single();
 
     if (insertError || !inserted) {
-      return jsonErr(insertError?.message ?? "Could not save set", 500);
+      return jsonErr(insertError?.message ?? "Could not save set");
     }
 
     return jsonOk({

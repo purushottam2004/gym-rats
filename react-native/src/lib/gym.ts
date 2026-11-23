@@ -1,8 +1,8 @@
-import { FunctionsHttpError, type SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { randomFileId } from './fileId'
 import type { Basis, Measure } from './measure'
 import { getSupabaseClient } from './supabase'
-import { bytesToBase64, parseVoiceSetResponse, type VoiceSetResult } from './voiceSet'
+import { bytesToBase64, resultFromFunctionsInvoke, type VoiceSetResult } from './voiceSet'
 
 export type { VoiceSetResult } from './voiceSet'
 
@@ -308,16 +308,7 @@ export async function logSetFromVoice(input: {
     },
   })
 
-  if (error instanceof FunctionsHttpError) {
-    try {
-      const body = await error.context.json()
-      return parseVoiceSetResponse(body, null)
-    } catch {
-      return parseVoiceSetResponse(null, error.message)
-    }
-  }
-
-  return parseVoiceSetResponse(data, error?.message)
+  return resultFromFunctionsInvoke(data, error)
 }
 
 export async function deleteSet(id: string): Promise<void> {
