@@ -1,6 +1,6 @@
-import { Trash2 } from 'lucide-react-native'
-import { Alert, Platform, Pressable } from 'react-native'
-import { confirmDelete } from '../lib/confirmDelete'
+import { useState } from 'react'
+import { ConfirmModal } from './ConfirmModal'
+import { TrashButton } from './TrashButton'
 
 type Props = {
   title: string
@@ -9,22 +9,21 @@ type Props = {
 }
 
 export function DeleteConfirmButton({ title, message, onConfirm }: Props) {
+  const [open, setOpen] = useState(false)
+
   return (
-    <Pressable
-      accessibilityLabel="Delete"
-      accessibilityRole="button"
-      hitSlop={8}
-      onPress={() =>
-        confirmDelete({
-          title,
-          message,
-          onConfirm,
-          useBrowserConfirm: Platform.OS === 'web',
-          nativeAlert: Alert.alert,
-        })
-      }
-    >
-      <Trash2 color="#e5484d" size={20} strokeWidth={1.75} />
-    </Pressable>
+    <>
+      <TrashButton onPress={() => setOpen(true)} />
+      <ConfirmModal
+        visible={open}
+        title={title}
+        message={message}
+        onCancel={() => setOpen(false)}
+        onConfirm={() => {
+          setOpen(false)
+          onConfirm()
+        }}
+      />
+    </>
   )
 }
