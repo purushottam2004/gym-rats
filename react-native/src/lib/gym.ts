@@ -2,9 +2,16 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { randomFileId } from './fileId'
 import type { Basis, Measure } from './measure'
 import { getSupabaseClient } from './supabase'
-import { bytesToBase64, resultFromFunctionsInvoke, type VoiceSetResult } from './voiceSet'
+import {
+  bytesToBase64,
+  parseVoiceIntakeResponse,
+  parseVoiceSetResponse,
+  resultFromFunctionsInvoke,
+  type VoiceIntakeResult,
+  type VoiceSetResult,
+} from './voiceSet'
 
-export type { VoiceSetResult } from './voiceSet'
+export type { VoiceIntakeResult, VoiceSetResult } from './voiceSet'
 
 export type { Basis, Measure } from './measure'
 export { basisForMeasure, measureLabel } from './measure'
@@ -308,7 +315,33 @@ export async function logSetFromVoice(input: {
     },
   })
 
-  return resultFromFunctionsInvoke(data, error)
+  return resultFromFunctionsInvoke(data, error, parseVoiceSetResponse)
+}
+
+/** Sends a recording to the add_intake_from_voice Edge Function (OpenAI + insert). */
+export async function logIntakeFromVoice(input: {
+  day: string
+  audioUri: string
+  mimeType: string
+}): Promise<VoiceIntakeResult> {
+  const response = await fetch(input.audioUri)
+  if (!response.ok) {
+    return { ok: false, error: 'Could not read the recording' }
+  }
+  const bytes = new Uint8Array(await response.arrayBuffer())
+  if (bytes.byteLength === 0) {
+    return { ok: false, error: 'Recording was empty' }
+  }
+
+  const { data, error } = await db().functions.invoke('add_intake_from_voice', {
+    body: {
+      logged_on: input.day,
+      audio_base64: bytesToBase64(bytes),
+      mime_type: input.mimeType,
+    },
+  })
+
+  return resultFromFunctionsInvoke(data, error, parseVoiceIntakeResponse)
 }
 
 export async function deleteSet(id: string): Promise<void> {

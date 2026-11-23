@@ -1,4 +1,4 @@
-/** Pure helpers for the add_set_from_voice Edge Function response. */
+/** Pure helpers for voice Edge Function responses (sets + intakes). */
 
 export type VoiceSetOk = {
   ok: true
@@ -12,12 +12,24 @@ export type VoiceSetOk = {
   }
 }
 
-export type VoiceSetErr = {
+export type VoiceIntakeOk = {
+  ok: true
+  intake: {
+    id: string
+    food_name: string
+    amount: number
+    measure: string
+    logged_on: string
+  }
+}
+
+export type VoiceActionErr = {
   ok: false
   error: string
 }
 
-export type VoiceSetResult = VoiceSetOk | VoiceSetErr
+export type VoiceSetResult = VoiceSetOk | VoiceActionErr
+export type VoiceIntakeResult = VoiceIntakeOk | VoiceActionErr
 
 function firstNonEmptyString(...values: unknown[]): string | null {
   for (const value of values) {
@@ -62,13 +74,43 @@ export function parseVoiceSetResponse(data: unknown, fallbackMessage?: string | 
   return { ok: false, error: 'Could not add set from voice' }
 }
 
+export function parseVoiceIntakeResponse(
+  data: unknown,
+  fallbackMessage?: string | null,
+): VoiceIntakeResult {
+  if (data && typeof data === 'object') {
+    const body = data as Record<string, unknown>
+    if (body.ok === true && body.intake && typeof body.intake === 'object') {
+      return data as VoiceIntakeOk
+    }
+    const fromBody = messageFromFunctionBody(data)
+    if (fromBody) {
+      return { ok: false, error: fromBody }
+    }
+  }
+
+  if (fallbackMessage?.trim()) {
+    return { ok: false, error: fallbackMessage.trim() }
+  }
+  if (!data || typeof data !== 'object') {
+    return { ok: false, error: 'Empty response from voice food' }
+  }
+  return { ok: false, error: 'Could not add food from voice' }
+}
+
+type VoiceParseFn<T extends { ok: true } | VoiceActionErr> = (
+  data: unknown,
+  fallbackMessage?: string | null,
+) => T
+
 /** Prefer the function/gateway body over generic "Failed to send a request…" text. */
-export async function resultFromFunctionsInvoke(
+export async function resultFromFunctionsInvoke<T extends { ok: true } | VoiceActionErr>(
   data: unknown,
   error: unknown,
-): Promise<VoiceSetResult> {
+  parse: VoiceParseFn<T>,
+): Promise<T> {
   if (!error) {
-    return parseVoiceSetResponse(data)
+    return parse(data)
   }
 
   const context = (error as { context?: unknown; message?: string }).context
@@ -77,14 +119,14 @@ export async function resultFromFunctionsInvoke(
     const response = context as Response
     try {
       const body = await response.clone().json()
-      const parsed = parseVoiceSetResponse(body)
+      const parsed = parse(body)
       if (!parsed.ok) return parsed
     } catch {
       // not JSON
     }
     try {
       const text = (await response.clone().text()).trim()
-      if (text) return { ok: false, error: text }
+      if (text) return { ok: false, error: text } as T
     } catch {
       // ignore
     }
@@ -94,7 +136,7 @@ export async function resultFromFunctionsInvoke(
         typeof (error as { message?: string }).message === 'string'
           ? (error as { message: string }).message
           : 'Edge Function error'
-      return { ok: false, error: `${base} (HTTP ${status})` }
+      return { ok: false, error: `${base} (HTTP ${status})` } as T
     }
   }
 
@@ -105,20 +147,20 @@ export async function resultFromFunctionsInvoke(
         : ''
     const inner = context.message.trim()
     if (outer && outer !== inner) {
-      return { ok: false, error: `${outer}: ${inner}` }
+      return { ok: false, error: `${outer}: ${inner}` } as T
     }
-    return { ok: false, error: inner }
+    return { ok: false, error: inner } as T
   }
 
   if (typeof context === 'string' && context.trim()) {
-    return { ok: false, error: context.trim() }
+    return { ok: false, error: context.trim() } as T
   }
 
   const message =
     typeof (error as { message?: string }).message === 'string'
       ? (error as { message: string }).message
       : null
-  return parseVoiceSetResponse(data, message)
+  return parse(data, message)
 }
 
 export function bytesToBase64(bytes: Uint8Array): string {

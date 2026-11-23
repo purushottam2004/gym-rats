@@ -452,3 +452,9 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/add_set_from_voice/deno.json"
 entrypoint = "./functions/add_set_from_voice/index.ts"
+
+[functions.add_intake_from_voice]
+enabled = true
+verify_jwt = true
+import_map = "./functions/add_intake_from_voice/deno.json"
+entrypoint = "./functions/add_intake_from_voice/index.ts"

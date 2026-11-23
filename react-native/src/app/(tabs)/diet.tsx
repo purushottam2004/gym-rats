@@ -1,13 +1,22 @@
+import {
+  AudioModule,
+  RecordingPresets,
+  setAudioModeAsync,
+  useAudioRecorder,
+  useAudioRecorderState,
+} from 'expo-audio'
 import { useFocusEffect, useRouter } from 'expo-router'
+import { Mic } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Platform, Pressable, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
 import { DeleteConfirmButton } from '../../components/DeleteConfirmButton'
 import { InfoButton } from '../../components/InfoButton'
 import { InfoListModal, type InfoListRow } from '../../components/InfoListModal'
 import { Screen } from '../../components/Screen'
+import { Toast, type ToastKind } from '../../components/Toast'
 import { screen } from '../../components/screenStyles'
-import { deleteIntake, loadIntakes, measureLabel, type Intake } from '../../lib/gym'
+import { deleteIntake, loadIntakes, logIntakeFromVoice, measureLabel, type Intake } from '../../lib/gym'
 import { formatDay, localDate, shiftDate } from '../../lib/localDate'
 import {
   foodBasisLabel,
@@ -25,14 +34,22 @@ type InfoModalState = {
   emptyMessage: string
 }
 
+function recordingMimeType(): string {
+  return Platform.OS === 'web' ? 'audio/webm' : 'audio/mp4'
+}
+
 export default function DietScreen() {
   const { session } = useAuth()
   const router = useRouter()
   const userId = session?.user.id
+  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY)
+  const recorderState = useAudioRecorderState(audioRecorder)
   const [day, setDay] = useState(localDate)
   const [rows, setRows] = useState<Intake[]>([])
   const [error, setError] = useState<string | null>(null)
   const [infoModal, setInfoModal] = useState<InfoModalState | null>(null)
+  const [voiceBusy, setVoiceBusy] = useState(false)
+  const [toast, setToast] = useState<{ kind: ToastKind; message: string } | null>(null)
   const today = localDate()
   const summary = summarizeNutrition(rows)
 
@@ -80,77 +97,157 @@ export default function DietScreen() {
     })
   }
 
+  async function toggleVoice() {
+    if (voiceBusy) return
+
+    if (recorderState.isRecording) {
+      setVoiceBusy(true)
+      try {
+        await audioRecorder.stop()
+        const uri = audioRecorder.uri
+        if (!uri) {
+          setToast({ kind: 'error', message: 'No recording captured' })
+          return
+        }
+        const result = await logIntakeFromVoice({
+          day,
+          audioUri: uri,
+          mimeType: recordingMimeType(),
+        })
+        if (result.ok) {
+          setToast({ kind: 'success', message: 'Food added' })
+          await load()
+        } else {
+          setToast({ kind: 'error', message: result.error })
+        }
+      } catch (err) {
+        const detail =
+          err instanceof Error && err.message.trim()
+            ? err.message.trim()
+            : 'Could not add food from voice'
+        setToast({ kind: 'error', message: detail })
+      } finally {
+        setVoiceBusy(false)
+      }
+      return
+    }
+
+    const permission = await AudioModule.requestRecordingPermissionsAsync()
+    if (!permission.granted) {
+      setToast({ kind: 'error', message: 'Microphone permission is required' })
+      return
+    }
+    await setAudioModeAsync({
+      playsInSilentMode: true,
+      allowsRecording: true,
+    })
+    await audioRecorder.prepareToRecordAsync()
+    audioRecorder.record()
+  }
+
+  const recording = recorderState.isRecording
+
   return (
-    <Screen>
-      <Text style={screen.title}>Diet</Text>
-      <View style={screen.dayRow}>
-        <Pressable onPress={() => setDay((current) => shiftDate(current, -1))}>
-          <Text style={screen.addText}>Previous</Text>
-        </Pressable>
-        <Text style={screen.body}>{formatDay(day)}</Text>
-        <Pressable onPress={() => setDay((current) => shiftDate(current, 1))}>
-          <Text style={screen.addText}>Next</Text>
-        </Pressable>
-      </View>
-      {error ? <Text style={screen.error}>{error}</Text> : null}
-      <View style={screen.card}>
-        {rows.map((row, index) => (
-          <View key={row.id} style={[screen.row, index === 0 && screen.rowFirst]}>
-            <View style={screen.rowMain}>
-              <Text style={screen.rowTitle}>{row.food.name}</Text>
-            </View>
-            <View style={screen.choiceTrail}>
-              <Text style={screen.rowMeta}>
-                {row.amount} {measureLabel(row.food.measure)}
-              </Text>
-              <DeleteConfirmButton
-                title="Delete food?"
-                message={`Remove ${row.food.name} from this day's log?`}
-                onConfirm={() => void deleteIntake(row.id).then(load)}
-              />
-              <InfoButton onPress={() => showFoodInfo(row)} />
-            </View>
-          </View>
-        ))}
-        <View style={screen.addRow}>
-          <Pressable onPress={() => router.push({ pathname: '/add-food', params: { day } })}>
-            <Text style={screen.addText}>Add food</Text>
+    <View style={{ flex: 1 }}>
+      <Screen>
+        <Text style={screen.title}>Diet</Text>
+        <View style={screen.dayRow}>
+          <Pressable onPress={() => setDay((current) => shiftDate(current, -1))}>
+            <Text style={screen.addText}>Previous</Text>
           </Pressable>
-          <Pressable onPress={() => router.push('/food-catalog')}>
-            <Text style={screen.addText}>View Catalog</Text>
+          <Text style={screen.body}>{formatDay(day)}</Text>
+          <Pressable onPress={() => setDay((current) => shiftDate(current, 1))}>
+            <Text style={screen.addText}>Next</Text>
           </Pressable>
         </View>
-      </View>
-      <View style={screen.section}>
-        <Text style={screen.sectionTitle}>{nutritionSummaryTitle(day, today)}</Text>
+        {error ? <Text style={screen.error}>{error}</Text> : null}
         <View style={screen.card}>
-          {summary.length > 0 ? (
-            summary.map((line, index) => (
-              <View key={line.id} style={[screen.row, index === 0 && screen.rowFirst]}>
-                <Text style={[screen.rowTitle, screen.rowMain]}>{line.name}</Text>
-                <View style={screen.choiceTrail}>
-                  <Text style={screen.rowMeta}>
-                    {formatNutrientTotal(line.total)} {line.unit}
-                  </Text>
-                  <InfoButton onPress={() => showNutrientInfo(line.id, line.name, line.unit)} />
-                </View>
+          {rows.map((row, index) => (
+            <View key={row.id} style={[screen.row, index === 0 && screen.rowFirst]}>
+              <View style={screen.rowMain}>
+                <Text style={screen.rowTitle}>{row.food.name}</Text>
               </View>
-            ))
-          ) : (
-            <View style={[screen.row, screen.rowFirst]}>
-              <Text style={screen.muted}>No nutrition logged for this day.</Text>
+              <View style={screen.choiceTrail}>
+                <Text style={screen.rowMeta}>
+                  {row.amount} {measureLabel(row.food.measure)}
+                </Text>
+                <DeleteConfirmButton
+                  title="Delete food?"
+                  message={`Remove ${row.food.name} from this day's log?`}
+                  onConfirm={() => void deleteIntake(row.id).then(load)}
+                />
+                <InfoButton onPress={() => showFoodInfo(row)} />
+              </View>
             </View>
-          )}
+          ))}
+          <View style={screen.addRow}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push({ pathname: '/add-food', params: { day } })}
+              style={screen.dietActionSide}
+            >
+              <Text style={screen.addText}>Add food</Text>
+            </Pressable>
+            <Pressable
+              accessibilityLabel={recording ? 'Stop recording and add food' : 'Speak a food'}
+              accessibilityRole="button"
+              disabled={voiceBusy}
+              onPress={() => void toggleVoice()}
+              style={({ pressed }) => [
+                screen.dietMicButton,
+                recording && screen.micButtonActive,
+                (pressed || voiceBusy) && screen.buttonDisabled,
+              ]}
+            >
+              <Mic color={recording ? '#9a3412' : '#1c1917'} size={20} strokeWidth={2.25} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/food-catalog')}
+              style={[screen.dietActionSide, screen.dietActionSideEnd]}
+            >
+              <Text style={screen.addText}>View Catalog</Text>
+            </Pressable>
+          </View>
         </View>
-      </View>
-      <InfoListModal
-        visible={infoModal !== null}
-        title={infoModal?.title ?? ''}
-        subtitle={infoModal?.subtitle}
-        rows={infoModal?.rows ?? []}
-        emptyMessage={infoModal?.emptyMessage ?? ''}
-        onClose={() => setInfoModal(null)}
+        <View style={screen.section}>
+          <Text style={screen.sectionTitle}>{nutritionSummaryTitle(day, today)}</Text>
+          <View style={screen.card}>
+            {summary.length > 0 ? (
+              summary.map((line, index) => (
+                <View key={line.id} style={[screen.row, index === 0 && screen.rowFirst]}>
+                  <Text style={[screen.rowTitle, screen.rowMain]}>{line.name}</Text>
+                  <View style={screen.choiceTrail}>
+                    <Text style={screen.rowMeta}>
+                      {formatNutrientTotal(line.total)} {line.unit}
+                    </Text>
+                    <InfoButton onPress={() => showNutrientInfo(line.id, line.name, line.unit)} />
+                  </View>
+                </View>
+              ))
+            ) : (
+              <View style={[screen.row, screen.rowFirst]}>
+                <Text style={screen.muted}>No nutrition logged for this day.</Text>
+              </View>
+            )}
+          </View>
+        </View>
+        <InfoListModal
+          visible={infoModal !== null}
+          title={infoModal?.title ?? ''}
+          subtitle={infoModal?.subtitle}
+          rows={infoModal?.rows ?? []}
+          emptyMessage={infoModal?.emptyMessage ?? ''}
+          onClose={() => setInfoModal(null)}
+        />
+      </Screen>
+      <Toast
+        visible={toast !== null}
+        kind={toast?.kind ?? 'success'}
+        message={toast?.message ?? ''}
+        durationMs={toast?.kind === 'error' ? 5600 : 2800}
+        onHide={() => setToast(null)}
       />
-    </Screen>
+    </View>
   )
 }

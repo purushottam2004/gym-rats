@@ -3,6 +3,7 @@ import { describe, it } from 'node:test'
 import {
   bytesToBase64,
   messageFromFunctionBody,
+  parseVoiceIntakeResponse,
   parseVoiceSetResponse,
   resultFromFunctionsInvoke,
 } from './voiceSet.ts'
@@ -50,6 +51,30 @@ describe('parseVoiceSetResponse', () => {
   })
 })
 
+describe('parseVoiceIntakeResponse', () => {
+  it('returns ok intake payload', () => {
+    const result = parseVoiceIntakeResponse({
+      ok: true,
+      intake: {
+        id: '1',
+        food_name: 'Oats',
+        amount: 80,
+        measure: 'g',
+        logged_on: '2026-11-23',
+      },
+    })
+    assert.equal(result.ok, true)
+    if (result.ok) assert.equal(result.intake.food_name, 'Oats')
+  })
+
+  it('reads intake errors', () => {
+    assert.deepEqual(parseVoiceIntakeResponse({ ok: false, error: ' Add a food ' }), {
+      ok: false,
+      error: 'Add a food',
+    })
+  })
+})
+
 describe('messageFromFunctionBody', () => {
   it('reads gateway message fields', () => {
     assert.equal(messageFromFunctionBody({ msg: 'JWT expired' }), 'JWT expired')
@@ -62,20 +87,24 @@ describe('resultFromFunctionsInvoke', () => {
     const result = await resultFromFunctionsInvoke(
       { ok: false, error: 'Add a lift first' },
       null,
+      parseVoiceSetResponse,
     )
     assert.deepEqual(result, { ok: false, error: 'Add a lift first' })
   })
 
   it('reads JSON from FunctionsHttpError-like context', async () => {
-    const response = new Response(JSON.stringify({ ok: false, error: 'OPENAI_API_KEY is not configured on the Edge Function' }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    const response = new Response(
+      JSON.stringify({ ok: false, error: 'OPENAI_API_KEY is not configured on the Edge Function' }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      },
+    )
     const error = Object.assign(new Error('Edge Function returned a non-2xx status code'), {
       name: 'FunctionsHttpError',
       context: response,
     })
-    const result = await resultFromFunctionsInvoke(null, error)
+    const result = await resultFromFunctionsInvoke(null, error, parseVoiceSetResponse)
     assert.deepEqual(result, {
       ok: false,
       error: 'OPENAI_API_KEY is not configured on the Edge Function',
@@ -87,7 +116,7 @@ describe('resultFromFunctionsInvoke', () => {
       name: 'FunctionsFetchError',
       context: new TypeError('Network request failed'),
     })
-    const result = await resultFromFunctionsInvoke(null, error)
+    const result = await resultFromFunctionsInvoke(null, error, parseVoiceSetResponse)
     assert.equal(
       result.ok === false && result.error,
       'Failed to send a request to the Edge Function: Network request failed',
