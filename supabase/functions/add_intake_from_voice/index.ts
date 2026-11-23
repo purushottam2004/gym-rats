@@ -166,10 +166,20 @@ async function parseIntakeFromTranscript(
         {
           role: "system",
           content:
-            "Extract one food intake from the user's spoken diet log. " +
-            "food_name must exactly match one name from the provided food catalog (case-insensitive match is fine in your reasoning, but return the catalog's exact spelling). " +
-            "amount is how much they ate in that food's measure (g, ml, or unit) and must be > 0. " +
-            "If the speech is unclear, missing a required field, or names a food not in the catalog, set understood=false and explain in error.",
+            "Extract one food intake from the user's spoken diet log.\n" +
+            "Matching foods:\n" +
+            "- Pick the catalog food whose name matches what they said. Case, spacing, and punctuation do not matter " +
+            '("water" matches "Water"; "oat milk" matches "Oat Milk").\n' +
+            "- Always return food_name using the catalog entry's exact spelling once matched.\n" +
+            "- Only set understood=false for food_name when no catalog food is a reasonable match.\n" +
+            "Amounts and units:\n" +
+            "- amount must be a number > 0 in that food's catalog measure (g, ml, or unit).\n" +
+            "- Convert spoken units into that measure. Examples: 1 litre/liter of an ml food → 1000; " +
+            "500 ml → 500; 1 kg of a g food → 1000; 250 g → 250; half a litre → 500. " +
+            "For measure \"unit\", amount is how many units (e.g. two bananas → 2).\n" +
+            "- Do NOT judge whether the amount is a realistic serving size. Large amounts like 1000 ml are valid.\n" +
+            "- Never reject an intake only because the quantity sounds large or small.\n" +
+            "If speech is unclear or amount cannot be determined, set understood=false and explain in error.",
         },
         {
           role: "user",
@@ -205,10 +215,22 @@ async function parseIntakeFromTranscript(
   return JSON.parse(content) as ParsedIntake;
 }
 
+function normalizeName(value: string): string {
+  return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
 function matchFood(foods: FoodRow[], name: string | null): FoodRow | null {
   if (!name) return null;
-  const needle = name.trim().toLowerCase();
-  return foods.find((food) => food.name.trim().toLowerCase() === needle) ?? null;
+  const needle = normalizeName(name);
+  if (!needle) return null;
+  const exact = foods.find((food) => normalizeName(food.name) === needle);
+  if (exact) return exact;
+  // Prefer a unique catalog name that contains the spoken name (or vice versa).
+  const partial = foods.filter((food) => {
+    const catalog = normalizeName(food.name);
+    return catalog.includes(needle) || needle.includes(catalog);
+  });
+  return partial.length === 1 ? partial[0] : null;
 }
 
 export default {

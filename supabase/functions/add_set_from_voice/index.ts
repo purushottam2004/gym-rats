@@ -168,10 +168,16 @@ async function parseSetFromTranscript(
         {
           role: "system",
           content:
-            "Extract one gym set from the user's spoken log. " +
-            "lift_name must exactly match one name from the provided lift list (case-insensitive match is fine in your reasoning, but return the list's exact spelling). " +
-            "attempt and reps are whole numbers >= 1. load_kg is kilograms >= 0. " +
-            "If the speech is unclear, missing a required field, or names a lift not in the list, set understood=false and explain in error.",
+            "Extract one gym set from the user's spoken log.\n" +
+            "Matching lifts:\n" +
+            "- Pick the lift whose name matches what they said. Case, spacing, and punctuation do not matter " +
+            '("bench" matches "Bench"; "overhead press" matches "Overhead Press").\n' +
+            "- Always return lift_name using the list entry's exact spelling once matched.\n" +
+            "- Only set understood=false for lift_name when no list lift is a reasonable match.\n" +
+            "Numbers:\n" +
+            "- attempt and reps are whole numbers >= 1. load_kg is kilograms >= 0.\n" +
+            "- Convert spoken weight units when needed (e.g. 100 pounds ≈ 45.4 kg). Do not reject unusual loads.\n" +
+            "If speech is unclear or a required field cannot be determined, set understood=false and explain in error.",
         },
         {
           role: "user",
@@ -207,10 +213,21 @@ async function parseSetFromTranscript(
   return JSON.parse(content) as ParsedSet;
 }
 
+function normalizeName(value: string): string {
+  return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
 function matchLift(lifts: LiftRow[], name: string | null): LiftRow | null {
   if (!name) return null;
-  const needle = name.trim().toLowerCase();
-  return lifts.find((lift) => lift.name.trim().toLowerCase() === needle) ?? null;
+  const needle = normalizeName(name);
+  if (!needle) return null;
+  const exact = lifts.find((lift) => normalizeName(lift.name) === needle);
+  if (exact) return exact;
+  const partial = lifts.filter((lift) => {
+    const catalog = normalizeName(lift.name);
+    return catalog.includes(needle) || needle.includes(catalog);
+  });
+  return partial.length === 1 ? partial[0] : null;
 }
 
 export default {
