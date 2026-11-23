@@ -179,29 +179,30 @@ export const screen = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
   },
-  speakButton: {
-    backgroundColor: '#ffffff',
+  addSetActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  addSetButton: {
+    flex: 1,
+    backgroundColor: '#1c1917',
     borderRadius: 14,
     paddingVertical: 14,
-    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  micButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: '#1c1917',
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 10,
-    borderWidth: 1,
-    borderColor: '#e7e5e4',
   },
-  speakButtonActive: {
+  micButtonActive: {
     backgroundColor: '#fff7ed',
+    borderWidth: 1,
     borderColor: '#fdba74',
-  },
-  speakButtonText: {
-    color: '#1c1917',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  speakButtonTextActive: {
-    color: '#9a3412',
   },
   codeCard: {
     backgroundColor: '#1c1917',

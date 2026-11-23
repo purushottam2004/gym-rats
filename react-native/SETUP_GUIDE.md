@@ -47,7 +47,7 @@ cp .env.example .env
 
 Set `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from `supabase/.env`. Keep the service-role key out of this file.
 
-**Speak a set** on Add a set needs the `add_set_from_voice` Edge Function and `OPENAI_API_KEY` in `supabase/.env` (see [../supabase/SETUP_GUIDE.md](../supabase/SETUP_GUIDE.md)). Microphone permission is configured via the `expo-audio` plugin in `app.json`. After adding that native module, use a development build (`pnpm ios` / `pnpm android`), not Expo Go alone if the module is missing there.
+The mic on the **Lifts** screen (next to Add a set) needs the `add_set_from_voice` Edge Function and `OPENAI_API_KEY` in `supabase/.env` (see [../supabase/SETUP_GUIDE.md](../supabase/SETUP_GUIDE.md)). Microphone permission is configured via the `expo-audio` plugin in `app.json`. After adding that native module, use a development build (`pnpm ios` / `pnpm android`), not Expo Go alone if the module is missing there.
 
 | Where the app runs | Host in `.env` |
 | --- | --- |
