@@ -95,7 +95,7 @@ Create another function from the repo root with `supabase functions new <name>`.
 
 #### `add_set_from_voice`
 
-User-JWT function used by the React Native **Add a set** screen. It transcribes speech with OpenAI, parses a structured set (lift, attempt, reps, kg), inserts via RLS, and returns `{ ok: true, set: … }` or `{ ok: false, error: "…" }`.
+User-JWT function used by the React Native **Lifts** mic control. It transcribes speech with OpenAI, parses a structured set (lift, attempt, reps, kg), inserts via RLS, and returns `{ ok: true, set: … }` or `{ ok: false, error: "…" }`.
 
 1. Put `OPENAI_API_KEY=sk-…` in [`supabase/.env`](./.env.example) (loaded by `[edge_runtime.secrets]` in `config.toml`). Hosted: `supabase secrets set OPENAI_API_KEY=sk-…`.
 2. Restart / serve functions after changing secrets: `supabase stop && supabase start`, or `supabase functions serve`.
