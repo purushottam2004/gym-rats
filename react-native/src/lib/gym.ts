@@ -1,7 +1,10 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
+import { FunctionsHttpError, type SupabaseClient } from '@supabase/supabase-js'
 import { randomFileId } from './fileId'
 import type { Basis, Measure } from './measure'
 import { getSupabaseClient } from './supabase'
+import { bytesToBase64, parseVoiceSetResponse, type VoiceSetResult } from './voiceSet'
+
+export type { VoiceSetResult } from './voiceSet'
 
 export type { Basis, Measure } from './measure'
 export { basisForMeasure, measureLabel } from './measure'
@@ -280,6 +283,41 @@ export async function logSet(input: {
     load_kg: input.loadKg,
   })
   fail(error)
+}
+
+/** Sends a recording to the add_set_from_voice Edge Function (OpenAI + insert). */
+export async function logSetFromVoice(input: {
+  day: string
+  audioUri: string
+  mimeType: string
+}): Promise<VoiceSetResult> {
+  const response = await fetch(input.audioUri)
+  if (!response.ok) {
+    return { ok: false, error: 'Could not read the recording' }
+  }
+  const bytes = new Uint8Array(await response.arrayBuffer())
+  if (bytes.byteLength === 0) {
+    return { ok: false, error: 'Recording was empty' }
+  }
+
+  const { data, error } = await db().functions.invoke('add_set_from_voice', {
+    body: {
+      logged_on: input.day,
+      audio_base64: bytesToBase64(bytes),
+      mime_type: input.mimeType,
+    },
+  })
+
+  if (error instanceof FunctionsHttpError) {
+    try {
+      const body = await error.context.json()
+      return parseVoiceSetResponse(body, null)
+    } catch {
+      return parseVoiceSetResponse(null, error.message)
+    }
+  }
+
+  return parseVoiceSetResponse(data, error?.message)
 }
 
 export async function deleteSet(id: string): Promise<void> {

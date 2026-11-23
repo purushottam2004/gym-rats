@@ -32,7 +32,8 @@ These files are **gitignored** (`python_seeds/_local_seed_*.py`). Do not commit 
 ## Edge functions
 
 - Source lives in `functions/<name>/index.ts`. Create one with `supabase functions new <name>` from the repo root. The CLI adds `[functions.<name>]` in `config.toml`.
-- `hello_world` sets `verify_jwt = false` so callers can send the publishable or secret key on `apikey`. Leave `verify_jwt = true` for a function that is only called with a user JWT.
+- `hello_world` sets `verify_jwt = false` so callers can send the publishable or secret key on `apikey`. Leave `verify_jwt = true` for a function that is only called with a user JWT (`add_set_from_voice`).
+- Secrets the runtime needs (e.g. `OPENAI_API_KEY`) go in `[edge_runtime.secrets]` for local and `supabase secrets set` for hosted — never in the mobile app.
 - `supabase functions new` writes the current local publishable key into the sample curl. Replace it with a placeholder before committing.
 
 ## Validation

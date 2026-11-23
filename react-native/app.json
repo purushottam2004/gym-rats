@@ -16,6 +16,14 @@
         {
           "photosPermission": "Gym Rats uses photos you choose for your profile and posts."
         }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Gym Rats uses the microphone so you can speak a set to log it.",
+          "recordAudioAndroid": true,
+          "enableBackgroundRecording": false
+        }
       ]
     ],
     "experiments": {

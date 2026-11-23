@@ -93,6 +93,14 @@ Create another function from the repo root with `supabase functions new <name>`.
 
 `supabase functions new` pastes the current local publishable key into the sample curl in `index.ts`. Replace that value with a placeholder before committing.
 
+#### `add_set_from_voice`
+
+User-JWT function used by the React Native **Add a set** screen. It transcribes speech with OpenAI, parses a structured set (lift, attempt, reps, kg), inserts via RLS, and returns `{ ok: true, set: … }` or `{ ok: false, error: "…" }`.
+
+1. Put `OPENAI_API_KEY=sk-…` in [`supabase/.env`](./.env.example) (loaded by `[edge_runtime.secrets]` in `config.toml`). Hosted: `supabase secrets set OPENAI_API_KEY=sk-…`.
+2. Restart / serve functions after changing secrets: `supabase stop && supabase start`, or `supabase functions serve`.
+3. The app calls `supabase.functions.invoke('add_set_from_voice', …)` with the signed-in session. Create at least one lift first so the model can match a name.
+
 ### Regenerate types after a migration
 
 ```bash

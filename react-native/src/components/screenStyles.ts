@@ -179,6 +179,30 @@ export const screen = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
   },
+  speakButton: {
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 10,
+    borderWidth: 1,
+    borderColor: '#e7e5e4',
+  },
+  speakButtonActive: {
+    backgroundColor: '#fff7ed',
+    borderColor: '#fdba74',
+  },
+  speakButtonText: {
+    color: '#1c1917',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  speakButtonTextActive: {
+    color: '#9a3412',
+  },
   codeCard: {
     backgroundColor: '#1c1917',
     borderRadius: 16,
