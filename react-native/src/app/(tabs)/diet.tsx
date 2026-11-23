@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../../auth/AuthProvider'
+import { DeleteConfirmButton } from '../../components/DeleteConfirmButton'
 import { screen } from '../../components/screenStyles'
 import { deleteIntake, loadIntakes, measureLabel, type Intake } from '../../lib/gym'
 import { formatDay, localDate, shiftDate } from '../../lib/localDate'
@@ -46,16 +47,21 @@ export default function DietScreen() {
       {error ? <Text style={screen.error}>{error}</Text> : null}
       <View style={screen.card}>
         {rows.map((row, index) => (
-          <Pressable
-            key={row.id}
-            onPress={() => void deleteIntake(row.id).then(load)}
-            style={[screen.row, index === 0 && screen.rowFirst]}
-          >
-            <Text style={screen.rowTitle}>{row.food.name}</Text>
-            <Text style={screen.rowMeta}>
-              {row.amount} {measureLabel(row.food.measure)}
-            </Text>
-          </Pressable>
+          <View key={row.id} style={[screen.row, index === 0 && screen.rowFirst]}>
+            <View style={screen.rowMain}>
+              <Text style={screen.rowTitle}>{row.food.name}</Text>
+            </View>
+            <View style={screen.choiceTrail}>
+              <Text style={screen.rowMeta}>
+                {row.amount} {measureLabel(row.food.measure)}
+              </Text>
+              <DeleteConfirmButton
+                title="Delete food?"
+                message={`Remove ${row.food.name} from this day's log?`}
+                onConfirm={() => void deleteIntake(row.id).then(load)}
+              />
+            </View>
+          </View>
         ))}
         <Pressable
           onPress={() => router.push({ pathname: '/add-food', params: { day } })}
@@ -64,7 +70,6 @@ export default function DietScreen() {
           <Text style={screen.addText}>Add food</Text>
         </Pressable>
       </View>
-      <Text style={screen.muted}>Tap a row to delete it.</Text>
     </SafeAreaView>
   )
 }

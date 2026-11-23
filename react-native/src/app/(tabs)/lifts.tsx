@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../../auth/AuthProvider'
+import { DeleteConfirmButton } from '../../components/DeleteConfirmButton'
 import { screen } from '../../components/screenStyles'
 import { deleteSet, loadSets, type SetLog } from '../../lib/gym'
 import { formatDay, localDate, shiftDate } from '../../lib/localDate'
@@ -54,19 +55,27 @@ export default function LiftsScreen() {
           {rows
             .filter((row) => row.lift.name === name)
             .map((row) => (
-              <Pressable key={row.id} onPress={() => void deleteSet(row.id).then(load)} style={screen.row}>
-                <Text style={screen.rowTitle}>
-                  {row.attempt} · {row.reps} reps
-                </Text>
-                <Text style={screen.rowMeta}>{row.load_kg} kg</Text>
-              </Pressable>
+              <View key={row.id} style={screen.row}>
+                <View style={screen.rowMain}>
+                  <Text style={screen.rowTitle}>
+                    {row.attempt} · {row.reps} reps
+                  </Text>
+                </View>
+                <View style={screen.choiceTrail}>
+                  <Text style={screen.rowMeta}>{row.load_kg} kg</Text>
+                  <DeleteConfirmButton
+                    title="Delete set?"
+                    message={`Remove attempt ${row.attempt} (${row.reps} reps · ${row.load_kg} kg)?`}
+                    onConfirm={() => void deleteSet(row.id).then(load)}
+                  />
+                </View>
+              </View>
             ))}
         </View>
       ))}
       <Pressable onPress={() => router.push({ pathname: '/add-set', params: { day } })} style={screen.save}>
         <Text style={screen.buttonText}>Add a set</Text>
       </Pressable>
-      <Text style={screen.muted}>Tap a set to delete it.</Text>
     </SafeAreaView>
   )
 }
