@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react'
 import { Pressable, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { screen } from '../components/screenStyles'
-import { loadFoods, logIntake, type Food } from '../lib/gym'
+import { loadFoods, logIntake, measureLabel, type Food } from '../lib/gym'
 
 export default function AddFoodScreen() {
   const { day } = useLocalSearchParams<{ day: string }>()
@@ -65,7 +65,7 @@ export default function AddFoodScreen() {
               >
                 <Text style={[screen.rowTitle, selectedFood && screen.rowTitleSelected]}>{food.name}</Text>
                 <View style={screen.choiceTrail}>
-                  <Text style={screen.muted}>{food.measure}</Text>
+                  <Text style={screen.muted}>{measureLabel(food.measure)}</Text>
                   {selectedFood ? (
                     <CircleCheck color="#c2410c" size={20} strokeWidth={2.25} />
                   ) : (
@@ -84,7 +84,7 @@ export default function AddFoodScreen() {
       >
         <Text style={screen.addText}>New food</Text>
       </Pressable>
-      <Text style={screen.label}>Amount{selected ? ` (${selected.measure})` : ''}</Text>
+      <Text style={screen.label}>Amount{selected ? ` (${measureLabel(selected.measure)})` : ''}</Text>
       <TextInput keyboardType="decimal-pad" onChangeText={setAmount} style={screen.input} value={amount} />
       <Pressable onPress={() => void save()} style={screen.save}>
         <Text style={screen.buttonText}>Save</Text>

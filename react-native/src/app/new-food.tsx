@@ -3,7 +3,14 @@ import { useEffect, useState } from 'react'
 import { Pressable, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { screen } from '../components/screenStyles'
-import { createFood, loadNutrients, type Basis, type Measure, type Nutrient } from '../lib/gym'
+import {
+  basisForMeasure,
+  createFood,
+  loadNutrients,
+  type Basis,
+  type Measure,
+  type Nutrient,
+} from '../lib/gym'
 
 export default function NewFoodScreen() {
   const router = useRouter()
@@ -29,7 +36,7 @@ export default function NewFoodScreen() {
         if (!(amount >= 0)) throw new Error(`${nutrient.name} cannot be negative`)
         return [{ nutrient_id: nutrient.id, amount }]
       })
-      await createFood({ name, measure, basis: measure === 'ml' ? 'per_100' : basis, nutrients: chosen })
+      await createFood({ name, measure, basis: basisForMeasure(measure, basis), nutrients: chosen })
       router.back()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not create food')
@@ -51,6 +58,10 @@ export default function NewFoodScreen() {
         <Pressable onPress={() => setMeasure('g')} style={screen.row}>
           <Text style={screen.rowTitle}>Grams</Text>
           <Text style={screen.muted}>{measure === 'g' ? 'Selected' : ''}</Text>
+        </Pressable>
+        <Pressable onPress={() => setMeasure('unit')} style={screen.row}>
+          <Text style={screen.rowTitle}>Unit</Text>
+          <Text style={screen.muted}>{measure === 'unit' ? 'Selected' : ''}</Text>
         </Pressable>
         {measure === 'g' ? (
           <Pressable

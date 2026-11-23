@@ -22,6 +22,7 @@
       "typedRoutes": true
     },
     "ios": {
+      "bundleIdentifier": "com.purushottam.gymrats",
       "supportsTablet": true,
       "infoPlist": {
         "NSAppTransportSecurity": {

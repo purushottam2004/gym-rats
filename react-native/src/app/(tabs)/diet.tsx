@@ -4,7 +4,7 @@ import { Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../../auth/AuthProvider'
 import { screen } from '../../components/screenStyles'
-import { deleteIntake, loadIntakes, type Intake } from '../../lib/gym'
+import { deleteIntake, loadIntakes, measureLabel, type Intake } from '../../lib/gym'
 import { formatDay, localDate, shiftDate } from '../../lib/localDate'
 
 export default function DietScreen() {
@@ -53,7 +53,7 @@ export default function DietScreen() {
           >
             <Text style={screen.rowTitle}>{row.food.name}</Text>
             <Text style={screen.rowMeta}>
-              {row.amount} {row.food.measure}
+              {row.amount} {measureLabel(row.food.measure)}
             </Text>
           </Pressable>
         ))}

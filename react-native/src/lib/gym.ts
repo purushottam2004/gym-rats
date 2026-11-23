@@ -1,5 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { randomFileId } from './fileId'
+import type { Basis, Measure } from './measure'
 import { getSupabaseClient } from './supabase'
+
+export type { Basis, Measure } from './measure'
+export { basisForMeasure, measureLabel } from './measure'
 
 function db(): SupabaseClient {
   return getSupabaseClient()
@@ -8,9 +13,6 @@ function db(): SupabaseClient {
 function fail(error: { message: string } | null): void {
   if (error) throw new Error(error.message)
 }
-
-export type Measure = 'g' | 'ml'
-export type Basis = 'per_100' | 'per_kg'
 
 export type Profile = {
   id: string
@@ -344,7 +346,7 @@ export async function uploadImage(
 ): Promise<string> {
   const response = await fetch(uri)
   const bytes = await response.arrayBuffer()
-  const path = `${userId}/${crypto.randomUUID()}.jpg`
+  const path = `${userId}/${randomFileId()}.jpg`
   const { error } = await db().storage.from(bucket).upload(path, bytes, {
     contentType: 'image/jpeg',
     upsert: false,

@@ -6,12 +6,12 @@
   "packageManager": "pnpm@11.17.0",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "eslint .",
     "type-check": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
-    "test": "node --experimental-strip-types --test src/lib/devHost.test.ts src/lib/localDate.test.ts"
+    "test": "node --experimental-strip-types --test src/lib/devHost.test.ts src/lib/fileId.test.ts src/lib/localDate.test.ts src/lib/measure.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.2",

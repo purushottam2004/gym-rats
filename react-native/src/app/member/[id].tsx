@@ -3,7 +3,15 @@ import { useCallback, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { screen } from '../../components/screenStyles'
-import { loadIntakes, loadProfile, loadSets, type Intake, type Profile, type SetLog } from '../../lib/gym'
+import {
+  loadIntakes,
+  loadProfile,
+  loadSets,
+  measureLabel,
+  type Intake,
+  type Profile,
+  type SetLog,
+} from '../../lib/gym'
 import { formatDay, localDate } from '../../lib/localDate'
 
 export default function MemberScreen() {
@@ -54,7 +62,7 @@ export default function MemberScreen() {
           <View key={row.id} style={screen.row}>
             <Text style={screen.rowTitle}>{row.food.name}</Text>
             <Text style={screen.rowMeta}>
-              {row.amount} {row.food.measure}
+              {row.amount} {measureLabel(row.food.measure)}
             </Text>
           </View>
         ))}
