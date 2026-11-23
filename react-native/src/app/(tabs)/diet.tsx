@@ -3,15 +3,27 @@ import { useCallback, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
 import { DeleteConfirmButton } from '../../components/DeleteConfirmButton'
+import { InfoButton } from '../../components/InfoButton'
+import { InfoListModal, type InfoListRow } from '../../components/InfoListModal'
 import { Screen } from '../../components/Screen'
 import { screen } from '../../components/screenStyles'
 import { deleteIntake, loadIntakes, measureLabel, type Intake } from '../../lib/gym'
 import { formatDay, localDate, shiftDate } from '../../lib/localDate'
 import {
+  foodBasisLabel,
+  foodTypeNutrition,
   formatNutrientTotal,
+  nutrientContributions,
   nutritionSummaryTitle,
   summarizeNutrition,
 } from '../../lib/nutrition'
+
+type InfoModalState = {
+  title: string
+  subtitle?: string
+  rows: InfoListRow[]
+  emptyMessage: string
+}
 
 export default function DietScreen() {
   const { session } = useAuth()
@@ -20,6 +32,7 @@ export default function DietScreen() {
   const [day, setDay] = useState(localDate)
   const [rows, setRows] = useState<Intake[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [infoModal, setInfoModal] = useState<InfoModalState | null>(null)
   const today = localDate()
   const summary = summarizeNutrition(rows)
 
@@ -38,6 +51,34 @@ export default function DietScreen() {
       void load()
     }, [load]),
   )
+
+  function showFoodInfo(row: Intake) {
+    const lines = foodTypeNutrition(row.food)
+    setInfoModal({
+      title: row.food.name,
+      subtitle: foodBasisLabel(row.food.measure, row.food.basis),
+      rows: lines.map((line) => ({
+        key: line.id,
+        label: line.name,
+        value: `${formatNutrientTotal(line.total)} ${line.unit}`,
+      })),
+      emptyMessage: 'No nutrients defined for this food.',
+    })
+  }
+
+  function showNutrientInfo(nutrientId: string, nutrientName: string, unit: string) {
+    const contributions = nutrientContributions(rows, nutrientId)
+    setInfoModal({
+      title: nutrientName,
+      subtitle: 'Contribution by food',
+      rows: contributions.map((line) => ({
+        key: line.key,
+        label: `${line.foodName} · ${line.amount} ${measureLabel(line.measure)}`,
+        value: `${formatNutrientTotal(line.total)} ${unit}`,
+      })),
+      emptyMessage: 'No foods contributed to this nutrient.',
+    })
+  }
 
   return (
     <Screen>
@@ -67,6 +108,7 @@ export default function DietScreen() {
                 message={`Remove ${row.food.name} from this day's log?`}
                 onConfirm={() => void deleteIntake(row.id).then(load)}
               />
+              <InfoButton onPress={() => showFoodInfo(row)} />
             </View>
           </View>
         ))}
@@ -83,10 +125,13 @@ export default function DietScreen() {
           {summary.length > 0 ? (
             summary.map((line, index) => (
               <View key={line.id} style={[screen.row, index === 0 && screen.rowFirst]}>
-                <Text style={screen.rowTitle}>{line.name}</Text>
-                <Text style={screen.rowMeta}>
-                  {formatNutrientTotal(line.total)} {line.unit}
-                </Text>
+                <Text style={[screen.rowTitle, screen.rowMain]}>{line.name}</Text>
+                <View style={screen.choiceTrail}>
+                  <Text style={screen.rowMeta}>
+                    {formatNutrientTotal(line.total)} {line.unit}
+                  </Text>
+                  <InfoButton onPress={() => showNutrientInfo(line.id, line.name, line.unit)} />
+                </View>
               </View>
             ))
           ) : (
@@ -96,6 +141,14 @@ export default function DietScreen() {
           )}
         </View>
       </View>
+      <InfoListModal
+        visible={infoModal !== null}
+        title={infoModal?.title ?? ''}
+        subtitle={infoModal?.subtitle}
+        rows={infoModal?.rows ?? []}
+        emptyMessage={infoModal?.emptyMessage ?? ''}
+        onClose={() => setInfoModal(null)}
+      />
     </Screen>
   )
 }

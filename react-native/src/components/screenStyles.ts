@@ -205,4 +205,26 @@ export const screen = StyleSheet.create({
     fontWeight: '600',
     color: '#111827',
   },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(28, 25, 23, 0.45)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalCard: {
+    backgroundColor: '#f5f5f4',
+    borderRadius: 20,
+    maxHeight: '80%',
+    padding: 16,
+    gap: 12,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  modalScroll: {
+    flexGrow: 0,
+  },
 })

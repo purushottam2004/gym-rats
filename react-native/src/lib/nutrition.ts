@@ -1,6 +1,7 @@
 import type { Basis, Measure } from './measure'
 
 export type NutritionFood = {
+  name: string
   measure: Measure
   basis: Basis
   nutrients: {
@@ -18,6 +19,14 @@ export type NutritionLine = {
   id: string
   name: string
   unit: string
+  total: number
+}
+
+export type NutritionContribution = {
+  key: string
+  foodName: string
+  amount: number
+  measure: Measure
   total: number
 }
 
@@ -72,4 +81,53 @@ export function formatNutrientTotal(total: number): string {
 
 export function nutritionSummaryTitle(day: string, today: string): string {
   return day === today ? "Today's Nutrition Summary" : "Day's Nutrition Summary"
+}
+
+/** Nutrients contributed by one logged intake. */
+export function intakeNutrition(intake: NutritionIntake): NutritionLine[] {
+  return summarizeNutrition([intake])
+}
+
+/** Catalog amounts on a food (per its measure basis), not scaled by intake. */
+export function foodTypeNutrition(food: NutritionFood): NutritionLine[] {
+  return food.nutrients
+    .filter((row) => row.amount > 0)
+    .map((row) => ({
+      id: row.nutrient.id,
+      name: row.nutrient.name,
+      unit: row.nutrient.unit,
+      total: row.amount,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+}
+
+export function foodBasisLabel(measure: Measure, basis: Basis): string {
+  if (measure === 'unit') return 'Per Unit'
+  if (basis === 'per_kg') return 'Per kilogram'
+  if (measure === 'ml') return 'Per 100 ml'
+  return 'Per 100 g'
+}
+
+/** How much each intake contributed to one nutrient. */
+export function nutrientContributions(
+  intakes: NutritionIntake[],
+  nutrientId: string,
+): NutritionContribution[] {
+  const lines: NutritionContribution[] = []
+
+  intakes.forEach((intake, index) => {
+    const row = intake.food.nutrients.find((item) => item.nutrient.id === nutrientId)
+    if (!row) return
+    const total = nutrientFromIntake(intake.amount, intake.food.measure, intake.food.basis, row.amount)
+    if (!(total > 0)) return
+    lines.push({
+      key: `${index}-${nutrientId}`,
+      foodName: intake.food.name,
+      amount: intake.amount,
+      measure: intake.food.measure,
+      total,
+    })
+  })
+
+  return lines
 }

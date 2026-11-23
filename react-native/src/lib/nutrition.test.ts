@@ -1,12 +1,48 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
+  foodBasisLabel,
+  foodTypeNutrition,
   formatNutrientTotal,
   nutrientBasisSize,
+  nutrientContributions,
   nutrientFromIntake,
   nutritionSummaryTitle,
   summarizeNutrition,
 } from './nutrition.ts'
+
+const milk = {
+  amount: 250,
+  food: {
+    name: 'Calci+ Milk',
+    measure: 'ml' as const,
+    basis: 'per_100' as const,
+    nutrients: [
+      { amount: 120, nutrient: { id: 'energy', name: 'Energy', unit: 'kcal' } },
+      { amount: 40, nutrient: { id: 'calcium', name: 'Calcium', unit: 'mg' } },
+    ],
+  },
+}
+
+const eggs = {
+  amount: 2,
+  food: {
+    name: 'Eggs',
+    measure: 'unit' as const,
+    basis: 'per_100' as const,
+    nutrients: [{ amount: 6, nutrient: { id: 'protein', name: 'Protein', unit: 'g' } }],
+  },
+}
+
+const bar = {
+  amount: 50,
+  food: {
+    name: 'Protein bar',
+    measure: 'g' as const,
+    basis: 'per_100' as const,
+    nutrients: [{ amount: 20, nutrient: { id: 'protein', name: 'Protein', unit: 'g' } }],
+  },
+}
 
 describe('nutrientBasisSize', () => {
   it('uses one unit, 100 for per_100, and 1000 for per_kg', () => {
@@ -37,35 +73,7 @@ describe('nutrientFromIntake', () => {
 
 describe('summarizeNutrition', () => {
   it('totals matching nutrients across intakes and sorts by name', () => {
-    const lines = summarizeNutrition([
-      {
-        amount: 250,
-        food: {
-          measure: 'ml',
-          basis: 'per_100',
-          nutrients: [
-            { amount: 120, nutrient: { id: 'energy', name: 'Energy', unit: 'kcal' } },
-            { amount: 40, nutrient: { id: 'calcium', name: 'Calcium', unit: 'mg' } },
-          ],
-        },
-      },
-      {
-        amount: 2,
-        food: {
-          measure: 'unit',
-          basis: 'per_100',
-          nutrients: [{ amount: 6, nutrient: { id: 'protein', name: 'Protein', unit: 'g' } }],
-        },
-      },
-      {
-        amount: 50,
-        food: {
-          measure: 'g',
-          basis: 'per_100',
-          nutrients: [{ amount: 20, nutrient: { id: 'protein', name: 'Protein', unit: 'g' } }],
-        },
-      },
-    ])
+    const lines = summarizeNutrition([milk, eggs, bar])
 
     assert.deepEqual(
       lines.map((line) => ({ name: line.name, unit: line.unit, total: line.total })),
@@ -83,6 +91,7 @@ describe('summarizeNutrition', () => {
         {
           amount: 100,
           food: {
+            name: 'Water',
             measure: 'g',
             basis: 'per_100',
             nutrients: [{ amount: 0, nutrient: { id: 'fat', name: 'Fat', unit: 'g' } }],
@@ -90,6 +99,42 @@ describe('summarizeNutrition', () => {
         },
       ]),
       [],
+    )
+  })
+})
+
+describe('foodTypeNutrition', () => {
+  it('returns catalog amounts for the food type', () => {
+    assert.deepEqual(
+      foodTypeNutrition(milk.food).map((line) => ({ name: line.name, total: line.total })),
+      [
+        { name: 'Calcium', total: 40 },
+        { name: 'Energy', total: 120 },
+      ],
+    )
+  })
+})
+
+describe('foodBasisLabel', () => {
+  it('names the food nutrient basis', () => {
+    assert.equal(foodBasisLabel('unit', 'per_100'), 'Per Unit')
+    assert.equal(foodBasisLabel('ml', 'per_100'), 'Per 100 ml')
+    assert.equal(foodBasisLabel('g', 'per_100'), 'Per 100 g')
+    assert.equal(foodBasisLabel('g', 'per_kg'), 'Per kilogram')
+  })
+})
+
+describe('nutrientContributions', () => {
+  it('lists each food that adds to a nutrient', () => {
+    assert.deepEqual(
+      nutrientContributions([milk, eggs, bar], 'protein').map((line) => ({
+        foodName: line.foodName,
+        total: line.total,
+      })),
+      [
+        { foodName: 'Eggs', total: 12 },
+        { foodName: 'Protein bar', total: 10 },
+      ],
     )
   })
 })
