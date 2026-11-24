@@ -30,7 +30,7 @@ export function NutrientProgressRow({ line, first, onInfo }: Props) {
       ) : null}
       <Text style={[screen.rowTitle, screen.rowMain]}>{line.name}</Text>
       <View style={screen.choiceTrail}>
-        <Text style={screen.rowMeta}>{meta}</Text>
+        <Text style={screen.nutrientMeta}>{meta}</Text>
         {onInfo ? <InfoButton onPress={onInfo} /> : null}
       </View>
     </View>

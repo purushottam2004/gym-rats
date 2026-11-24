@@ -247,6 +247,11 @@ export const screen = StyleSheet.create({
     color: '#1c1917',
     fontWeight: '600',
   },
+  nutrientMeta: {
+    fontSize: 13,
+    color: '#57534e',
+    fontWeight: '500',
+  },
   muted: {
     fontSize: 15,
     color: '#78716c',

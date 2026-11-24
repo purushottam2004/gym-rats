@@ -96,13 +96,14 @@ export type NutritionProgressLine = NutritionLine & {
   max: number | null
   /** 0–1 bar width; null when there is no goal band. */
   progress: number | null
-  /** Option A fill: yellow→green by progress, coral when over max. */
+  /** Fill: yellow→green to min, then green→orange→red toward max. */
   fillColor: string | null
 }
 
 const FILL_YELLOW = { r: 253, g: 230, b: 138 } // #fde68a
 const FILL_GREEN = { r: 134, g: 239, b: 172 } // #86efac
-const FILL_CORAL = '#fda4af'
+const FILL_ORANGE = { r: 253, g: 186, b: 116 } // #fdba74
+const FILL_RED = { r: 252, g: 165, b: 165 } // #fca5a5
 
 function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value))
@@ -120,7 +121,13 @@ function mixRgb(
   return `#${[r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('')}`
 }
 
-/** Yellow→green for t in [0,1]; coral when over the max. */
+/** After min, warm green→orange→red through the remaining band (not only at max). */
+function colorPastMin(t: number): string {
+  if (t <= 0.5) return mixRgb(FILL_GREEN, FILL_ORANGE, t / 0.5)
+  return mixRgb(FILL_ORANGE, FILL_RED, (t - 0.5) / 0.5)
+}
+
+/** Yellow→green toward min; past min, green→orange→red toward max; over max = red. */
 export function nutrientBandFill(
   total: number,
   min: number | null,
@@ -129,25 +136,31 @@ export function nutrientBandFill(
   if (min == null && max == null) return null
 
   if (max != null && total > max) {
-    return { progress: 1, fillColor: FILL_CORAL }
+    return { progress: 1, fillColor: mixRgb(FILL_RED, FILL_RED, 1) }
   }
 
   if (min != null && max != null) {
     const width = clamp01(total / max)
-    if (total >= min) {
-      return { progress: width, fillColor: mixRgb(FILL_YELLOW, FILL_GREEN, 1) }
+    if (total < min) {
+      return { progress: width, fillColor: mixRgb(FILL_YELLOW, FILL_GREEN, total / min) }
     }
-    return { progress: width, fillColor: mixRgb(FILL_YELLOW, FILL_GREEN, total / min) }
+    const span = max - min
+    const past = span > 0 ? (total - min) / span : 1
+    return { progress: width, fillColor: colorPastMin(past) }
   }
 
   if (min != null) {
     const t = clamp01(total / min)
-    return { progress: t, fillColor: mixRgb(FILL_YELLOW, FILL_GREEN, t) }
+    return { progress: Math.max(t, total > min ? 1 : t), fillColor: mixRgb(FILL_YELLOW, FILL_GREEN, t) }
   }
 
-  // max only
-  const t = clamp01(total / (max as number))
-  return { progress: t, fillColor: mixRgb(FILL_YELLOW, FILL_GREEN, t) }
+  // max only: yellow→green early, then warm toward red before max
+  const ceiling = max as number
+  const width = clamp01(total / ceiling)
+  if (width < 0.5) {
+    return { progress: width, fillColor: mixRgb(FILL_YELLOW, FILL_GREEN, width / 0.5) }
+  }
+  return { progress: width, fillColor: colorPastMin((width - 0.5) / 0.5) }
 }
 
 export function formatNutrientGoalMeta(
@@ -161,10 +174,10 @@ export function formatNutrientGoalMeta(
     return `${value} / ${formatNutrientTotal(min)}–${formatNutrientTotal(max)} ${unit}`
   }
   if (min != null) {
-    return `${value} / ≥${formatNutrientTotal(min)} ${unit}`
+    return `${value} / ${formatNutrientTotal(min)} ${unit}`
   }
   if (max != null) {
-    return `${value} / ≤${formatNutrientTotal(max)} ${unit}`
+    return `${value} / ${formatNutrientTotal(max)} ${unit}`
   }
   return `${value} ${unit}`
 }

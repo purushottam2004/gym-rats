@@ -183,25 +183,28 @@ describe('nutritionProgressLines', () => {
 })
 
 describe('nutrientBandFill', () => {
-  it('ramps yellow to green toward a min and turns coral over max', () => {
+  it('ramps yellow to green toward a min and warms past min before max', () => {
     const low = nutrientBandFill(25, 100, null)
     const met = nutrientBandFill(100, 100, null)
+    const midBand = nutrientBandFill(75, 50, 100)
     const over = nutrientBandFill(120, 50, 100)
     assert.ok(low)
     assert.equal(low.progress, 0.25)
     assert.notEqual(low.fillColor, met?.fillColor)
     assert.ok(met)
     assert.equal(met.progress, 1)
+    assert.ok(midBand)
+    assert.notEqual(midBand.fillColor, met.fillColor)
     assert.ok(over)
     assert.equal(over.progress, 1)
-    assert.equal(over.fillColor, '#fda4af')
+    assert.equal(over.fillColor, '#fca5a5')
   })
 })
 
 describe('formatNutrientGoalMeta', () => {
-  it('labels min, max, and band', () => {
-    assert.equal(formatNutrientGoalMeta(12, 100, null, 'g'), '12 / ≥100 g')
-    assert.equal(formatNutrientGoalMeta(12, null, 100, 'g'), '12 / ≤100 g')
+  it('labels min, max, and band without inequality signs', () => {
+    assert.equal(formatNutrientGoalMeta(12, 100, null, 'g'), '12 / 100 g')
+    assert.equal(formatNutrientGoalMeta(12, null, 100, 'g'), '12 / 100 g')
     assert.equal(formatNutrientGoalMeta(12, 80, 120, 'g'), '12 / 80–120 g')
   })
 })
