@@ -91,9 +91,6 @@ export default function GroupScreen() {
   return (
     <View style={{ flex: 1 }}>
       <Screen>
-        <Pressable onPress={() => router.back()}>
-          <Text style={screen.addText}>Back</Text>
-        </Pressable>
         <View style={screen.groupHeaderRow}>
           <View style={screen.groupHeaderMain}>
             <Pressable

@@ -53,9 +53,6 @@ export default function LiftCatalogScreen() {
   return (
     <View style={{ flex: 1 }}>
       <Screen>
-        <Pressable onPress={() => router.back()}>
-          <Text style={screen.addText}>Back</Text>
-        </Pressable>
         <Text style={screen.title}>Lift Catalog</Text>
         {error ? <Text style={screen.error}>{error}</Text> : null}
         <View style={screen.card}>

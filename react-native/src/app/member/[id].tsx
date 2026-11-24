@@ -1,6 +1,6 @@
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
+import { useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useCallback, useMemo, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Text, View } from 'react-native'
 import { DayControls } from '../../components/DayControls'
 import { InfoButton } from '../../components/InfoButton'
 import { InfoListModal, type InfoListRow } from '../../components/InfoListModal'
@@ -40,7 +40,6 @@ type InfoModalState = {
 
 export default function MemberScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
-  const router = useRouter()
   const [day, setDay] = useState(localDate)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [intakes, setIntakes] = useState<Intake[]>([])
@@ -156,17 +155,12 @@ export default function MemberScreen() {
     <View style={{ flex: 1 }}>
       <Screen
         header={
-          <>
-            <Pressable onPress={() => router.back()}>
-              <Text style={screen.addText}>Back</Text>
-            </Pressable>
-            <View style={screen.tabChrome}>
-              <Text style={[screen.tabChromeTitle, { flexShrink: 1 }]} numberOfLines={1}>
-                {profile?.display_name ?? 'Member'}
-              </Text>
-              <DayControls day={day} onChange={setDay} />
-            </View>
-          </>
+          <View style={screen.tabChrome}>
+            <Text style={[screen.tabChromeTitle, { flexShrink: 1 }]} numberOfLines={1}>
+              {profile?.display_name ?? 'Member'}
+            </Text>
+            <DayControls day={day} onChange={setDay} />
+          </View>
         }
       >
         {error ? <Text style={screen.error}>{error}</Text> : null}
