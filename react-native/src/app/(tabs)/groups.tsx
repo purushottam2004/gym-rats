@@ -1,9 +1,11 @@
 import { useFocusEffect, useRouter } from 'expo-router'
+import { Users } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
 import { Pressable, Text, TextInput, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
 import { Avatar } from '../../components/Avatar'
 import { Screen } from '../../components/Screen'
+import { TabChrome } from '../../components/TabChrome'
 import { screen } from '../../components/screenStyles'
 import { joinGroup, loadGroups, loadMembers, type Group, type Member } from '../../lib/gym'
 
@@ -45,12 +47,15 @@ export default function GroupsScreen() {
 
   return (
     <Screen>
-      <View style={screen.dayRow}>
-        <Text style={screen.title}>Groups</Text>
-        <Pressable onPress={() => router.push('/new-group')}>
-          <Text style={screen.addText}>New</Text>
-        </Pressable>
-      </View>
+      <TabChrome
+        icon={Users}
+        title="Groups"
+        trailing={
+          <Pressable onPress={() => router.push('/new-group')}>
+            <Text style={screen.addText}>New</Text>
+          </Pressable>
+        }
+      />
       {error ? <Text style={screen.error}>{error}</Text> : null}
       <Text style={screen.label}>Invite code</Text>
       <TextInput

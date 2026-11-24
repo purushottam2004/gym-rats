@@ -1,9 +1,11 @@
 import { useFocusEffect, useRouter } from 'expo-router'
+import { Image as ImageIcon } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
 import { Image, Pressable, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
 import { ConfirmModal } from '../../components/ConfirmModal'
 import { Screen } from '../../components/Screen'
+import { TabChrome } from '../../components/TabChrome'
 import { TrashButton } from '../../components/TrashButton'
 import { screen } from '../../components/screenStyles'
 import { deletePost, loadGroups, loadPosts, publicImageUrl, type Post } from '../../lib/gym'
@@ -36,12 +38,15 @@ export default function PostsScreen() {
   return (
     <View style={{ flex: 1 }}>
       <Screen>
-        <View style={screen.dayRow}>
-          <Text style={screen.title}>Posts</Text>
-          <Pressable onPress={() => router.push('/new-post')}>
-            <Text style={screen.addText}>New</Text>
-          </Pressable>
-        </View>
+        <TabChrome
+          icon={ImageIcon}
+          title="Posts"
+          trailing={
+            <Pressable onPress={() => router.push('/new-post')}>
+              <Text style={screen.addText}>New</Text>
+            </Pressable>
+          }
+        />
         {error ? <Text style={screen.error}>{error}</Text> : null}
         {posts.map((post) => {
           const audience = post.audiences

@@ -1,8 +1,10 @@
 import { useFocusEffect, useRouter } from 'expo-router'
+import { UserRound } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
 import { Image, Pressable, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
 import { Screen } from '../../components/Screen'
+import { TabChrome } from '../../components/TabChrome'
 import { screen } from '../../components/screenStyles'
 import { loadProfile, publicImageUrl, type Profile } from '../../lib/gym'
 
@@ -33,7 +35,7 @@ export default function ProfileScreen() {
 
   return (
     <Screen>
-      <Text style={screen.title}>Profile</Text>
+      <TabChrome icon={UserRound} title="Profile" />
       {error ? <Text style={screen.error}>{error}</Text> : null}
       <View style={{ alignItems: 'center', gap: 8 }}>
         {photo ? (
@@ -41,7 +43,7 @@ export default function ProfileScreen() {
         ) : (
           <View style={{ width: 84, height: 84, borderRadius: 42, backgroundColor: '#e7e5e4' }} />
         )}
-        <Text style={screen.title}>{profile?.display_name ?? 'Add a name'}</Text>
+        <Text style={screen.sectionTitle}>{profile?.display_name ?? 'Add a name'}</Text>
       </View>
       <View style={screen.card}>
         <Pressable onPress={() => router.push('/edit-name')} style={[screen.row, screen.rowFirst]}>

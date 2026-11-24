@@ -6,18 +6,20 @@ import {
   useAudioRecorderState,
 } from 'expo-audio'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { Mic } from 'lucide-react-native'
+import { Mic, Utensils } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
 import { Platform, Pressable, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
+import { DayControls } from '../../components/DayControls'
 import { DeleteConfirmButton } from '../../components/DeleteConfirmButton'
 import { InfoButton } from '../../components/InfoButton'
 import { InfoListModal, type InfoListRow } from '../../components/InfoListModal'
 import { Screen } from '../../components/Screen'
+import { TabChrome } from '../../components/TabChrome'
 import { Toast, type ToastKind } from '../../components/Toast'
 import { screen } from '../../components/screenStyles'
 import { deleteIntake, loadIntakes, logIntakeFromVoice, measureLabel, type Intake } from '../../lib/gym'
-import { formatDay, localDate, shiftDate } from '../../lib/localDate'
+import { localDate } from '../../lib/localDate'
 import {
   foodBasisLabel,
   foodTypeNutrition,
@@ -150,16 +152,11 @@ export default function DietScreen() {
   return (
     <View style={{ flex: 1 }}>
       <Screen>
-        <Text style={screen.title}>Diet</Text>
-        <View style={screen.dayRow}>
-          <Pressable onPress={() => setDay((current) => shiftDate(current, -1))}>
-            <Text style={screen.addText}>Previous</Text>
-          </Pressable>
-          <Text style={screen.body}>{formatDay(day)}</Text>
-          <Pressable onPress={() => setDay((current) => shiftDate(current, 1))}>
-            <Text style={screen.addText}>Next</Text>
-          </Pressable>
-        </View>
+        <TabChrome
+          icon={Utensils}
+          title="Diet"
+          trailing={<DayControls day={day} onChange={setDay} />}
+        />
         {error ? <Text style={screen.error}>{error}</Text> : null}
         <View style={screen.card}>
           {rows.map((row, index) => (

@@ -6,17 +6,19 @@ import {
   useAudioRecorderState,
 } from 'expo-audio'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { Mic } from 'lucide-react-native'
+import { Dumbbell, Mic } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
 import { Platform, Pressable, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
+import { DayControls } from '../../components/DayControls'
 import { DeleteConfirmButton } from '../../components/DeleteConfirmButton'
 import { OrdinalNumber } from '../../components/OrdinalNumber'
 import { Screen } from '../../components/Screen'
+import { TabChrome } from '../../components/TabChrome'
 import { Toast, type ToastKind } from '../../components/Toast'
 import { screen } from '../../components/screenStyles'
 import { deleteSet, loadSets, logSetFromVoice, type SetLog } from '../../lib/gym'
-import { formatDay, localDate, shiftDate } from '../../lib/localDate'
+import { localDate } from '../../lib/localDate'
 import { ordinalSuffix } from '../../lib/ordinal'
 
 function recordingMimeType(): string {
@@ -105,16 +107,11 @@ export default function LiftsScreen() {
   return (
     <View style={{ flex: 1 }}>
       <Screen>
-        <Text style={screen.title}>Lifts</Text>
-        <View style={screen.dayRow}>
-          <Pressable onPress={() => setDay((current) => shiftDate(current, -1))}>
-            <Text style={screen.addText}>Previous</Text>
-          </Pressable>
-          <Text style={screen.body}>{formatDay(day)}</Text>
-          <Pressable onPress={() => setDay((current) => shiftDate(current, 1))}>
-            <Text style={screen.addText}>Next</Text>
-          </Pressable>
-        </View>
+        <TabChrome
+          icon={Dumbbell}
+          title="Lifts"
+          trailing={<DayControls day={day} onChange={setDay} />}
+        />
         {error ? <Text style={screen.error}>{error}</Text> : null}
         {names.map((name) => (
           <View key={name} style={screen.card}>

@@ -13,7 +13,8 @@ function Navigation() {
     if (!ready || configError) return
     const onLogin = segments[0] === 'login'
     const onScrollSmoke = __DEV__ && segments[0] === 'scroll-smoke'
-    if (!session && !onLogin && !onScrollSmoke) router.replace('/login')
+    const onChromePreview = __DEV__ && segments[0] === 'chrome-preview'
+    if (!session && !onLogin && !onScrollSmoke && !onChromePreview) router.replace('/login')
     if (session && onLogin) router.replace('/diet')
   }, [ready, session, configError, segments, router])
 
@@ -37,6 +38,7 @@ function Navigation() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="login" />
       <Stack.Screen name="scroll-smoke" />
+      <Stack.Screen name="chrome-preview" />
       <Stack.Screen name="index" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="add-food" />
