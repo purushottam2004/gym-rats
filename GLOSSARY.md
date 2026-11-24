@@ -36,6 +36,10 @@ _Avoid_: workout, timestamp
 A named kind of nutrition on one global list every User shares. It has a unit, such as kcal, g, or mg. The list is maintained outside the app; a User cannot add one. A User may pick it when creating a Food. A Nutrient cannot be removed while a Food still uses it.
 _Avoid_: nutrition type, macro, column
 
+**Nutrient goal**:
+An optional daily amount of one Nutrient that a User sets for themselves, in that Nutrient's unit. A User may set or clear a goal for any Nutrient. Another User who shares a Group can see those goals only as progress against Intakes they can already see.
+_Avoid_: target, allowance, RDA
+
 **Food**:
 A nutritional definition created by one User. It has a name, one measure (grams or millilitres), and a base of 100 of that measure, or of 1 kilogram when the measure is grams. The creator may pick any subset of Nutrients, including none, and sets one amount of each, in that Nutrient's unit, for the base. The name, measure, base, and amounts cannot be changed after the Food is created. The same Nutrient appears at most once on a Food. A User cannot log an Intake of a Food they have not created. Another User can see a Food only by seeing an Intake of it. The User may delete a Food only when no Intake uses it; the nutrient amounts on it are removed with the Food.
 _Avoid_: diet entry, ingredient, item, product

@@ -3,12 +3,14 @@ import { Image as ImageIcon } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
 import { Image, Pressable, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
+import { Avatar } from '../../components/Avatar'
 import { ConfirmModal } from '../../components/ConfirmModal'
 import { Screen } from '../../components/Screen'
 import { TabChrome } from '../../components/TabChrome'
 import { TrashButton } from '../../components/TrashButton'
 import { screen } from '../../components/screenStyles'
 import { deletePost, loadGroups, loadPosts, publicImageUrl, type Post } from '../../lib/gym'
+import { formatRelativeTime } from '../../lib/relativeTime'
 
 export default function PostsScreen() {
   const { session } = useAuth()
@@ -57,20 +59,22 @@ export default function PostsScreen() {
             .join(' · ')
           const image = publicImageUrl('post-images', post.image_path)
           const own = post.user_id === session?.user.id
+          const when = formatRelativeTime(post.created_at)
+          const meta = [post.author.display_name ?? 'Unnamed', audience || null, when || null]
+            .filter(Boolean)
+            .join(' · ')
           return (
-            <View key={post.id} style={{ gap: 8 }}>
-              {image ? (
-                <Image source={{ uri: image }} style={{ height: 220, borderRadius: 16, backgroundColor: '#e7e5e4' }} />
-              ) : null}
-              <View style={screen.dayRow}>
-                <View style={screen.rowMain}>
-                  {post.body ? <Text style={screen.rowTitle}>{post.body}</Text> : null}
-                  <Text style={screen.muted}>
-                    {post.author.display_name ?? 'Unnamed'}
-                    {audience ? ` · ${audience}` : ''}
-                  </Text>
+            <View key={post.id} style={screen.postCard}>
+              {image ? <Image source={{ uri: image }} style={screen.postImage} /> : null}
+              <View style={screen.postBody}>
+                <View style={screen.postMetaRow}>
+                  <Avatar name={post.author.display_name} path={post.author.avatar_path} size={40} />
+                  <View style={screen.rowMain}>
+                    {post.body ? <Text style={screen.rowTitle}>{post.body}</Text> : null}
+                    <Text style={screen.muted}>{meta}</Text>
+                  </View>
+                  {own ? <TrashButton onPress={() => setPendingDelete(post)} /> : null}
                 </View>
-                {own ? <TrashButton onPress={() => setPendingDelete(post)} /> : null}
               </View>
             </View>
           )

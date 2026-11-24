@@ -83,6 +83,43 @@ export function nutritionSummaryTitle(day: string, today: string): string {
   return day === today ? "Today's Nutrition Summary" : "Day's Nutrition Summary"
 }
 
+export type NutritionProgressLine = NutritionLine & {
+  goal: number | null
+  /** 0–1 fill toward the goal; null when there is no goal. */
+  progress: number | null
+}
+
+/** Merge logged totals with optional per-nutrient goals for progress rows. */
+export function nutritionProgressLines(
+  summary: NutritionLine[],
+  goals: { nutrient_id: string; amount: number; name: string; unit: string }[],
+): NutritionProgressLine[] {
+  const byId = new Map(summary.map((line) => [line.id, line]))
+  const seen = new Set<string>()
+  const lines: NutritionProgressLine[] = []
+
+  for (const goal of goals) {
+    seen.add(goal.nutrient_id)
+    const current = byId.get(goal.nutrient_id)
+    const total = current?.total ?? 0
+    lines.push({
+      id: goal.nutrient_id,
+      name: current?.name ?? goal.name,
+      unit: current?.unit ?? goal.unit,
+      total,
+      goal: goal.amount,
+      progress: goal.amount > 0 ? Math.min(1, total / goal.amount) : null,
+    })
+  }
+
+  for (const line of summary) {
+    if (seen.has(line.id)) continue
+    lines.push({ ...line, goal: null, progress: null })
+  }
+
+  return lines.sort((a, b) => a.name.localeCompare(b.name))
+}
+
 /** Nutrients contributed by one logged intake. */
 export function intakeNutrition(intake: NutritionIntake): NutritionLine[] {
   return summarizeNutrition([intake])

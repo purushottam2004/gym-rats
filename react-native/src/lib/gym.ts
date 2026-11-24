@@ -131,6 +131,49 @@ export async function loadNutrients(): Promise<Nutrient[]> {
   return (data ?? []) as Nutrient[]
 }
 
+export type NutrientGoal = {
+  nutrient_id: string
+  amount: number
+  name: string
+  unit: string
+}
+
+export async function loadNutrientGoals(userId: string): Promise<NutrientGoal[]> {
+  const { data, error } = await db()
+    .from('nutrient_goals')
+    .select('nutrient_id, amount, nutrient:nutrients(id, name, unit)')
+    .eq('user_id', userId)
+  fail(error)
+  return (data ?? []).map((row) => {
+    const nutrient = row.nutrient as unknown as Nutrient
+    return {
+      nutrient_id: row.nutrient_id as string,
+      amount: Number(row.amount),
+      name: nutrient.name,
+      unit: nutrient.unit,
+    }
+  })
+}
+
+/** Replace the caller's goals with the given amounts (blank / non-positive clears). */
+export async function saveNutrientGoals(
+  userId: string,
+  amounts: { nutrient_id: string; amount: number | null }[],
+): Promise<void> {
+  const keep = amounts.filter((row) => row.amount != null && row.amount > 0)
+  const { error: delError } = await db().from('nutrient_goals').delete().eq('user_id', userId)
+  fail(delError)
+  if (keep.length === 0) return
+  const { error } = await db().from('nutrient_goals').insert(
+    keep.map((row) => ({
+      user_id: userId,
+      nutrient_id: row.nutrient_id,
+      amount: row.amount,
+    })),
+  )
+  fail(error)
+}
+
 export async function loadFoods(): Promise<Food[]> {
   const { data: userData, error: userError } = await db().auth.getUser()
   fail(userError)

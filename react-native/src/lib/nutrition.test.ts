@@ -7,6 +7,7 @@ import {
   nutrientBasisSize,
   nutrientContributions,
   nutrientFromIntake,
+  nutritionProgressLines,
   nutritionSummaryTitle,
   summarizeNutrition,
 } from './nutrition.ts'
@@ -151,5 +152,26 @@ describe('nutritionSummaryTitle', () => {
   it('names today vs another day', () => {
     assert.equal(nutritionSummaryTitle('2026-11-23', '2026-11-23'), "Today's Nutrition Summary")
     assert.equal(nutritionSummaryTitle('2026-11-22', '2026-11-23'), "Day's Nutrition Summary")
+  })
+})
+
+describe('nutritionProgressLines', () => {
+  it('caps progress at one and keeps goal-less lines', () => {
+    const summary = summarizeNutrition([milk, eggs])
+    const lines = nutritionProgressLines(summary, [
+      { nutrient_id: 'energy', amount: 100, name: 'Energy', unit: 'kcal' },
+      { nutrient_id: 'protein', amount: 50, name: 'Protein', unit: 'g' },
+    ])
+    const energy = lines.find((line) => line.id === 'energy')
+    const protein = lines.find((line) => line.id === 'protein')
+    const calcium = lines.find((line) => line.id === 'calcium')
+    assert.ok(energy)
+    assert.equal(energy.goal, 100)
+    assert.equal(energy.progress, 1)
+    assert.ok(protein)
+    assert.equal(protein.total, 12)
+    assert.ok(protein.progress != null && protein.progress < 1)
+    assert.ok(calcium)
+    assert.equal(calcium.goal, null)
   })
 })

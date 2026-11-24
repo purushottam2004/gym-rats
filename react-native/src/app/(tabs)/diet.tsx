@@ -7,24 +7,34 @@ import {
 } from 'expo-audio'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { Mic, Utensils } from 'lucide-react-native'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Platform, Pressable, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
 import { DayControls } from '../../components/DayControls'
 import { DeleteConfirmButton } from '../../components/DeleteConfirmButton'
 import { InfoButton } from '../../components/InfoButton'
 import { InfoListModal, type InfoListRow } from '../../components/InfoListModal'
+import { NutrientProgressRow } from '../../components/NutrientProgressRow'
 import { Screen } from '../../components/Screen'
 import { TabChrome } from '../../components/TabChrome'
 import { Toast, type ToastKind } from '../../components/Toast'
 import { screen } from '../../components/screenStyles'
-import { deleteIntake, loadIntakes, logIntakeFromVoice, measureLabel, type Intake } from '../../lib/gym'
+import {
+  deleteIntake,
+  loadIntakes,
+  loadNutrientGoals,
+  logIntakeFromVoice,
+  measureLabel,
+  type Intake,
+  type NutrientGoal,
+} from '../../lib/gym'
 import { localDate } from '../../lib/localDate'
 import {
   foodBasisLabel,
   foodTypeNutrition,
   formatNutrientTotal,
   nutrientContributions,
+  nutritionProgressLines,
   nutritionSummaryTitle,
   summarizeNutrition,
 } from '../../lib/nutrition'
@@ -48,17 +58,26 @@ export default function DietScreen() {
   const recorderState = useAudioRecorderState(audioRecorder)
   const [day, setDay] = useState(localDate)
   const [rows, setRows] = useState<Intake[]>([])
+  const [goals, setGoals] = useState<NutrientGoal[]>([])
   const [error, setError] = useState<string | null>(null)
   const [infoModal, setInfoModal] = useState<InfoModalState | null>(null)
   const [voiceBusy, setVoiceBusy] = useState(false)
   const [toast, setToast] = useState<{ kind: ToastKind; message: string } | null>(null)
   const today = localDate()
-  const summary = summarizeNutrition(rows)
+  const progress = useMemo(
+    () => nutritionProgressLines(summarizeNutrition(rows), goals),
+    [rows, goals],
+  )
 
   const load = useCallback(async () => {
     if (!userId) return
     try {
-      setRows(await loadIntakes(userId, day))
+      const [nextRows, nextGoals] = await Promise.all([
+        loadIntakes(userId, day),
+        loadNutrientGoals(userId),
+      ])
+      setRows(nextRows)
+      setGoals(nextGoals)
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load diet')
@@ -219,17 +238,14 @@ export default function DietScreen() {
         <View style={screen.section}>
           <Text style={screen.sectionTitle}>{nutritionSummaryTitle(day, today)}</Text>
           <View style={screen.card}>
-            {summary.length > 0 ? (
-              summary.map((line, index) => (
-                <View key={line.id} style={[screen.row, index === 0 && screen.rowFirst]}>
-                  <Text style={[screen.rowTitle, screen.rowMain]}>{line.name}</Text>
-                  <View style={screen.choiceTrail}>
-                    <Text style={screen.rowMeta}>
-                      {formatNutrientTotal(line.total)} {line.unit}
-                    </Text>
-                    <InfoButton onPress={() => showNutrientInfo(line.id, line.name, line.unit)} />
-                  </View>
-                </View>
+            {progress.length > 0 ? (
+              progress.map((line, index) => (
+                <NutrientProgressRow
+                  key={line.id}
+                  first={index === 0}
+                  line={line}
+                  onInfo={() => showNutrientInfo(line.id, line.name, line.unit)}
+                />
               ))
             ) : (
               <View style={[screen.row, screen.rowFirst]}>
