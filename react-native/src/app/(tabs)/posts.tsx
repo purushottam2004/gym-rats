@@ -37,16 +37,19 @@ export default function PostsScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Screen>
-        <TabChrome
-          icon={ImageIcon}
-          title="Posts"
-          trailing={
-            <Pressable onPress={() => router.push('/new-post')}>
-              <Text style={screen.addText}>New</Text>
-            </Pressable>
-          }
-        />
+      <Screen
+        header={
+          <TabChrome
+            icon={ImageIcon}
+            title="Posts"
+            trailing={
+              <Pressable onPress={() => router.push('/new-post')}>
+                <Text style={screen.addText}>New</Text>
+              </Pressable>
+            }
+          />
+        }
+      >
         {error ? <Text style={screen.error}>{error}</Text> : null}
         {posts.map((post) => {
           const audience = post.audiences

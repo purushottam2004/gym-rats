@@ -34,8 +34,7 @@ export default function ProfileScreen() {
   const photo = publicImageUrl('avatars', profile?.avatar_path ?? null)
 
   return (
-    <Screen>
-      <TabChrome icon={UserRound} title="Profile" />
+    <Screen header={<TabChrome icon={UserRound} title="Profile" />}>
       {error ? <Text style={screen.error}>{error}</Text> : null}
       <View style={{ alignItems: 'center', gap: 8 }}>
         {photo ? (

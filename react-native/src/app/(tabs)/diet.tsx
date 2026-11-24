@@ -151,62 +151,71 @@ export default function DietScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Screen>
-        <TabChrome
-          icon={Utensils}
-          title="Diet"
-          trailing={<DayControls day={day} onChange={setDay} />}
-        />
-        {error ? <Text style={screen.error}>{error}</Text> : null}
-        <View style={screen.card}>
-          {rows.map((row, index) => (
-            <View key={row.id} style={[screen.row, index === 0 && screen.rowFirst]}>
-              <View style={screen.rowMain}>
-                <Text style={screen.rowTitle}>{row.food.name}</Text>
-              </View>
-              <View style={screen.choiceTrail}>
-                <Text style={screen.rowMeta}>
-                  {row.amount} {measureLabel(row.food.measure)}
-                </Text>
-                <DeleteConfirmButton
-                  title="Delete food?"
-                  message={`Remove ${row.food.name} from this day's log?`}
-                  onConfirm={() => void deleteIntake(row.id).then(load)}
-                />
-                <InfoButton onPress={() => showFoodInfo(row)} />
+      <Screen
+        header={
+          <>
+            <TabChrome
+              icon={Utensils}
+              title="Diet"
+              trailing={<DayControls day={day} onChange={setDay} />}
+            />
+            <View style={screen.card}>
+              <View style={[screen.addRow, screen.addRowFirst]}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => router.push({ pathname: '/add-food', params: { day } })}
+                  style={screen.dietActionSide}
+                >
+                  <Text style={screen.addText}>Add food</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityLabel={recording ? 'Stop recording and add food' : 'Speak a food'}
+                  accessibilityRole="button"
+                  disabled={voiceBusy}
+                  onPress={() => void toggleVoice()}
+                  style={({ pressed }) => [
+                    screen.dietMicButton,
+                    recording && screen.micButtonActive,
+                    (pressed || voiceBusy) && screen.buttonDisabled,
+                  ]}
+                >
+                  <Mic color={recording ? '#9a3412' : '#1c1917'} size={20} strokeWidth={2.25} />
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => router.push('/food-catalog')}
+                  style={[screen.dietActionSide, screen.dietActionSideEnd]}
+                >
+                  <Text style={screen.addText}>View Catalog</Text>
+                </Pressable>
               </View>
             </View>
-          ))}
-          <View style={screen.addRow}>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => router.push({ pathname: '/add-food', params: { day } })}
-              style={screen.dietActionSide}
-            >
-              <Text style={screen.addText}>Add food</Text>
-            </Pressable>
-            <Pressable
-              accessibilityLabel={recording ? 'Stop recording and add food' : 'Speak a food'}
-              accessibilityRole="button"
-              disabled={voiceBusy}
-              onPress={() => void toggleVoice()}
-              style={({ pressed }) => [
-                screen.dietMicButton,
-                recording && screen.micButtonActive,
-                (pressed || voiceBusy) && screen.buttonDisabled,
-              ]}
-            >
-              <Mic color={recording ? '#9a3412' : '#1c1917'} size={20} strokeWidth={2.25} />
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => router.push('/food-catalog')}
-              style={[screen.dietActionSide, screen.dietActionSideEnd]}
-            >
-              <Text style={screen.addText}>View Catalog</Text>
-            </Pressable>
+          </>
+        }
+      >
+        {error ? <Text style={screen.error}>{error}</Text> : null}
+        {rows.length > 0 ? (
+          <View style={screen.card}>
+            {rows.map((row, index) => (
+              <View key={row.id} style={[screen.row, index === 0 && screen.rowFirst]}>
+                <View style={screen.rowMain}>
+                  <Text style={screen.rowTitle}>{row.food.name}</Text>
+                </View>
+                <View style={screen.choiceTrail}>
+                  <Text style={screen.rowMeta}>
+                    {row.amount} {measureLabel(row.food.measure)}
+                  </Text>
+                  <DeleteConfirmButton
+                    title="Delete food?"
+                    message={`Remove ${row.food.name} from this day's log?`}
+                    onConfirm={() => void deleteIntake(row.id).then(load)}
+                  />
+                  <InfoButton onPress={() => showFoodInfo(row)} />
+                </View>
+              </View>
+            ))}
           </View>
-        </View>
+        ) : null}
         <View style={screen.section}>
           <Text style={screen.sectionTitle}>{nutritionSummaryTitle(day, today)}</Text>
           <View style={screen.card}>
@@ -229,15 +238,15 @@ export default function DietScreen() {
             )}
           </View>
         </View>
-        <InfoListModal
-          visible={infoModal !== null}
-          title={infoModal?.title ?? ''}
-          subtitle={infoModal?.subtitle}
-          rows={infoModal?.rows ?? []}
-          emptyMessage={infoModal?.emptyMessage ?? ''}
-          onClose={() => setInfoModal(null)}
-        />
       </Screen>
+      <InfoListModal
+        visible={infoModal !== null}
+        title={infoModal?.title ?? ''}
+        subtitle={infoModal?.subtitle}
+        rows={infoModal?.rows ?? []}
+        emptyMessage={infoModal?.emptyMessage ?? ''}
+        onClose={() => setInfoModal(null)}
+      />
       <Toast
         visible={toast !== null}
         kind={toast?.kind ?? 'success'}

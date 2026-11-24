@@ -48,24 +48,44 @@ function FakeTabBar({ active }: { active: Tab }) {
   )
 }
 
+function ActionRow({ addLabel, catalogLabel }: { addLabel: string; catalogLabel: string }) {
+  return (
+    <View style={screen.card}>
+      <View style={[screen.addRow, screen.addRowFirst]}>
+        <Text style={[screen.addText, screen.dietActionSide]}>{addLabel}</Text>
+        <View style={screen.dietMicButton}>
+          <Mic color="#c2410c" size={20} strokeWidth={2.25} />
+        </View>
+        <Text style={[screen.addText, screen.dietActionSide, screen.dietActionSideEnd]}>{catalogLabel}</Text>
+      </View>
+    </View>
+  )
+}
+
 export default function ChromePreviewScreen() {
   const { tab: raw } = useLocalSearchParams<{ tab?: string }>()
   const tab = (tabs.includes(raw as Tab) ? raw : 'diet') as Tab
   const [day, setDay] = useState(localDate)
 
+  let header: ReactNode = null
   let body: ReactNode = null
+
   if (tab === 'diet') {
-    body = (
+    header = (
       <>
         <TabChrome icon={Utensils} title="Diet" trailing={<DayControls day={day} onChange={setDay} />} />
+        <ActionRow addLabel="Add food" catalogLabel="View Catalog" />
+      </>
+    )
+    body = (
+      <>
         <View style={screen.card}>
-          <View style={[screen.addRow, screen.addRowFirst]}>
-            <Text style={[screen.addText, screen.dietActionSide]}>Add food</Text>
-            <View style={screen.dietMicButton}>
-              <Mic color="#c2410c" size={20} strokeWidth={2.25} />
+          {['Oats', 'Eggs', 'Banana', 'Curd', 'Almonds', 'Chicken', 'Rice'].map((name, index) => (
+            <View key={name} style={[screen.row, index === 0 && screen.rowFirst]}>
+              <Text style={[screen.rowTitle, screen.rowMain]}>{name}</Text>
+              <Text style={screen.rowMeta}>1 serving</Text>
             </View>
-            <Text style={[screen.addText, screen.dietActionSide]}>View Catalog</Text>
-          </View>
+          ))}
         </View>
         <View style={screen.section}>
           <Text style={screen.sectionTitle}>Today&apos;s Nutrition Summary</Text>
@@ -78,100 +98,105 @@ export default function ChromePreviewScreen() {
       </>
     )
   } else if (tab === 'lifts') {
-    body = (
+    header = (
       <>
         <TabChrome icon={Dumbbell} title="Lifts" trailing={<DayControls day={day} onChange={setDay} />} />
-        <View style={screen.card}>
-          <View style={[screen.addRow, screen.addRowFirst]}>
-            <Text style={[screen.addText, screen.dietActionSide]}>Add a set</Text>
-            <View style={screen.dietMicButton}>
-              <Mic color="#c2410c" size={20} strokeWidth={2.25} />
-            </View>
-            <Text style={[screen.addText, screen.dietActionSide]}>View Catalogue</Text>
-          </View>
-        </View>
+        <ActionRow addLabel="Add a set" catalogLabel="View Catalogue" />
       </>
+    )
+    body = (
+      <View style={screen.card}>
+        <View style={[screen.row, screen.rowFirst]}>
+          <Text style={screen.muted}>Bench Press</Text>
+        </View>
+        {['1st 8 reps', '2nd 8 reps', '3rd 6 reps', '4th 5 reps', '5th 5 reps'].map((label) => (
+          <View key={label} style={screen.row}>
+            <Text style={[screen.rowTitle, screen.rowMain]}>{label}</Text>
+            <Text style={screen.rowMeta}>60 kg</Text>
+          </View>
+        ))}
+      </View>
     )
   } else if (tab === 'groups') {
-    body = (
-      <>
-        <TabChrome
-          icon={Users}
-          title="Groups"
-          trailing={
-            <>
-              <Pressable style={screen.chromeAction}>
-                <Text style={screen.addText}>Join</Text>
-              </Pressable>
-              <Pressable style={screen.chromeAction}>
-                <Text style={screen.addText}>New</Text>
-              </Pressable>
-            </>
-          }
-        />
-        <View style={screen.groupBlock}>
-          <View style={screen.groupHeaderRow}>
-            <View style={screen.groupHeaderMain}>
-              <Avatar name="Hemraj Thakre Mitr Parivar" path={null} size={56} />
-              <Text numberOfLines={2} style={screen.groupHeaderName}>
-                Hemraj Thakre Mitr Parivar
-              </Text>
-            </View>
-            <InfoButton onPress={() => undefined} />
-          </View>
-          <View style={screen.card}>
-            {['Purushottam', 'Vijay', 'Hemraj'].map((name, index) => (
-              <View
-                key={name}
-                style={[screen.row, index === 0 && screen.rowFirst, index === 0 && screen.rowSelected]}
-              >
-                <View style={screen.memberRow}>
-                  <Avatar name={name} path={null} />
-                  <Text style={[screen.rowTitle, screen.memberName, index === 0 && screen.rowTitleSelected]}>
-                    {name}
-                  </Text>
-                </View>
-                {index === 0 ? (
-                  <View style={screen.choiceTrail}>
-                    <Text style={screen.youLabel}>You</Text>
-                    <Text style={screen.muted}>Creator</Text>
-                  </View>
-                ) : null}
-              </View>
-            ))}
-          </View>
-        </View>
-      </>
-    )
-  } else if (tab === 'posts') {
-    body = (
-      <>
-        <TabChrome
-          icon={ImageIcon}
-          title="Posts"
-          trailing={
-            <Pressable>
+    header = (
+      <TabChrome
+        icon={Users}
+        title="Groups"
+        trailing={
+          <>
+            <Pressable style={screen.chromeAction}>
+              <Text style={screen.addText}>Join</Text>
+            </Pressable>
+            <Pressable style={screen.chromeAction}>
               <Text style={screen.addText}>New</Text>
             </Pressable>
-          }
-        />
+          </>
+        }
+      />
+    )
+    body = (
+      <View style={screen.groupBlock}>
+        <View style={screen.groupHeaderRow}>
+          <View style={screen.groupHeaderMain}>
+            <Avatar name="Hemraj Thakre Mitr Parivar" path={null} size={56} />
+            <Text numberOfLines={2} style={screen.groupHeaderName}>
+              Hemraj Thakre Mitr Parivar
+            </Text>
+          </View>
+          <InfoButton onPress={() => undefined} />
+        </View>
         <View style={screen.card}>
-          <View style={[screen.row, screen.rowFirst]}>
-            <View style={screen.memberRow}>
-              <Avatar name="Hemraj" path={null} />
-              <View style={{ flex: 1 }}>
-                <Text style={screen.rowTitle}>Testing</Text>
-                <Text style={screen.muted}>Hemraj · Hemraj Thakre Mitr Parivar</Text>
+          {['Purushottam', 'Vijay', 'Hemraj'].map((name, index) => (
+            <View
+              key={name}
+              style={[screen.row, index === 0 && screen.rowFirst, index === 0 && screen.rowSelected]}
+            >
+              <View style={screen.memberRow}>
+                <Avatar name={name} path={null} />
+                <Text style={[screen.rowTitle, screen.memberName, index === 0 && screen.rowTitleSelected]}>
+                  {name}
+                </Text>
               </View>
+              {index === 0 ? (
+                <View style={screen.choiceTrail}>
+                  <Text style={screen.youLabel}>You</Text>
+                  <Text style={screen.muted}>Creator</Text>
+                </View>
+              ) : null}
+            </View>
+          ))}
+        </View>
+      </View>
+    )
+  } else if (tab === 'posts') {
+    header = (
+      <TabChrome
+        icon={ImageIcon}
+        title="Posts"
+        trailing={
+          <Pressable>
+            <Text style={screen.addText}>New</Text>
+          </Pressable>
+        }
+      />
+    )
+    body = (
+      <View style={screen.card}>
+        <View style={[screen.row, screen.rowFirst]}>
+          <View style={screen.memberRow}>
+            <Avatar name="Hemraj" path={null} />
+            <View style={{ flex: 1 }}>
+              <Text style={screen.rowTitle}>Testing</Text>
+              <Text style={screen.muted}>Hemraj · Hemraj Thakre Mitr Parivar</Text>
             </View>
           </View>
         </View>
-      </>
+      </View>
     )
   } else {
+    header = <TabChrome icon={UserRound} title="Profile" />
     body = (
       <>
-        <TabChrome icon={UserRound} title="Profile" />
         <View style={{ alignItems: 'center', gap: 8 }}>
           <View style={{ width: 84, height: 84, borderRadius: 42, backgroundColor: '#e7e5e4' }} />
           <Text style={screen.sectionTitle}>Purushottam</Text>
@@ -193,7 +218,7 @@ export default function ChromePreviewScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#f5f5f4' }}>
-      <Screen>{body}</Screen>
+      <Screen header={header}>{body}</Screen>
       <FakeTabBar active={tab} />
     </View>
   )

@@ -71,29 +71,32 @@ export default function GroupsScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Screen>
-        <TabChrome
-          icon={Users}
-          title="Groups"
-          trailing={
-            <>
-              <Pressable
-                accessibilityRole="button"
-                onPress={openJoin}
-                style={screen.chromeAction}
-              >
-                <Text style={screen.addText}>Join</Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => router.push('/new-group')}
-                style={screen.chromeAction}
-              >
-                <Text style={screen.addText}>New</Text>
-              </Pressable>
-            </>
-          }
-        />
+      <Screen
+        header={
+          <TabChrome
+            icon={Users}
+            title="Groups"
+            trailing={
+              <>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={openJoin}
+                  style={screen.chromeAction}
+                >
+                  <Text style={screen.addText}>Join</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => router.push('/new-group')}
+                  style={screen.chromeAction}
+                >
+                  <Text style={screen.addText}>New</Text>
+                </Pressable>
+              </>
+            }
+          />
+        }
+      >
         {error ? <Text style={screen.error}>{error}</Text> : null}
         {groups.map((group) => (
           <View key={group.id} style={screen.groupBlock}>
