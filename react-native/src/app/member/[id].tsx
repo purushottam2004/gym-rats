@@ -13,12 +13,12 @@ import {
   type Profile,
   type SetLog,
 } from '../../lib/gym'
-import { formatDay, localDate } from '../../lib/localDate'
+import { formatDay, localDate, shiftDate } from '../../lib/localDate'
 
 export default function MemberScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
-  const day = localDate()
+  const [day, setDay] = useState(localDate)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [intakes, setIntakes] = useState<Intake[]>([])
   const [sets, setSets] = useState<SetLog[]>([])
@@ -53,7 +53,15 @@ export default function MemberScreen() {
         <Text style={screen.addText}>Back</Text>
       </Pressable>
       <Text style={screen.title}>{profile?.display_name ?? 'Member'}</Text>
-      <Text style={screen.muted}>{formatDay(day)}</Text>
+      <View style={screen.dayRow}>
+        <Pressable onPress={() => setDay((current) => shiftDate(current, -1))}>
+          <Text style={screen.addText}>Previous</Text>
+        </Pressable>
+        <Text style={screen.body}>{formatDay(day)}</Text>
+        <Pressable onPress={() => setDay((current) => shiftDate(current, 1))}>
+          <Text style={screen.addText}>Next</Text>
+        </Pressable>
+      </View>
       {error ? <Text style={screen.error}>{error}</Text> : null}
       <View style={screen.card}>
         <View style={[screen.row, screen.rowFirst]}>
