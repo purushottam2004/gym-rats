@@ -1,7 +1,8 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { Circle, CircleCheck } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
-import { Pressable, Text, TextInput, View } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
+import { AppTextInput } from '../components/AppTextInput'
 import { Screen } from '../components/Screen'
 import { screen } from '../components/screenStyles'
 import { loadLifts, logSet, type Lift } from '../lib/gym'
@@ -114,9 +115,9 @@ export default function AddSetScreen() {
         })}
       </View>
       <Text style={screen.label}>Reps</Text>
-      <TextInput keyboardType="number-pad" onChangeText={setReps} style={screen.input} value={reps} />
+      <AppTextInput keyboardType="number-pad" onChangeText={setReps} style={screen.input} value={reps} />
       <Text style={screen.label}>Kilograms</Text>
-      <TextInput keyboardType="decimal-pad" onChangeText={setLoadKg} style={screen.input} value={loadKg} />
+      <AppTextInput keyboardType="decimal-pad" onChangeText={setLoadKg} style={screen.input} value={loadKg} />
       <Pressable onPress={() => void save()} style={screen.save}>
         <Text style={screen.buttonText}>Save</Text>
       </Pressable>

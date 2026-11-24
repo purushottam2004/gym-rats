@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
-import { Pressable, Text, TextInput } from 'react-native'
+import { Pressable, Text } from 'react-native'
+import { AppTextInput } from '../components/AppTextInput'
 import { Screen } from '../components/Screen'
 import { screen } from '../components/screenStyles'
 import { createGroup } from '../lib/gym'
@@ -25,7 +26,7 @@ export default function NewGroupScreen() {
       <Text style={screen.muted}>You name it. A code is issued when you create it.</Text>
       {error ? <Text style={screen.error}>{error}</Text> : null}
       <Text style={screen.label}>Name</Text>
-      <TextInput onChangeText={setName} style={screen.input} value={name} />
+      <AppTextInput onChangeText={setName} style={screen.input} value={name} />
       <Pressable onPress={() => void save()} style={screen.save}>
         <Text style={screen.buttonText}>Create group</Text>
       </Pressable>

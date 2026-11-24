@@ -5,11 +5,11 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../auth/AuthProvider'
+import { AppTextInput } from '../components/AppTextInput'
 
 export default function LoginScreen() {
   const { signIn } = useAuth()
@@ -47,23 +47,21 @@ export default function LoginScreen() {
           <Text style={styles.lead}>Sign in with the email and password you were given.</Text>
           <View style={styles.card}>
             <Text style={styles.label}>Email</Text>
-            <TextInput
+            <AppTextInput
               autoCapitalize="none"
               autoComplete="email"
               keyboardType="email-address"
               onChangeText={setEmail}
               placeholder="you@email.com"
-              placeholderTextColor="#a8a29e"
               style={styles.input}
               textContentType="username"
               value={email}
             />
             <Text style={styles.label}>Password</Text>
-            <TextInput
+            <AppTextInput
               autoCapitalize="none"
               onChangeText={setPassword}
               placeholder="Password"
-              placeholderTextColor="#a8a29e"
               secureTextEntry
               style={styles.input}
               textContentType="password"

@@ -1,4 +1,5 @@
-import { Modal, Pressable, Text, TextInput, View } from 'react-native'
+import { Modal, Pressable, Text, View } from 'react-native'
+import { AppTextInput } from './AppTextInput'
 import { screen } from './screenStyles'
 
 type Props = {
@@ -26,7 +27,7 @@ export function JoinGroupModal({
         <View style={screen.confirmCard}>
           <Text style={screen.sectionTitle}>Join group</Text>
           <Text style={screen.body}>Enter an invite code to join.</Text>
-          <TextInput
+          <AppTextInput
             autoCapitalize="characters"
             autoFocus
             editable={!busy}

@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
-import { Pressable, Text, TextInput } from 'react-native'
+import { Pressable, Text } from 'react-native'
+import { AppTextInput } from '../components/AppTextInput'
 import { Screen } from '../components/Screen'
 import { screen } from '../components/screenStyles'
 import { createLift } from '../lib/gym'
@@ -32,7 +33,7 @@ export default function NewLiftScreen() {
       <Text style={screen.muted}>Shared catalog. A name only — it cannot be edited later.</Text>
       {error ? <Text style={screen.error}>{error}</Text> : null}
       <Text style={screen.label}>Name</Text>
-      <TextInput onChangeText={setName} style={screen.input} value={name} />
+      <AppTextInput onChangeText={setName} style={screen.input} value={name} />
       <Pressable onPress={() => void save()} style={screen.save}>
         <Text style={screen.buttonText}>Create lift</Text>
       </Pressable>

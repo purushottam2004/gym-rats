@@ -1,7 +1,8 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { Circle, CircleCheck } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
-import { Pressable, Text, TextInput, View } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
+import { AppTextInput } from '../components/AppTextInput'
 import { Screen } from '../components/Screen'
 import { screen } from '../components/screenStyles'
 import { loadFoods, logIntake, measureLabel, type Food } from '../lib/gym'
@@ -85,7 +86,7 @@ export default function AddFoodScreen() {
         <Text style={screen.addText}>New food</Text>
       </Pressable>
       <Text style={screen.label}>Amount{selected ? ` (${measureLabel(selected.measure)})` : ''}</Text>
-      <TextInput keyboardType="decimal-pad" onChangeText={setAmount} style={screen.input} value={amount} />
+      <AppTextInput keyboardType="decimal-pad" onChangeText={setAmount} style={screen.input} value={amount} />
       <Pressable onPress={() => void save()} style={screen.save}>
         <Text style={screen.buttonText}>Save</Text>
       </Pressable>

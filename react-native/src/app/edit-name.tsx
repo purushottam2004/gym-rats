@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { Pressable, Text, TextInput } from 'react-native'
+import { Pressable, Text } from 'react-native'
+import { AppTextInput } from '../components/AppTextInput'
 import { Screen } from '../components/Screen'
 import { useAuth } from '../auth/AuthProvider'
 import { screen } from '../components/screenStyles'
@@ -36,7 +37,7 @@ export default function EditNameScreen() {
       <Text style={screen.title}>Edit name</Text>
       {error ? <Text style={screen.error}>{error}</Text> : null}
       <Text style={screen.label}>Display name</Text>
-      <TextInput onChangeText={setName} style={screen.input} value={name} />
+      <AppTextInput onChangeText={setName} style={screen.input} value={name} />
       <Pressable onPress={() => void save()} style={screen.save}>
         <Text style={screen.buttonText}>Save</Text>
       </Pressable>

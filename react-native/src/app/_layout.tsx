@@ -1,8 +1,27 @@
 import { Stack, useRouter, useSegments } from 'expo-router'
 import { useEffect } from 'react'
-import { ActivityIndicator, Text, View } from 'react-native'
+import { ActivityIndicator, Platform, Text, View } from 'react-native'
 import { AuthProvider, useAuth } from '../auth/AuthProvider'
+import { PLACEHOLDER_COLOR } from '../components/AppTextInput'
 import { screen } from '../components/screenStyles'
+
+const WEB_PLACEHOLDER_STYLE_ID = 'gym-rats-placeholder-style'
+
+function ensureWebPlaceholderStyles() {
+  if (Platform.OS !== 'web' || typeof document === 'undefined') return
+  if (document.getElementById(WEB_PLACEHOLDER_STYLE_ID)) return
+  const style = document.createElement('style')
+  style.id = WEB_PLACEHOLDER_STYLE_ID
+  style.textContent = `
+    input::placeholder,
+    textarea::placeholder {
+      color: ${PLACEHOLDER_COLOR} !important;
+      font-style: italic !important;
+      opacity: 1;
+    }
+  `
+  document.head.appendChild(style)
+}
 
 function Navigation() {
   const { ready, session, configError } = useAuth()
@@ -58,6 +77,10 @@ function Navigation() {
 }
 
 export default function RootLayout() {
+  useEffect(() => {
+    ensureWebPlaceholderStyles()
+  }, [])
+
   return (
     <AuthProvider>
       <Navigation />

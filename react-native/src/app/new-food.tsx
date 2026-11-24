@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { Pressable, Text, TextInput, View } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
+import { AppTextInput } from '../components/AppTextInput'
 import { Screen } from '../components/Screen'
 import { screen } from '../components/screenStyles'
 import {
@@ -49,7 +50,7 @@ export default function NewFoodScreen() {
       <Text style={screen.muted}>This cannot be edited later.</Text>
       {error ? <Text style={screen.error}>{error}</Text> : null}
       <Text style={screen.label}>Name</Text>
-      <TextInput onChangeText={setName} style={screen.input} value={name} />
+      <AppTextInput onChangeText={setName} style={screen.input} value={name} />
       <View style={screen.card}>
         <Pressable onPress={() => setMeasure('ml')} style={[screen.row, screen.rowFirst]}>
           <Text style={screen.rowTitle}>Millilitres</Text>
@@ -77,7 +78,7 @@ export default function NewFoodScreen() {
         {nutrients.map((nutrient, index) => (
           <View key={nutrient.id} style={[screen.row, index === 0 && screen.rowFirst]}>
             <Text style={screen.rowTitle}>{nutrient.name}</Text>
-            <TextInput
+            <AppTextInput
               keyboardType="decimal-pad"
               onChangeText={(value) => setAmounts((current) => ({ ...current, [nutrient.id]: value }))}
               placeholder={nutrient.unit}

@@ -2,7 +2,8 @@ import * as ImagePicker from 'expo-image-picker'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { Circle, CircleCheck } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
-import { Pressable, Text, TextInput, View } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
+import { AppTextInput } from '../components/AppTextInput'
 import { useAuth } from '../auth/AuthProvider'
 import { Screen } from '../components/Screen'
 import { screen } from '../components/screenStyles'
@@ -59,7 +60,7 @@ export default function NewPostScreen() {
       <Text style={screen.title}>New post</Text>
       {error ? <Text style={screen.error}>{error}</Text> : null}
       <Text style={screen.label}>Text</Text>
-      <TextInput multiline onChangeText={setBody} style={[screen.input, { minHeight: 80 }]} value={body} />
+      <AppTextInput multiline onChangeText={setBody} style={[screen.input, { minHeight: 80 }]} value={body} />
       <Pressable onPress={() => void pick()} style={screen.secondaryButton}>
         <Text style={screen.secondaryButtonText}>{imageUri ? 'Photo chosen' : 'Add a photo'}</Text>
       </Pressable>

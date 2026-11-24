@@ -1,7 +1,8 @@
 import * as ImagePicker from 'expo-image-picker'
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useState } from 'react'
-import { Pressable, Text, TextInput, View } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
+import { AppTextInput } from '../../components/AppTextInput'
 import { useAuth } from '../../auth/AuthProvider'
 import { Avatar } from '../../components/Avatar'
 import { InfoButton } from '../../components/InfoButton'
@@ -163,7 +164,7 @@ export default function GroupScreen() {
         {creator ? (
           <>
             <Text style={screen.label}>Rename</Text>
-            <TextInput onChangeText={setName} style={screen.input} value={name} />
+            <AppTextInput onChangeText={setName} style={screen.input} value={name} />
             <Pressable onPress={() => void run(() => renameGroup(id, name))} style={screen.save}>
               <Text style={screen.buttonText}>Save name</Text>
             </Pressable>
