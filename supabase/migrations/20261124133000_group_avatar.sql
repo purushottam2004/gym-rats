@@ -79,3 +79,4 @@ create policy "Members delete group avatars"
     bucket_id = 'group-avatars'
     and public.is_group_member(((storage.foldername(name))[1])::uuid)
   );
+
