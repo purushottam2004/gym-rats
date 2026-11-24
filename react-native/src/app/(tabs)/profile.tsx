@@ -29,7 +29,8 @@ export default function ProfileScreen() {
   const [nameDraft, setNameDraft] = useState('')
   const [photoBusy, setPhotoBusy] = useState(false)
   const [nutrients, setNutrients] = useState<Nutrient[]>([])
-  const [goalDrafts, setGoalDrafts] = useState<Record<string, string>>({})
+  const [minDrafts, setMinDrafts] = useState<Record<string, string>>({})
+  const [maxDrafts, setMaxDrafts] = useState<Record<string, string>>({})
   const [goalsBusy, setGoalsBusy] = useState(false)
 
   const load = useCallback(async () => {
@@ -44,11 +45,19 @@ export default function ProfileScreen() {
       setProfile(nextProfile)
       setNameDraft(nextProfile.display_name ?? '')
       setNutrients(nextNutrients)
-      setGoalDrafts(
+      setMinDrafts(
         Object.fromEntries(
           nextNutrients.map((nutrient) => {
             const goal = nextGoals.find((row) => row.nutrient_id === nutrient.id)
-            return [nutrient.id, goal ? String(goal.amount) : '']
+            return [nutrient.id, goal?.min_amount != null ? String(goal.min_amount) : '']
+          }),
+        ),
+      )
+      setMaxDrafts(
+        Object.fromEntries(
+          nextNutrients.map((nutrient) => {
+            const goal = nextGoals.find((row) => row.nutrient_id === nutrient.id)
+            return [nutrient.id, goal?.max_amount != null ? String(goal.max_amount) : '']
           }),
         ),
       )
@@ -99,6 +108,14 @@ export default function ProfileScreen() {
     }
   }
 
+  function parseBound(raw: string, label: string, nutrientName: string): number | null {
+    const trimmed = raw.trim()
+    if (!trimmed) return null
+    const amount = Number(trimmed)
+    if (!(amount > 0)) throw new Error(`${nutrientName} ${label} must be greater than zero`)
+    return amount
+  }
+
   async function saveGoals() {
     const userId = session?.user.id
     if (!userId || goalsBusy) return
@@ -108,11 +125,12 @@ export default function ProfileScreen() {
       await saveNutrientGoals(
         userId,
         nutrients.map((nutrient) => {
-          const raw = goalDrafts[nutrient.id]?.trim() ?? ''
-          if (!raw) return { nutrient_id: nutrient.id, amount: null }
-          const amount = Number(raw)
-          if (!(amount > 0)) throw new Error(`${nutrient.name} goal must be greater than zero`)
-          return { nutrient_id: nutrient.id, amount }
+          const min_amount = parseBound(minDrafts[nutrient.id] ?? '', 'min', nutrient.name)
+          const max_amount = parseBound(maxDrafts[nutrient.id] ?? '', 'max', nutrient.name)
+          if (min_amount != null && max_amount != null && min_amount > max_amount) {
+            throw new Error(`${nutrient.name} min cannot be greater than max`)
+          }
+          return { nutrient_id: nutrient.id, min_amount, max_amount }
         }),
       )
       await load()
@@ -175,19 +193,36 @@ export default function ProfileScreen() {
 
       <View style={screen.section}>
         <Text style={screen.sectionTitle}>Daily nutrient goals</Text>
-        <Text style={screen.muted}>Optional targets for the Diet summary progress fill.</Text>
+        <Text style={screen.muted}>Optional min and/or max for the Diet summary bands.</Text>
+        <View style={[screen.row, { paddingHorizontal: 4 }]}>
+          <Text style={[screen.muted, screen.rowMain]}>Nutrient</Text>
+          <Text style={[screen.muted, screen.goalBoundInput]}>Min</Text>
+          <Text style={[screen.muted, screen.goalBoundInput]}>Max</Text>
+        </View>
         <View style={screen.card}>
           {nutrients.map((nutrient, index) => (
             <View key={nutrient.id} style={[screen.row, index === 0 && screen.rowFirst]}>
-              <Text style={[screen.rowTitle, screen.rowMain]}>{nutrient.name}</Text>
+              <View style={screen.rowMain}>
+                <Text style={screen.rowTitle}>{nutrient.name}</Text>
+                <Text style={screen.muted}>{nutrient.unit}</Text>
+              </View>
               <AppTextInput
                 keyboardType="decimal-pad"
                 onChangeText={(value) =>
-                  setGoalDrafts((current) => ({ ...current, [nutrient.id]: value }))
+                  setMinDrafts((current) => ({ ...current, [nutrient.id]: value }))
                 }
-                placeholder={nutrient.unit}
-                style={[screen.input, { width: 96, paddingVertical: 6 }]}
-                value={goalDrafts[nutrient.id] ?? ''}
+                placeholder="min"
+                style={[screen.input, screen.goalBoundInput]}
+                value={minDrafts[nutrient.id] ?? ''}
+              />
+              <AppTextInput
+                keyboardType="decimal-pad"
+                onChangeText={(value) =>
+                  setMaxDrafts((current) => ({ ...current, [nutrient.id]: value }))
+                }
+                placeholder="max"
+                style={[screen.input, screen.goalBoundInput]}
+                value={maxDrafts[nutrient.id] ?? ''}
               />
             </View>
           ))}

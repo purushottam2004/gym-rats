@@ -37,7 +37,7 @@ A named kind of nutrition on one global list every User shares. It has a unit, s
 _Avoid_: nutrition type, macro, column
 
 **Nutrient goal**:
-An optional daily amount of one Nutrient that a User sets for themselves, in that Nutrient's unit. A User may set or clear a goal for any Nutrient. Another User who shares a Group can see those goals only as progress against Intakes they can already see.
+An optional daily band for one Nutrient that a User sets for themselves, in that Nutrient's unit: a minimum, a maximum, or both. A User may set or clear either bound for any Nutrient; when both are set, the minimum is not greater than the maximum. Another User who shares a Group can see those goals as progress against Intakes they can already see.
 _Avoid_: target, allowance, RDA
 
 **Food**:

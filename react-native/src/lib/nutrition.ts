@@ -30,6 +30,14 @@ export type NutritionContribution = {
   total: number
 }
 
+export type NutrientGoalBounds = {
+  nutrient_id: string
+  min_amount: number | null
+  max_amount: number | null
+  name: string
+  unit: string
+}
+
 /** How many measure units the food's nutrient amounts are defined for. */
 export function nutrientBasisSize(measure: Measure, basis: Basis): number {
   if (measure === 'unit') return 1
@@ -84,37 +92,115 @@ export function nutritionSummaryTitle(day: string, today: string): string {
 }
 
 export type NutritionProgressLine = NutritionLine & {
-  goal: number | null
-  /** 0–1 fill toward the goal; null when there is no goal. */
+  min: number | null
+  max: number | null
+  /** 0–1 bar width; null when there is no goal band. */
   progress: number | null
+  /** Option A fill: yellow→green by progress, coral when over max. */
+  fillColor: string | null
 }
 
-/** Merge logged totals with optional per-nutrient goals for progress rows. */
+const FILL_YELLOW = { r: 253, g: 230, b: 138 } // #fde68a
+const FILL_GREEN = { r: 134, g: 239, b: 172 } // #86efac
+const FILL_CORAL = '#fda4af'
+
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value))
+}
+
+function mixRgb(
+  from: { r: number; g: number; b: number },
+  to: { r: number; g: number; b: number },
+  t: number,
+): string {
+  const p = clamp01(t)
+  const r = Math.round(from.r + (to.r - from.r) * p)
+  const g = Math.round(from.g + (to.g - from.g) * p)
+  const b = Math.round(from.b + (to.b - from.b) * p)
+  return `#${[r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('')}`
+}
+
+/** Yellow→green for t in [0,1]; coral when over the max. */
+export function nutrientBandFill(
+  total: number,
+  min: number | null,
+  max: number | null,
+): { progress: number; fillColor: string } | null {
+  if (min == null && max == null) return null
+
+  if (max != null && total > max) {
+    return { progress: 1, fillColor: FILL_CORAL }
+  }
+
+  if (min != null && max != null) {
+    const width = clamp01(total / max)
+    if (total >= min) {
+      return { progress: width, fillColor: mixRgb(FILL_YELLOW, FILL_GREEN, 1) }
+    }
+    return { progress: width, fillColor: mixRgb(FILL_YELLOW, FILL_GREEN, total / min) }
+  }
+
+  if (min != null) {
+    const t = clamp01(total / min)
+    return { progress: t, fillColor: mixRgb(FILL_YELLOW, FILL_GREEN, t) }
+  }
+
+  // max only
+  const t = clamp01(total / (max as number))
+  return { progress: t, fillColor: mixRgb(FILL_YELLOW, FILL_GREEN, t) }
+}
+
+export function formatNutrientGoalMeta(
+  total: number,
+  min: number | null,
+  max: number | null,
+  unit: string,
+): string {
+  const value = formatNutrientTotal(total)
+  if (min != null && max != null) {
+    return `${value} / ${formatNutrientTotal(min)}–${formatNutrientTotal(max)} ${unit}`
+  }
+  if (min != null) {
+    return `${value} / ≥${formatNutrientTotal(min)} ${unit}`
+  }
+  if (max != null) {
+    return `${value} / ≤${formatNutrientTotal(max)} ${unit}`
+  }
+  return `${value} ${unit}`
+}
+
+/** Merge logged totals with optional per-nutrient min/max goals for progress rows. */
 export function nutritionProgressLines(
   summary: NutritionLine[],
-  goals: { nutrient_id: string; amount: number; name: string; unit: string }[],
+  goals: NutrientGoalBounds[],
 ): NutritionProgressLine[] {
   const byId = new Map(summary.map((line) => [line.id, line]))
   const seen = new Set<string>()
   const lines: NutritionProgressLine[] = []
 
   for (const goal of goals) {
+    if (goal.min_amount == null && goal.max_amount == null) continue
     seen.add(goal.nutrient_id)
     const current = byId.get(goal.nutrient_id)
     const total = current?.total ?? 0
+    const min = goal.min_amount
+    const max = goal.max_amount
+    const band = nutrientBandFill(total, min, max)
     lines.push({
       id: goal.nutrient_id,
       name: current?.name ?? goal.name,
       unit: current?.unit ?? goal.unit,
       total,
-      goal: goal.amount,
-      progress: goal.amount > 0 ? Math.min(1, total / goal.amount) : null,
+      min,
+      max,
+      progress: band?.progress ?? null,
+      fillColor: band?.fillColor ?? null,
     })
   }
 
   for (const line of summary) {
     if (seen.has(line.id)) continue
-    lines.push({ ...line, goal: null, progress: null })
+    lines.push({ ...line, min: null, max: null, progress: null, fillColor: null })
   }
 
   return lines.sort((a, b) => a.name.localeCompare(b.name))

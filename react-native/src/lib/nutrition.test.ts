@@ -3,7 +3,9 @@ import { describe, it } from 'node:test'
 import {
   foodBasisLabel,
   foodTypeNutrition,
+  formatNutrientGoalMeta,
   formatNutrientTotal,
+  nutrientBandFill,
   nutrientBasisSize,
   nutrientContributions,
   nutrientFromIntake,
@@ -156,22 +158,50 @@ describe('nutritionSummaryTitle', () => {
 })
 
 describe('nutritionProgressLines', () => {
-  it('caps progress at one and keeps goal-less lines', () => {
+  it('applies min/max bands and keeps goal-less lines', () => {
     const summary = summarizeNutrition([milk, eggs])
     const lines = nutritionProgressLines(summary, [
-      { nutrient_id: 'energy', amount: 100, name: 'Energy', unit: 'kcal' },
-      { nutrient_id: 'protein', amount: 50, name: 'Protein', unit: 'g' },
+      { nutrient_id: 'energy', min_amount: 100, max_amount: null, name: 'Energy', unit: 'kcal' },
+      { nutrient_id: 'protein', min_amount: 50, max_amount: 80, name: 'Protein', unit: 'g' },
     ])
     const energy = lines.find((line) => line.id === 'energy')
     const protein = lines.find((line) => line.id === 'protein')
     const calcium = lines.find((line) => line.id === 'calcium')
     assert.ok(energy)
-    assert.equal(energy.goal, 100)
+    assert.equal(energy.min, 100)
+    assert.equal(energy.max, null)
     assert.equal(energy.progress, 1)
+    assert.ok(energy.fillColor)
     assert.ok(protein)
     assert.equal(protein.total, 12)
     assert.ok(protein.progress != null && protein.progress < 1)
     assert.ok(calcium)
-    assert.equal(calcium.goal, null)
+    assert.equal(calcium.min, null)
+    assert.equal(calcium.max, null)
+    assert.equal(calcium.fillColor, null)
+  })
+})
+
+describe('nutrientBandFill', () => {
+  it('ramps yellow to green toward a min and turns coral over max', () => {
+    const low = nutrientBandFill(25, 100, null)
+    const met = nutrientBandFill(100, 100, null)
+    const over = nutrientBandFill(120, 50, 100)
+    assert.ok(low)
+    assert.equal(low.progress, 0.25)
+    assert.notEqual(low.fillColor, met?.fillColor)
+    assert.ok(met)
+    assert.equal(met.progress, 1)
+    assert.ok(over)
+    assert.equal(over.progress, 1)
+    assert.equal(over.fillColor, '#fda4af')
+  })
+})
+
+describe('formatNutrientGoalMeta', () => {
+  it('labels min, max, and band', () => {
+    assert.equal(formatNutrientGoalMeta(12, 100, null, 'g'), '12 / ≥100 g')
+    assert.equal(formatNutrientGoalMeta(12, null, 100, 'g'), '12 / ≤100 g')
+    assert.equal(formatNutrientGoalMeta(12, 80, 120, 'g'), '12 / 80–120 g')
   })
 })

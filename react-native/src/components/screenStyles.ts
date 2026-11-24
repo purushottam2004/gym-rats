@@ -173,7 +173,12 @@ export const screen = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
-    backgroundColor: '#bbf7d0',
+    backgroundColor: '#86efac',
+  },
+  goalBoundInput: {
+    width: 72,
+    paddingVertical: 6,
+    textAlign: 'right',
   },
   postCard: {
     backgroundColor: '#ffffff',
