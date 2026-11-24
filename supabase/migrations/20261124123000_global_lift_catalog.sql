@@ -34,11 +34,14 @@ begin
 end;
 $$;
 
+-- Drop policies that reference lifts.user_id before dropping the column.
 drop policy if exists "Read own lifts and lifts behind a visible set" on public.lifts;
 drop policy if exists "Read all lifts" on public.lifts;
 drop policy if exists "Define your own lift" on public.lifts;
 drop policy if exists "Add a lift to the catalog" on public.lifts;
 drop policy if exists "Delete an unused lift" on public.lifts;
+drop policy if exists "Log your own set" on public.sets;
+drop policy if exists "Change your own set" on public.sets;
 
 alter table public.lifts drop column if exists user_id;
 
@@ -63,7 +66,6 @@ create policy "Delete an unused lift"
   to authenticated
   using (true);
 
-drop policy if exists "Log your own set" on public.sets;
 create policy "Log your own set"
   on public.sets
   for insert
@@ -76,7 +78,6 @@ create policy "Log your own set"
     )
   );
 
-drop policy if exists "Change your own set" on public.sets;
 create policy "Change your own set"
   on public.sets
   for update
