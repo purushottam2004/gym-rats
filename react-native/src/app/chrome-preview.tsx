@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { Avatar } from '../components/Avatar'
 import { DayControls } from '../components/DayControls'
+import { InfoButton } from '../components/InfoButton'
 import { Screen } from '../components/Screen'
 import { TabChrome } from '../components/TabChrome'
 import { screen } from '../components/screenStyles'
@@ -98,42 +99,47 @@ export default function ChromePreviewScreen() {
           icon={Users}
           title="Groups"
           trailing={
-            <Pressable>
-              <Text style={screen.addText}>New</Text>
-            </Pressable>
+            <>
+              <Pressable style={screen.chromeAction}>
+                <Text style={screen.addText}>Join</Text>
+              </Pressable>
+              <Pressable style={screen.chromeAction}>
+                <Text style={screen.addText}>New</Text>
+              </Pressable>
+            </>
           }
         />
-        <Text style={screen.label}>Invite code</Text>
-        <View style={screen.input}>
-          <Text style={screen.muted}>Invite code</Text>
-        </View>
-        <View style={screen.addCard}>
-          <Text style={screen.addText}>Join with code</Text>
-        </View>
-        <View style={screen.codeCard}>
-          <Text style={screen.muted}>Hemraj Thakre Mitr Parivar</Text>
-          <Text style={screen.codeValue}>N5FF</Text>
-        </View>
-        <View style={screen.card}>
-          {['Purushottam', 'Vijay', 'Hemraj'].map((name, index) => (
-            <View
-              key={name}
-              style={[screen.row, index === 0 && screen.rowFirst, index === 0 && screen.rowSelected]}
-            >
-              <View style={screen.memberRow}>
-                <Avatar name={name} path={null} />
-                <Text style={[screen.rowTitle, screen.memberName, index === 0 && screen.rowTitleSelected]}>
-                  {name}
-                </Text>
-              </View>
-              {index === 0 ? (
-                <View style={screen.choiceTrail}>
-                  <Text style={screen.youLabel}>You</Text>
-                  <Text style={screen.muted}>Creator</Text>
-                </View>
-              ) : null}
+        <View style={screen.groupBlock}>
+          <View style={screen.groupHeaderRow}>
+            <View style={screen.groupHeaderMain}>
+              <Avatar name="Hemraj Thakre Mitr Parivar" path={null} size={56} />
+              <Text numberOfLines={2} style={screen.groupHeaderName}>
+                Hemraj Thakre Mitr Parivar
+              </Text>
             </View>
-          ))}
+            <InfoButton onPress={() => undefined} />
+          </View>
+          <View style={screen.card}>
+            {['Purushottam', 'Vijay', 'Hemraj'].map((name, index) => (
+              <View
+                key={name}
+                style={[screen.row, index === 0 && screen.rowFirst, index === 0 && screen.rowSelected]}
+              >
+                <View style={screen.memberRow}>
+                  <Avatar name={name} path={null} />
+                  <Text style={[screen.rowTitle, screen.memberName, index === 0 && screen.rowTitleSelected]}>
+                    {name}
+                  </Text>
+                </View>
+                {index === 0 ? (
+                  <View style={screen.choiceTrail}>
+                    <Text style={screen.youLabel}>You</Text>
+                    <Text style={screen.muted}>Creator</Text>
+                  </View>
+                ) : null}
+              </View>
+            ))}
+          </View>
         </View>
       </>
     )

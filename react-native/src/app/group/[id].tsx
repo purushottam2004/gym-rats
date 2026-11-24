@@ -3,6 +3,8 @@ import { useCallback, useState } from 'react'
 import { Pressable, Text, TextInput, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
 import { Avatar } from '../../components/Avatar'
+import { InfoButton } from '../../components/InfoButton'
+import { InfoListModal } from '../../components/InfoListModal'
 import { Screen } from '../../components/Screen'
 import { screen } from '../../components/screenStyles'
 import {
@@ -24,6 +26,7 @@ export default function GroupScreen() {
   const [members, setMembers] = useState<Member[]>([])
   const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [showCode, setShowCode] = useState(false)
 
   const load = useCallback(async () => {
     if (!id) return
@@ -61,9 +64,14 @@ export default function GroupScreen() {
       <Pressable onPress={() => router.back()}>
         <Text style={screen.addText}>Back</Text>
       </Pressable>
-      <View style={screen.codeCard}>
-        <Text style={screen.muted}>{group?.name ?? 'Group'}</Text>
-        <Text style={screen.codeValue}>{group?.invite_code}</Text>
+      <View style={screen.groupHeaderRow}>
+        <View style={screen.groupHeaderMain}>
+          <Avatar name={group?.name ?? 'Group'} path={null} size={56} />
+          <Text numberOfLines={2} style={screen.groupHeaderName}>
+            {group?.name ?? 'Group'}
+          </Text>
+        </View>
+        <InfoButton onPress={() => setShowCode(true)} />
       </View>
       {error ? <Text style={screen.error}>{error}</Text> : null}
       <View style={screen.card}>
@@ -118,6 +126,18 @@ export default function GroupScreen() {
       >
         <Text style={screen.leaveText}>Leave group</Text>
       </Pressable>
+      <InfoListModal
+        visible={showCode}
+        title={group?.name ?? 'Group'}
+        subtitle="Invite code"
+        rows={
+          group?.invite_code
+            ? [{ key: 'code', label: 'Code', value: group.invite_code }]
+            : []
+        }
+        emptyMessage="No invite code."
+        onClose={() => setShowCode(false)}
+      />
     </Screen>
   )
 }
