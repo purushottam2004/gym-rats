@@ -19,6 +19,16 @@ Repo-wide rules: [../CONTRIBUTING.md](../CONTRIBUTING.md). Setup: [SETUP_GUIDE.m
 - Python seed runners live as `python_seeds/_…_seed_….py` (auto-discovered by `seed.py`).
 - Do not commit local `.env`, service keys, or `__pycache__` / `.venv/`.
 
+## Hosted / production migrations
+
+**Do not apply migrations to the hosted Supabase project yourself** (not via the Supabase dashboard SQL editor, CLI `db push` against production, MCP `apply_migration`, or similar).
+
+1. Add a new file under `migrations/`.
+2. Validate locally (`supabase db reset`, seeds, package checks) as needed.
+3. Merge to `main`.
+
+The [Deploy database and Edge Functions](../.github/workflows/supabase-cd.yaml) workflow runs `supabase db push --remote --yes` on pushes to `main` that touch `supabase/**`. That job is the only path that should change the production schema.
+
 ## Local custom data (scratch seeds)
 
 If you want to **test on custom data** without changing committed seeds, write a local seeding script:

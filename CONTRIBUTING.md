@@ -86,7 +86,7 @@ If the change is trivial and you discovered nothing, still include the heading a
 | --- | --- |
 | `backend/` | `uv run ruff check .`, `uv run ruff format --check .`, `uv run mypy .`, `uv run pytest tests/unit` (+ `tests/integration` when DB-related) — from `backend/` |
 | `frontend/` | `pnpm lint` and `pnpm type-check` |
-| `supabase/` | Apply / validate migrations as needed; `uv run ruff check .`, `uv run ruff format --check .`, `uv run pytest python_tests/unit` from `supabase/`; smoke `uv run python seed.py` when seeds change; keep IDs in sync with backend/e2e |
+| `supabase/` | Validate migrations **locally** only (`supabase db reset` / local migrate) — **do not** push or apply them to the hosted project (MCP, dashboard, or CLI); production migrations run via GitHub Actions on `main` (see [supabase/CONTRIBUTING.md](./supabase/CONTRIBUTING.md#hosted--production-migrations)). Also: `uv run ruff check .`, `uv run ruff format --check .`, `uv run pytest python_tests/unit` from `supabase/`; smoke `uv run python seed.py` when seeds change; keep IDs in sync with backend/e2e |
 | `e2e/` or behaviour covered by Playwright | Relevant `npm run test:…` project(s) |
 | `android/` | `./gradlew test lint` from `android/` (JDK 17 and Android SDK platform 37.2) |
 | `react-native/` | `pnpm lint`, `pnpm type-check`, and `pnpm test` from `react-native/` |
@@ -170,6 +170,7 @@ Details: [frontend/CONTRIBUTING.md](./frontend/CONTRIBUTING.md).
 **Database**
 
 - Prefer new migrations over editing applied history.
+- Do **not** apply migrations to the hosted project yourself; merge to `main` and let [supabase-cd](./.github/workflows/supabase-cd.yaml) run `supabase db push`. Details: [supabase/CONTRIBUTING.md](./supabase/CONTRIBUTING.md#hosted--production-migrations).
 - Keep Python seed IDs / emails in sync with backend and e2e expectations.
 - Run Python seeds with `uv run` from `supabase/`, never raw `python`.
 
