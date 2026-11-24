@@ -109,9 +109,20 @@ export default function ChromePreviewScreen() {
         <View style={[screen.row, screen.rowFirst]}>
           <Text style={screen.muted}>Bench Press</Text>
         </View>
-        {['1st 8 reps', '2nd 8 reps', '3rd 6 reps', '4th 5 reps', '5th 5 reps'].map((label) => (
-          <View key={label} style={screen.row}>
-            <Text style={[screen.rowTitle, screen.rowMain]}>{label}</Text>
+        {[
+          { set: 1, reps: 8 },
+          { set: 2, reps: 8 },
+          { set: 3, reps: 6 },
+          { set: 4, reps: 5 },
+          { set: 5, reps: 5 },
+        ].map((row) => (
+          <View key={row.set} style={screen.row}>
+            <View style={[screen.rowMain, screen.setLabelRow]}>
+              <View style={screen.setBadge}>
+                <Text style={screen.setBadgeText}>{row.set}</Text>
+              </View>
+              <Text style={screen.rowTitle}>{row.reps} reps</Text>
+            </View>
             <Text style={screen.rowMeta}>60 kg</Text>
           </View>
         ))}

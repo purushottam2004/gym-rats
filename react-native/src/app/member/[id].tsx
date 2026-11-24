@@ -212,9 +212,13 @@ export default function MemberScreen() {
           {sets.length > 0 ? (
             sets.map((row) => (
               <View key={row.id} style={screen.row}>
-                <Text style={screen.rowTitle}>
-                  {row.lift.name} · <OrdinalNumber value={row.attempt} /> {row.reps} reps
-                </Text>
+                <View style={[screen.rowMain, screen.setLabelRow]}>
+                  <Text style={screen.rowTitle} numberOfLines={1}>
+                    {row.lift.name}
+                  </Text>
+                  <OrdinalNumber value={row.attempt} />
+                  <Text style={screen.rowTitle}>{row.reps} reps</Text>
+                </View>
                 <Text style={screen.rowMeta}>{row.load_kg} kg</Text>
               </View>
             ))

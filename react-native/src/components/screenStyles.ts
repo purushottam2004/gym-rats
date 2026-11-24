@@ -541,4 +541,28 @@ export const screen = StyleSheet.create({
   setNumberCircleTextSelected: {
     color: '#ffffff',
   },
+  /** Inline set index + reps label (Lifts list, member day). */
+  setLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 1,
+  },
+  /** Compact circled digit for logged set attempt (echoes Add Set circles). */
+  setBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: '#d6d3d1',
+    backgroundColor: '#f5f5f4',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  setBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#57534e',
+    lineHeight: 14,
+  },
 })
