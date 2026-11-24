@@ -75,7 +75,10 @@ export type Group = {
   name: string
   invite_code: string
   creator_id: string
+  avatar_path: string | null
 }
+
+export type ImageBucket = 'avatars' | 'post-images' | 'group-avatars'
 
 export type Member = Profile & { joined_at: string }
 
@@ -95,7 +98,7 @@ export type Post = {
   audiences: Audience[]
 }
 
-export function publicImageUrl(bucket: 'avatars' | 'post-images', path: string | null): string | null {
+export function publicImageUrl(bucket: ImageBucket, path: string | null): string | null {
   if (!path) return null
   return db().storage.from(bucket).getPublicUrl(path).data.publicUrl
 }
@@ -355,10 +358,16 @@ export async function deleteSet(id: string): Promise<void> {
 export async function loadGroups(): Promise<Group[]> {
   const { data, error } = await db()
     .from('groups')
-    .select('id, name, invite_code, creator_id')
+    .select('id, name, invite_code, creator_id, avatar_path')
     .order('created_at')
   fail(error)
-  return (data ?? []) as Group[]
+  return (data ?? []).map((row) => ({
+    id: row.id as string,
+    name: row.name as string,
+    invite_code: row.invite_code as string,
+    creator_id: row.creator_id as string,
+    avatar_path: (row.avatar_path as string | null) ?? null,
+  }))
 }
 
 export async function loadMembers(groupId: string): Promise<Member[]> {
@@ -403,6 +412,11 @@ export async function removeMember(groupId: string, userId: string): Promise<voi
 
 export async function leaveGroup(groupId: string): Promise<void> {
   const { error } = await db().rpc('leave_group', { p_group_id: groupId })
+  fail(error)
+}
+
+export async function setGroupAvatar(groupId: string, path: string): Promise<void> {
+  const { error } = await db().rpc('set_group_avatar', { p_group_id: groupId, p_path: path })
   fail(error)
 }
 
@@ -460,13 +474,13 @@ export async function deletePost(id: string): Promise<void> {
 }
 
 export async function uploadImage(
-  bucket: 'avatars' | 'post-images',
-  userId: string,
+  bucket: ImageBucket,
+  ownerId: string,
   uri: string,
 ): Promise<string> {
   const response = await fetch(uri)
   const bytes = await response.arrayBuffer()
-  const path = `${userId}/${randomFileId()}.jpg`
+  const path = `${ownerId}/${randomFileId()}.jpg`
   const { error } = await db().storage.from(bucket).upload(path, bytes, {
     contentType: 'image/jpeg',
     upsert: false,

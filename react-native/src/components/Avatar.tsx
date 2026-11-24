@@ -1,15 +1,16 @@
 import { Image, Text, View } from 'react-native'
-import { publicImageUrl } from '../lib/gym'
+import { publicImageUrl, type ImageBucket } from '../lib/gym'
 import { screen } from './screenStyles'
 
 type Props = {
   path: string | null | undefined
   name?: string | null
   size?: number
+  bucket?: ImageBucket
 }
 
-export function Avatar({ path, name, size = 44 }: Props) {
-  const uri = publicImageUrl('avatars', path ?? null)
+export function Avatar({ path, name, size = 44, bucket = 'avatars' }: Props) {
+  const uri = publicImageUrl(bucket, path ?? null)
   const initial = (name?.trim()?.charAt(0) ?? '?').toUpperCase()
   const radius = size / 2
 

@@ -138,7 +138,7 @@ export default function ChromePreviewScreen() {
       <View style={screen.groupBlock}>
         <View style={screen.groupHeaderRow}>
           <View style={screen.groupHeaderMain}>
-            <Avatar name="Hemraj Thakre Mitr Parivar" path={null} size={56} />
+            <Avatar bucket="group-avatars" name="Hemraj Thakre Mitr Parivar" path={null} size={56} />
             <Text numberOfLines={2} style={screen.groupHeaderName}>
               Hemraj Thakre Mitr Parivar
             </Text>

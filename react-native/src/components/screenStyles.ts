@@ -114,6 +114,23 @@ export const screen = StyleSheet.create({
     color: '#57534e',
     fontWeight: '700',
   },
+  photoLightboxBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(28, 25, 23, 0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  photoLightboxBody: {
+    alignItems: 'center',
+    gap: 16,
+  },
+  photoLightboxName: {
+    color: '#fafaf9',
+    fontSize: 20,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
   memberName: {
     flex: 1,
     flexShrink: 1,

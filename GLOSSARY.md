@@ -13,7 +13,7 @@ The single face of a User. It shows a display name, which is required, and a pho
 _Avoid_: account, settings
 
 **Group**:
-A named set of Users. The Creator chooses the name when the Group is created. A User can be in more than one Group.
+A named set of Users. The Creator chooses the name when the Group is created. A User can be in more than one Group. A Group may have a photo; any Member can set or replace that photo.
 _Avoid_: club, room, team, circle
 
 **Member**:
