@@ -174,10 +174,13 @@ export async function saveNutrientGoals(
   fail(error)
 }
 
-export async function loadFoods(): Promise<Food[]> {
-  const { data: userData, error: userError } = await db().auth.getUser()
-  fail(userError)
-  const userId = userData.user?.id
+export async function loadFoods(forUserId?: string): Promise<Food[]> {
+  let userId = forUserId
+  if (!userId) {
+    const { data: userData, error: userError } = await db().auth.getUser()
+    fail(userError)
+    userId = userData.user?.id
+  }
   if (!userId) throw new Error('Not signed in')
   const { data, error } = await db()
     .from('foods')
