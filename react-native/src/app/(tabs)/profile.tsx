@@ -194,36 +194,42 @@ export default function ProfileScreen() {
       <View style={screen.section}>
         <Text style={screen.sectionTitle}>Daily nutrient goals</Text>
         <Text style={screen.muted}>Optional min and/or max for the Diet summary bands.</Text>
-        <View style={[screen.row, { paddingHorizontal: 4 }]}>
-          <Text style={[screen.muted, screen.rowMain]}>Nutrient</Text>
-          <Text style={[screen.muted, screen.goalBoundInput]}>Min</Text>
-          <Text style={[screen.muted, screen.goalBoundInput]}>Max</Text>
-        </View>
         <View style={screen.card}>
           {nutrients.map((nutrient, index) => (
-            <View key={nutrient.id} style={[screen.row, index === 0 && screen.rowFirst]}>
-              <View style={screen.rowMain}>
-                <Text style={screen.rowTitle}>{nutrient.name}</Text>
+            <View
+              key={nutrient.id}
+              style={[screen.goalBlock, index === 0 && screen.goalBlockFirst]}
+            >
+              <View style={screen.goalNameRow}>
+                <Text style={[screen.rowTitle, screen.rowMain]}>{nutrient.name}</Text>
                 <Text style={screen.muted}>{nutrient.unit}</Text>
               </View>
-              <AppTextInput
-                keyboardType="decimal-pad"
-                onChangeText={(value) =>
-                  setMinDrafts((current) => ({ ...current, [nutrient.id]: value }))
-                }
-                placeholder="min"
-                style={[screen.input, screen.goalBoundInput]}
-                value={minDrafts[nutrient.id] ?? ''}
-              />
-              <AppTextInput
-                keyboardType="decimal-pad"
-                onChangeText={(value) =>
-                  setMaxDrafts((current) => ({ ...current, [nutrient.id]: value }))
-                }
-                placeholder="max"
-                style={[screen.input, screen.goalBoundInput]}
-                value={maxDrafts[nutrient.id] ?? ''}
-              />
+              <View style={screen.goalBoundsRow}>
+                <View style={screen.goalBoundField}>
+                  <Text style={screen.muted}>Min</Text>
+                  <AppTextInput
+                    keyboardType="decimal-pad"
+                    onChangeText={(value) =>
+                      setMinDrafts((current) => ({ ...current, [nutrient.id]: value }))
+                    }
+                    placeholder={nutrient.unit}
+                    style={[screen.input, screen.goalBoundInput]}
+                    value={minDrafts[nutrient.id] ?? ''}
+                  />
+                </View>
+                <View style={screen.goalBoundField}>
+                  <Text style={screen.muted}>Max</Text>
+                  <AppTextInput
+                    keyboardType="decimal-pad"
+                    onChangeText={(value) =>
+                      setMaxDrafts((current) => ({ ...current, [nutrient.id]: value }))
+                    }
+                    placeholder={nutrient.unit}
+                    style={[screen.input, screen.goalBoundInput]}
+                    value={maxDrafts[nutrient.id] ?? ''}
+                  />
+                </View>
+              </View>
             </View>
           ))}
         </View>

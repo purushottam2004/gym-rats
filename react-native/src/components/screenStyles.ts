@@ -175,10 +175,35 @@ export const screen = StyleSheet.create({
     bottom: 0,
     backgroundColor: '#86efac',
   },
+  goalBlock: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#f0eeeb',
+  },
+  goalBlockFirst: {
+    borderTopWidth: 0,
+  },
+  goalNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  goalBoundsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginTop: 2,
+  },
+  goalBoundField: {
+    flex: 1,
+    gap: 4,
+  },
   goalBoundInput: {
-    width: 72,
-    paddingVertical: 6,
-    textAlign: 'right',
+    paddingVertical: 8,
+    textAlign: 'left',
   },
   postCard: {
     backgroundColor: '#ffffff',
