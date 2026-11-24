@@ -1,31 +1,23 @@
-import { Text, type StyleProp, type TextStyle } from 'react-native'
-import { ordinalSuffix } from '../lib/ordinal'
+import { Text, View, type StyleProp, type ViewStyle } from 'react-native'
+import { screen } from './screenStyles'
 
 type Props = {
   value: number
-  style?: StyleProp<TextStyle>
-  suffixStyle?: StyleProp<TextStyle>
+  style?: StyleProp<ViewStyle>
 }
 
-/** Renders `1ˢᵗ]` with the ordinal suffix raised as a superscript, then `]`. */
-export function OrdinalNumber({ value, style, suffixStyle }: Props) {
+/**
+ * Compact circled set number (①-style badge) matching the Add Set picker language.
+ * Prefer this over ordinal text like `1st]` — quieter and consistent across platforms.
+ */
+export function OrdinalNumber({ value, style }: Props) {
   return (
-    <Text style={style}>
-      {value}
-      <Text
-        style={[
-          {
-            fontSize: 10,
-            lineHeight: 12,
-            position: 'relative',
-            top: -6,
-          },
-          suffixStyle,
-        ]}
-      >
-        {ordinalSuffix(value)}
-      </Text>
-      ]
-    </Text>
+    <View
+      accessibilityLabel={`set ${value}`}
+      accessibilityRole="text"
+      style={[screen.setBadge, style]}
+    >
+      <Text style={screen.setBadgeText}>{value}</Text>
+    </View>
   )
 }

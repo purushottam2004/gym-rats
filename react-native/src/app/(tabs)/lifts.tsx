@@ -158,10 +158,9 @@ export default function LiftsScreen() {
               .filter((row) => row.lift.name === name)
               .map((row) => (
                 <View key={row.id} style={screen.row}>
-                  <View style={screen.rowMain}>
-                    <Text style={screen.rowTitle}>
-                      <OrdinalNumber value={row.attempt} /> {row.reps} reps
-                    </Text>
+                  <View style={[screen.rowMain, screen.setLabelRow]}>
+                    <OrdinalNumber value={row.attempt} />
+                    <Text style={screen.rowTitle}>{row.reps} reps</Text>
                   </View>
                   <View style={screen.choiceTrail}>
                     <Text style={screen.rowMeta}>{row.load_kg} kg</Text>
