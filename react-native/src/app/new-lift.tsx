@@ -19,14 +19,17 @@ export default function NewLiftScreen() {
       await createLift(name)
       router.back()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not create lift')
+      const message = err instanceof Error ? err.message : 'Could not create lift'
+      setError(
+        /duplicate|unique/i.test(message) ? 'That lift is already in the catalog' : message,
+      )
     }
   }
 
   return (
     <Screen>
       <Text style={screen.title}>New lift</Text>
-      <Text style={screen.muted}>A name only. It cannot be edited later.</Text>
+      <Text style={screen.muted}>Shared catalog. A name only — it cannot be edited later.</Text>
       {error ? <Text style={screen.error}>{error}</Text> : null}
       <Text style={screen.label}>Name</Text>
       <TextInput onChangeText={setName} style={screen.input} value={name} />

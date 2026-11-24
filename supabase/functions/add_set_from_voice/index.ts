@@ -253,14 +253,13 @@ export default {
     const { data: lifts, error: liftsError } = await ctx.supabase
       .from("lifts")
       .select("id, name")
-      .eq("user_id", userId)
       .order("name");
     if (liftsError) {
       return jsonErr(liftsError.message);
     }
     const liftRows = (lifts ?? []) as LiftRow[];
     if (liftRows.length === 0) {
-      return jsonErr("Add a lift first");
+      return jsonErr("Add a lift to the catalog first");
     }
 
     let transcript: string;

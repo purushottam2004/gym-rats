@@ -72,7 +72,7 @@ export default function LiftCatalogScreen() {
             ))
           ) : (
             <View style={[screen.row, screen.rowFirst]}>
-              <Text style={screen.muted}>No lifts in your catalog yet.</Text>
+              <Text style={screen.muted}>No lifts in the catalog yet.</Text>
             </View>
           )}
         </View>
@@ -89,7 +89,7 @@ export default function LiftCatalogScreen() {
       <ConfirmModal
         visible={pendingDelete !== null}
         title="Delete lift?"
-        message={pendingDelete ? `Remove ${pendingDelete.name} from your catalog?` : ''}
+        message={pendingDelete ? `Remove ${pendingDelete.name} from the catalog?` : ''}
         onCancel={() => setPendingDelete(null)}
         onConfirm={() => void confirmDelete()}
       />

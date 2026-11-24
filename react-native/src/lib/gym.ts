@@ -238,27 +238,13 @@ export async function deleteIntake(id: string): Promise<void> {
 }
 
 export async function loadLifts(): Promise<Lift[]> {
-  const { data: userData, error: userError } = await db().auth.getUser()
-  fail(userError)
-  const userId = userData.user?.id
-  if (!userId) throw new Error('Not signed in')
-  // Only the caller's lifts — RLS also exposes groupmates' lifts used in shared
-  // set history, but logging/deleting requires lifts.user_id = auth.uid().
-  const { data, error } = await db()
-    .from('lifts')
-    .select('id, name')
-    .eq('user_id', userId)
-    .order('name')
+  const { data, error } = await db().from('lifts').select('id, name').order('name')
   fail(error)
   return (data ?? []) as Lift[]
 }
 
 export async function createLift(name: string): Promise<void> {
-  const { data: userData, error: userError } = await db().auth.getUser()
-  fail(userError)
-  const userId = userData.user?.id
-  if (!userId) throw new Error('Not signed in')
-  const { error } = await db().from('lifts').insert({ user_id: userId, name: name.trim() })
+  const { error } = await db().from('lifts').insert({ name: name.trim() })
   fail(error)
 }
 

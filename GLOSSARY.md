@@ -1,6 +1,6 @@
 # Gym Rats
 
-People who train each have an account and a profile. They keep a private catalog of foods and lifts, log what they ate and what they lifted, publish posts, and see each other when they share a group.
+People who train each have an account and a profile. They keep a private catalog of foods, share one global catalog of lifts, log what they ate and what they lifted, publish posts, and see each other when they share a group.
 
 ## Language
 
@@ -45,7 +45,7 @@ One recorded consumption by a User of one of their Foods on a Day: which Food, a
 _Avoid_: diet entry, meal, serving
 
 **Lift**:
-An exercise a User defines before logging it. The name cannot be changed after the Lift is created. A User cannot log a Set of a Lift they have not defined. Another User can see a Lift only by seeing a Set of it. The User may delete a Lift only when no Set uses it.
+An exercise on one global catalog every User shares. Any signed-in User may add a name; names are unique ignoring letter case and outer spaces, and cannot be changed after the Lift is created. Any User may log a Set of any Lift in the catalog. Any User may delete a Lift only when no Set uses it.
 _Avoid_: lift entry, weight, exercise
 
 **Set**:
