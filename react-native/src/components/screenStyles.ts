@@ -91,6 +91,26 @@ export const screen = StyleSheet.create({
   rowMain: {
     flex: 1,
   },
+  memberRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minWidth: 0,
+  },
+  avatarFallback: {
+    backgroundColor: '#e7e5e4',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInitial: {
+    color: '#57534e',
+    fontWeight: '700',
+  },
+  memberName: {
+    flex: 1,
+    flexShrink: 1,
+  },
   secondaryButtonText: {
     color: '#111827',
     fontSize: 16,

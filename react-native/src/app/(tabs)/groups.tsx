@@ -2,6 +2,7 @@ import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useState } from 'react'
 import { Pressable, Text, TextInput, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
+import { Avatar } from '../../components/Avatar'
 import { Screen } from '../../components/Screen'
 import { screen } from '../../components/screenStyles'
 import { joinGroup, loadGroups, loadMembers, type Group, type Member } from '../../lib/gym'
@@ -82,9 +83,15 @@ export default function GroupsScreen() {
                   onPress={() => router.push({ pathname: '/member/[id]', params: { id: member.id } })}
                   style={[screen.row, index === 0 && screen.rowFirst, isYou && screen.rowSelected]}
                 >
-                  <Text style={[screen.rowTitle, isYou && screen.rowTitleSelected]}>
-                    {member.display_name ?? 'Unnamed'}
-                  </Text>
+                  <View style={screen.memberRow}>
+                    <Avatar name={member.display_name} path={member.avatar_path} />
+                    <Text
+                      numberOfLines={1}
+                      style={[screen.rowTitle, screen.memberName, isYou && screen.rowTitleSelected]}
+                    >
+                      {member.display_name ?? 'Unnamed'}
+                    </Text>
+                  </View>
                   <View style={screen.choiceTrail}>
                     {isYou ? <Text style={screen.youLabel}>You</Text> : null}
                     {member.id === group.creator_id ? <Text style={screen.muted}>Creator</Text> : null}
