@@ -1,6 +1,4 @@
-const SET_NUMBERS = [1, 2, 3, 4, 5] as const
-
-export type SetAttempt = (typeof SET_NUMBERS)[number]
+export type SetAttempt = 1 | 2 | 3 | 4 | 5
 
 /**
  * Default set number for a new log: one past the highest attempt already
