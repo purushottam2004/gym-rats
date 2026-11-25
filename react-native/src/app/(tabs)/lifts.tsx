@@ -18,11 +18,19 @@ import { Screen } from '../../components/Screen'
 import { TabChrome } from '../../components/TabChrome'
 import { Toast, type ToastKind } from '../../components/Toast'
 import { screen } from '../../components/screenStyles'
-import { deleteSet, loadSets, logSetFromVoice, type SetLog } from '../../lib/gym'
+import {
+  deleteSet,
+  loadSets,
+  loadWeekdayLifts,
+  logSetFromVoice,
+  type Lift,
+  type SetLog,
+} from '../../lib/gym'
+import { liftCardsForDay } from '../../lib/liftCards'
 import { localDate } from '../../lib/localDate'
 import { nextSetAttempt, type SetAttempt } from '../../lib/nextSetAttempt'
 import { ordinalSuffix } from '../../lib/ordinal'
-import { compareSetsByAttemptThenCreated } from '../../lib/setOrder'
+import { weekdayFromDay } from '../../lib/weekday'
 
 type AddTarget = {
   liftId: string
@@ -42,6 +50,7 @@ export default function LiftsScreen() {
   const recorderState = useAudioRecorderState(audioRecorder)
   const [day, setDay] = useState(localDate)
   const [rows, setRows] = useState<SetLog[]>([])
+  const [planned, setPlanned] = useState<Lift[]>([])
   const [error, setError] = useState<string | null>(null)
   const [voiceBusy, setVoiceBusy] = useState(false)
   const [toast, setToast] = useState<{ kind: ToastKind; message: string } | null>(null)
@@ -50,7 +59,12 @@ export default function LiftsScreen() {
   const load = useCallback(async () => {
     if (!userId) return
     try {
-      setRows(await loadSets(userId, day))
+      const [loadedSets, planRows] = await Promise.all([
+        loadSets(userId, day),
+        loadWeekdayLifts(userId, weekdayFromDay(day)),
+      ])
+      setRows(loadedSets)
+      setPlanned(planRows)
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load lifts')
@@ -111,7 +125,7 @@ export default function LiftsScreen() {
     audioRecorder.record()
   }
 
-  const names = [...new Set(rows.map((row) => row.lift.name))]
+  const cards = liftCardsForDay(rows, planned)
   const recording = recorderState.isRecording
 
   return (
@@ -154,57 +168,60 @@ export default function LiftsScreen() {
                   <Text style={screen.addText}>View Catalogue</Text>
                 </Pressable>
               </View>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() =>
+                  router.push({
+                    pathname: '/weekday-lifts',
+                    params: { day, weekday: String(weekdayFromDay(day)) },
+                  })
+                }
+                style={({ pressed }) => [screen.add, pressed && screen.rowPressed]}
+              >
+                <Text style={screen.addText}>Week plan</Text>
+              </Pressable>
             </View>
           </>
         }
       >
         {error ? <Text style={screen.error}>{error}</Text> : null}
-        {names.map((name) => {
-          const liftRows = rows
-            .filter((row) => row.lift.name === name)
-            .slice()
-            .sort(compareSetsByAttemptThenCreated)
-          const liftId = liftRows[0]?.lift.id
-          return (
-            <View key={name} style={screen.card}>
-              <View style={[screen.row, screen.rowFirst]}>
-                <Text style={screen.muted}>{name}</Text>
-                {liftId ? (
-                  <Pressable
-                    accessibilityLabel={`Add set for ${name}`}
-                    accessibilityRole="button"
-                    hitSlop={8}
-                    onPress={() =>
-                      setAddTarget({
-                        liftId,
-                        liftName: name,
-                        initialAttempt: nextSetAttempt(liftRows.map((row) => row.attempt)),
-                      })
-                    }
-                  >
-                    <Plus color="#c2410c" size={22} strokeWidth={2.25} />
-                  </Pressable>
-                ) : null}
-              </View>
-              {liftRows.map((row) => (
-                <View key={row.id} style={screen.row}>
-                  <View style={[screen.rowMain, screen.setLabelRow]}>
-                    <OrdinalNumber value={row.attempt} />
-                    <Text style={screen.rowTitle}>{row.reps} reps</Text>
-                  </View>
-                  <View style={screen.choiceTrail}>
-                    <Text style={screen.rowMeta}>{row.load_kg} kg</Text>
-                    <DeleteConfirmButton
-                      title="Delete set?"
-                      message={`Remove ${row.attempt}${ordinalSuffix(row.attempt)} set (${row.reps} reps · ${row.load_kg} kg)?`}
-                      onConfirm={() => void deleteSet(row.id).then(load)}
-                    />
-                  </View>
-                </View>
-              ))}
+        {cards.map(({ lift, rows: liftRows }) => (
+          <View key={lift.id} style={screen.card}>
+            <View style={[screen.row, screen.rowFirst]}>
+              <Text style={screen.muted}>{lift.name}</Text>
+              <Pressable
+                accessibilityLabel={`Add set for ${lift.name}`}
+                accessibilityRole="button"
+                hitSlop={8}
+                onPress={() =>
+                  setAddTarget({
+                    liftId: lift.id,
+                    liftName: lift.name,
+                    initialAttempt: nextSetAttempt(liftRows.map((row) => row.attempt)),
+                  })
+                }
+              >
+                <Plus color="#c2410c" size={22} strokeWidth={2.25} />
+              </Pressable>
             </View>
-          )
-        })}
+            {liftRows.map((row) => (
+              <View key={row.id} style={screen.row}>
+                <View style={[screen.rowMain, screen.setLabelRow]}>
+                  <OrdinalNumber value={row.attempt} />
+                  <Text style={screen.rowTitle}>{row.reps} reps</Text>
+                </View>
+                <View style={screen.choiceTrail}>
+                  <Text style={screen.rowMeta}>{row.load_kg} kg</Text>
+                  <DeleteConfirmButton
+                    title="Delete set?"
+                    message={`Remove ${row.attempt}${ordinalSuffix(row.attempt)} set (${row.reps} reps · ${row.load_kg} kg)?`}
+                    onConfirm={() => void deleteSet(row.id).then(load)}
+                  />
+                </View>
+              </View>
+            ))}
+          </View>
+        ))}
       </Screen>
       {addTarget ? (
         <AddSetModal

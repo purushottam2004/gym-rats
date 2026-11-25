@@ -53,8 +53,12 @@ An exercise on one global catalog every User shares. Any signed-in User may add 
 _Avoid_: lift entry, weight, exercise
 
 **Set**:
-One log line for a Lift on a Day: an attempt (an integer of 1 or greater), reps (an integer of 1 or greater), and a load in kilograms (zero or greater). The attempt does not have to be unique. The author may change or delete their own Set. Any User who shares a Group with them can see the Set.
+One log line for a Lift on a Day: an attempt (an integer from 1 to 5), reps (an integer of 1 or greater), and a load in kilograms (zero or greater). The attempt does not have to be unique. The author may change or delete their own Set. Any User who shares a Group with them can see the Set.
 _Avoid_: workout, set number, weight entry
+
+**Week plan**:
+The Lifts a User chooses for each weekday (Sunday through Saturday). On a Day that falls on that weekday, those Lifts appear on Lifts even when the User has logged no Set for them yet, so they can add a Set from the card. Another User who shares a Group can see the plan.
+_Avoid_: workout template, routine, schedule
 
 **Post**:
 Text, one photo, or both, published by a User. At least one of text or photo is present. The author may change the text and the photo, and may delete the Post. It has an Audience the author can change later.

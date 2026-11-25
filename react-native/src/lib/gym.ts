@@ -308,6 +308,59 @@ export async function deleteLift(liftId: string): Promise<void> {
 
 export { isLiftInUseError } from './liftDelete'
 
+export type WeekdayLift = Lift & {
+  weekday: number
+  position: number
+}
+
+export async function loadWeekdayLifts(userId: string, weekday: number): Promise<Lift[]> {
+  const { data, error } = await db()
+    .from('weekday_lifts')
+    .select('position, lift:lifts!weekday_lifts_lift_id_fkey(id, name)')
+    .eq('user_id', userId)
+    .eq('weekday', weekday)
+    .order('position', { ascending: true })
+    .order('created_at', { ascending: true })
+  fail(error)
+  return (data ?? []).map((row) => row.lift as unknown as Lift)
+}
+
+export async function addWeekdayLift(input: {
+  userId: string
+  weekday: number
+  liftId: string
+}): Promise<void> {
+  const { data: existing, error: existingError } = await db()
+    .from('weekday_lifts')
+    .select('position')
+    .eq('user_id', input.userId)
+    .eq('weekday', input.weekday)
+  fail(existingError)
+  const nextPosition =
+    (existing ?? []).reduce((max, row) => Math.max(max, row.position as number), -1) + 1
+  const { error } = await db().from('weekday_lifts').insert({
+    user_id: input.userId,
+    weekday: input.weekday,
+    lift_id: input.liftId,
+    position: nextPosition,
+  })
+  fail(error)
+}
+
+export async function removeWeekdayLift(input: {
+  userId: string
+  weekday: number
+  liftId: string
+}): Promise<void> {
+  const { error } = await db()
+    .from('weekday_lifts')
+    .delete()
+    .eq('user_id', input.userId)
+    .eq('weekday', input.weekday)
+    .eq('lift_id', input.liftId)
+  fail(error)
+}
+
 export async function loadSets(userId: string, day: string): Promise<SetLog[]> {
   const { data, error } = await db()
     .from('sets')
