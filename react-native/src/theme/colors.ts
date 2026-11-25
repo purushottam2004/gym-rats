@@ -35,6 +35,10 @@ export type ThemeColors = {
   toastSuccessBg: string
   toastSuccessBorder: string
   toastSuccessText: string
+  /** Habit row complete fill — a touch greener than toast success, not forest. */
+  habitCompleteBg: string
+  habitCompleteBorder: string
+  habitCompleteText: string
   toastErrorBg: string
   toastErrorBorder: string
   toastErrorText: string
@@ -79,6 +83,9 @@ export const lightColors: ThemeColors = {
   toastSuccessBg: '#ecfdf3',
   toastSuccessBorder: '#bbf7d0',
   toastSuccessText: '#166534',
+  habitCompleteBg: '#bbf7d0',
+  habitCompleteBorder: '#4ade80',
+  habitCompleteText: '#15803d',
   toastErrorBg: '#fef2f2',
   toastErrorBorder: '#fecaca',
   toastErrorText: '#991b1b',
@@ -123,6 +130,9 @@ export const darkColors: ThemeColors = {
   toastSuccessBg: '#14532d',
   toastSuccessBorder: '#166534',
   toastSuccessText: '#bbf7d0',
+  habitCompleteBg: '#166534',
+  habitCompleteBorder: '#22c55e',
+  habitCompleteText: '#86efac',
   toastErrorBg: '#7f1d1d',
   toastErrorBorder: '#991b1b',
   toastErrorText: '#fecaca',

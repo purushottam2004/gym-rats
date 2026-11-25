@@ -188,9 +188,9 @@ export default function ChromePreviewScreen() {
               screen.row,
               index === 0 && screen.rowFirst,
               row.done >= row.target && {
-                backgroundColor: colors.toastSuccessBg,
+                backgroundColor: colors.habitCompleteBg,
                 borderLeftWidth: 3,
-                borderLeftColor: colors.toastSuccessBorder,
+                borderLeftColor: colors.habitCompleteBorder,
               },
             ]}
           >
@@ -199,7 +199,7 @@ export default function ChromePreviewScreen() {
               style={[
                 screen.rowMeta,
                 row.done >= row.target && {
-                  color: colors.toastSuccessText,
+                  color: colors.habitCompleteText,
                   fontWeight: '700',
                 },
               ]}

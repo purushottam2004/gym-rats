@@ -12,12 +12,13 @@ import {
   type HabitRecurrence,
 } from '../lib/gym'
 import { WEEKDAY_LABELS, type Weekday } from '../lib/weekday'
-import { useScreenStyles } from '../theme/ThemeProvider'
+import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
 
 const ALL_DAYS: Weekday[] = [0, 1, 2, 3, 4, 5, 6]
 
 export default function EditHabitScreen() {
   const screen = useScreenStyles()
+  const { colors } = useTheme()
   const router = useRouter()
   const { session } = useAuth()
   const userId = session?.user.id
@@ -153,7 +154,7 @@ export default function EditHabitScreen() {
         />
 
         <Text style={screen.label}>Recurrence</Text>
-        <View style={[screen.setNumberRow, { flexWrap: 'wrap' }]}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
           {(
             [
               { value: 'per_day' as const, label: 'Per day' },
@@ -168,17 +169,23 @@ export default function EditHabitScreen() {
                 key={option.value}
                 onPress={() => setRecurrence(option.value)}
                 style={({ pressed }) => [
-                  screen.setNumberCircle,
-                  { paddingHorizontal: 14, width: undefined },
-                  selected && screen.setNumberCircleSelected,
-                  pressed && !selected && screen.setNumberCirclePressed,
+                  {
+                    paddingHorizontal: 16,
+                    paddingVertical: 10,
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    borderColor: selected ? colors.accentSoftBorder : colors.border,
+                    backgroundColor: selected ? colors.accentSoft : colors.surface,
+                  },
+                  pressed && { opacity: 0.85 },
                 ]}
               >
                 <Text
-                  style={[
-                    screen.setNumberCircleText,
-                    selected && screen.setNumberCircleTextSelected,
-                  ]}
+                  style={{
+                    fontSize: 15,
+                    fontWeight: '600',
+                    color: selected ? colors.accentText : colors.text,
+                  }}
                 >
                   {option.label}
                 </Text>
