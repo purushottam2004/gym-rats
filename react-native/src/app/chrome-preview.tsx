@@ -247,37 +247,18 @@ export default function ChromePreviewScreen() {
       />
     )
     body = (
-      <View style={screen.groupBlock}>
-        <View style={screen.groupHeaderRow}>
-          <View style={screen.groupHeaderMain}>
-            <Avatar bucket="group-avatars" name="Hemraj Thakre Mitr Parivar" path={null} size={56} />
-            <Text numberOfLines={2} style={screen.groupHeaderName}>
-              Hemraj Thakre Mitr Parivar
-            </Text>
-          </View>
-          <InfoButton onPress={() => undefined} />
-        </View>
-        <View style={screen.card}>
-          {['Purushottam', 'Vijay', 'Hemraj'].map((name, index) => (
-            <View
-              key={name}
-              style={[screen.row, index === 0 && screen.rowFirst, index === 0 && screen.rowSelected]}
-            >
-              <View style={screen.memberRow}>
-                <Avatar name={name} path={null} />
-                <Text style={[screen.rowTitle, screen.memberName, index === 0 && screen.rowTitleSelected]}>
-                  {name}
-                </Text>
-              </View>
-              {index === 0 ? (
-                <View style={screen.choiceTrail}>
-                  <Text style={screen.youLabel}>You</Text>
-                  <Text style={screen.muted}>Creator</Text>
-                </View>
-              ) : null}
+      <View style={screen.card}>
+        {['Hemraj Thakre Mitr Parivar', 'Morning Lifters'].map((name, index) => (
+          <View key={name} style={[screen.row, index === 0 && screen.rowFirst]}>
+            <View style={screen.memberRow}>
+              <Avatar bucket="group-avatars" name={name} path={null} />
+              <Text numberOfLines={1} style={[screen.rowTitle, screen.memberName]}>
+                {name}
+              </Text>
             </View>
-          ))}
-        </View>
+            <InfoButton onPress={() => undefined} />
+          </View>
+        ))}
       </View>
     )
   } else if (tab === 'posts') {

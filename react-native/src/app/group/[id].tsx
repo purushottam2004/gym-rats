@@ -116,48 +116,60 @@ export default function GroupScreen() {
         </View>
         {error ? <Text style={screen.error}>{error}</Text> : null}
         <View style={screen.card}>
-          {members.map((member, index) => {
-            const isYou = member.id === session?.user.id
-            return (
-              <View
-                key={member.id}
-                style={[screen.row, index === 0 && screen.rowFirst, isYou && screen.rowSelected]}
-              >
-                <View style={screen.memberRow}>
-                  <Pressable
-                    accessibilityLabel="View profile photo"
-                    accessibilityRole="button"
-                    hitSlop={4}
-                    onPress={() => setPhotoMember(member)}
-                  >
-                    <Avatar name={member.display_name} path={member.avatar_path} />
-                  </Pressable>
-                  <Pressable
-                    onPress={() =>
-                      router.push({ pathname: '/member/[id]', params: { id: member.id } })
-                    }
-                    style={{ flex: 1, minWidth: 0 }}
-                  >
-                    <Text
-                      numberOfLines={1}
-                      style={[screen.rowTitle, screen.memberName, isYou && screen.rowTitleSelected]}
+          {members.length > 0 ? (
+            members.map((member, index) => {
+              const isYou = member.id === session?.user.id
+              return (
+                <View
+                  key={member.id}
+                  style={[screen.row, index === 0 && screen.rowFirst, isYou && screen.rowSelected]}
+                >
+                  <View style={screen.memberRow}>
+                    <Pressable
+                      accessibilityLabel="View profile photo"
+                      accessibilityRole="button"
+                      hitSlop={4}
+                      onPress={() => setPhotoMember(member)}
                     >
-                      {member.display_name ?? 'Unnamed'}
-                    </Text>
-                  </Pressable>
-                </View>
-                <View style={screen.choiceTrail}>
-                  {isYou ? <Text style={screen.youLabel}>You</Text> : null}
-                  {member.id === group?.creator_id ? <Text style={screen.muted}>Creator</Text> : null}
-                  {creator && !isYou ? (
-                    <Pressable onPress={() => void run(() => removeMember(id, member.id))}>
-                      <Text style={screen.leaveText}>Remove</Text>
+                      <Avatar name={member.display_name} path={member.avatar_path} />
                     </Pressable>
-                  ) : null}
+                    <Pressable
+                      onPress={() =>
+                        router.push({ pathname: '/member/[id]', params: { id: member.id } })
+                      }
+                      style={{ flex: 1, minWidth: 0 }}
+                    >
+                      <Text
+                        numberOfLines={1}
+                        style={[
+                          screen.rowTitle,
+                          screen.memberName,
+                          isYou && screen.rowTitleSelected,
+                        ]}
+                      >
+                        {member.display_name ?? 'Unnamed'}
+                      </Text>
+                    </Pressable>
+                  </View>
+                  <View style={screen.choiceTrail}>
+                    {isYou ? <Text style={screen.youLabel}>You</Text> : null}
+                    {member.id === group?.creator_id ? (
+                      <Text style={screen.muted}>Creator</Text>
+                    ) : null}
+                    {creator && !isYou ? (
+                      <Pressable onPress={() => void run(() => removeMember(id, member.id))}>
+                        <Text style={screen.leaveText}>Remove</Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
                 </View>
-              </View>
-            )
-          })}
+              )
+            })
+          ) : (
+            <View style={[screen.row, screen.rowFirst]}>
+              <Text style={screen.muted}>No members in this group yet.</Text>
+            </View>
+          )}
         </View>
         {creator ? (
           <>
