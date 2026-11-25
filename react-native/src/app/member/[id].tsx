@@ -8,6 +8,7 @@ import { NutrientProgressRow } from '../../components/NutrientProgressRow'
 import { OrdinalNumber } from '../../components/OrdinalNumber'
 import { Screen } from '../../components/Screen'
 import { useScreenStyles } from '../../theme/ThemeProvider'
+import { HabitSectionHeader } from '../../components/HabitSectionHeader'
 import { HabitSwipeRow } from '../../components/HabitSwipeRow'
 import {
   loadFoods,
@@ -270,9 +271,10 @@ export default function MemberScreen() {
         {habitCards.length > 0 ? (
           habitCards.map((card) => (
             <View key={card.key} style={screen.card}>
-              <View style={[screen.row, screen.rowFirst]}>
-                <Text style={[screen.muted, screen.rowMain]}>{card.title}</Text>
-              </View>
+              <HabitSectionHeader
+                title={card.title}
+                parts={card.rows.map((row) => ({ done: row.done, target: row.target }))}
+              />
               {card.rows.map((row) => (
                 <HabitSwipeRow
                   key={row.habit.id}

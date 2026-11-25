@@ -11,6 +11,7 @@ import { useCallback, useState } from 'react'
 import { Platform, Pressable, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
 import { DayControls } from '../../components/DayControls'
+import { HabitSectionHeader } from '../../components/HabitSectionHeader'
 import { HabitSwipeRow } from '../../components/HabitSwipeRow'
 import { Screen } from '../../components/Screen'
 import { TabChrome } from '../../components/TabChrome'
@@ -208,9 +209,10 @@ export default function HabitsScreen() {
         ) : (
           cards.map((card) => (
             <View key={card.key} style={screen.card}>
-              <View style={[screen.row, screen.rowFirst]}>
-                <Text style={screen.muted}>{card.title}</Text>
-              </View>
+              <HabitSectionHeader
+                title={card.title}
+                parts={card.rows.map((row) => ({ done: row.done, target: row.target }))}
+              />
               {card.rows.map((row) => (
                 <HabitSwipeRow
                   key={row.habit.id}
