@@ -6,7 +6,7 @@ import {
   useAudioRecorderState,
 } from 'expo-audio'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { Dumbbell, Mic, Plus } from 'lucide-react-native'
+import { BookOpen, CalendarDays, Dumbbell, Mic, Plus } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
 import { Platform, Pressable, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
@@ -37,6 +37,8 @@ type AddTarget = {
   liftName: string
   initialAttempt: SetAttempt
 }
+
+const ACTION_ICON = '#c2410c'
 
 function recordingMimeType(): string {
   return Platform.OS === 'web' ? 'audio/webm' : 'audio/mp4'
@@ -139,13 +141,35 @@ export default function LiftsScreen() {
               trailing={<DayControls day={day} onChange={setDay} />}
             />
             <View style={screen.card}>
-              <View style={[screen.addRow, screen.addRowFirst]}>
+              <View style={screen.iconActionRow}>
                 <Pressable
+                  accessibilityLabel="Add a set"
                   accessibilityRole="button"
                   onPress={() => router.push({ pathname: '/add-set', params: { day } })}
-                  style={screen.dietActionSide}
+                  style={({ pressed }) => [screen.iconActionButton, pressed && screen.rowPressed]}
                 >
-                  <Text style={screen.addText}>Add a set</Text>
+                  <Plus color={ACTION_ICON} size={22} strokeWidth={2.25} />
+                </Pressable>
+                <Pressable
+                  accessibilityLabel="Week plan"
+                  accessibilityRole="button"
+                  onPress={() =>
+                    router.push({
+                      pathname: '/weekday-lifts',
+                      params: { day, weekday: String(weekdayFromDay(day)) },
+                    })
+                  }
+                  style={({ pressed }) => [screen.iconActionButton, pressed && screen.rowPressed]}
+                >
+                  <CalendarDays color={ACTION_ICON} size={20} strokeWidth={2.25} />
+                </Pressable>
+                <Pressable
+                  accessibilityLabel="View catalogue"
+                  accessibilityRole="button"
+                  onPress={() => router.push('/lift-catalog')}
+                  style={({ pressed }) => [screen.iconActionButton, pressed && screen.rowPressed]}
+                >
+                  <BookOpen color={ACTION_ICON} size={20} strokeWidth={2.25} />
                 </Pressable>
                 <Pressable
                   accessibilityLabel={recording ? 'Stop recording and add set' : 'Speak a set'}
@@ -153,33 +177,14 @@ export default function LiftsScreen() {
                   disabled={voiceBusy}
                   onPress={() => void toggleVoice()}
                   style={({ pressed }) => [
-                    screen.dietMicButton,
+                    screen.iconActionButton,
                     recording && screen.micButtonActive,
                     (pressed || voiceBusy) && screen.buttonDisabled,
                   ]}
                 >
-                  <Mic color={recording ? '#9a3412' : '#1c1917'} size={20} strokeWidth={2.25} />
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => router.push('/lift-catalog')}
-                  style={[screen.dietActionSide, screen.dietActionSideEnd]}
-                >
-                  <Text style={screen.addText}>View Catalogue</Text>
+                  <Mic color={recording ? '#9a3412' : ACTION_ICON} size={20} strokeWidth={2.25} />
                 </Pressable>
               </View>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() =>
-                  router.push({
-                    pathname: '/weekday-lifts',
-                    params: { day, weekday: String(weekdayFromDay(day)) },
-                  })
-                }
-                style={({ pressed }) => [screen.add, pressed && screen.rowPressed]}
-              >
-                <Text style={screen.addText}>Week plan</Text>
-              </Pressable>
             </View>
           </>
         }

@@ -528,6 +528,25 @@ export const screen = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  /** Evenly spaced icon-only actions (Lifts: set / week / catalogue / mic). */
+  iconActionRow: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-evenly',
+    gap: 12,
+  },
+  iconActionButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#f5f5f4',
+    borderWidth: 1,
+    borderColor: '#e7e5e4',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   setNumberRow: {
     flexDirection: 'row',
     alignItems: 'center',

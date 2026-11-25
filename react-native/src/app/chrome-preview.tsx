@@ -1,5 +1,15 @@
 import { useLocalSearchParams } from 'expo-router'
-import { Dumbbell, Image as ImageIcon, Mic, UserRound, Users, Utensils } from 'lucide-react-native'
+import {
+  BookOpen,
+  CalendarDays,
+  Dumbbell,
+  Image as ImageIcon,
+  Mic,
+  Plus,
+  UserRound,
+  Users,
+  Utensils,
+} from 'lucide-react-native'
 import { useState, type ReactNode } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { Avatar } from '../components/Avatar'
@@ -62,6 +72,27 @@ function ActionRow({ addLabel, catalogLabel }: { addLabel: string; catalogLabel:
   )
 }
 
+function LiftsIconActionRow() {
+  return (
+    <View style={screen.card}>
+      <View style={screen.iconActionRow}>
+        <View style={screen.iconActionButton}>
+          <Plus color="#c2410c" size={22} strokeWidth={2.25} />
+        </View>
+        <View style={screen.iconActionButton}>
+          <CalendarDays color="#c2410c" size={20} strokeWidth={2.25} />
+        </View>
+        <View style={screen.iconActionButton}>
+          <BookOpen color="#c2410c" size={20} strokeWidth={2.25} />
+        </View>
+        <View style={screen.iconActionButton}>
+          <Mic color="#c2410c" size={20} strokeWidth={2.25} />
+        </View>
+      </View>
+    </View>
+  )
+}
+
 export default function ChromePreviewScreen() {
   const { tab: raw } = useLocalSearchParams<{ tab?: string }>()
   const tab = (tabs.includes(raw as Tab) ? raw : 'diet') as Tab
@@ -101,7 +132,7 @@ export default function ChromePreviewScreen() {
     header = (
       <>
         <TabChrome icon={Dumbbell} title="Lifts" trailing={<DayControls day={day} onChange={setDay} />} />
-        <ActionRow addLabel="Add a set" catalogLabel="View Catalogue" />
+        <LiftsIconActionRow />
       </>
     )
     body = (
