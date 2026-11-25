@@ -23,6 +23,10 @@ import {
   type Member,
 } from '../../lib/gym'
 
+type LightboxTarget =
+  | { kind: 'group' }
+  | { kind: 'member'; member: Member }
+
 export default function GroupScreen() {
   const screen = useScreenStyles()
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -33,7 +37,7 @@ export default function GroupScreen() {
   const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [showCode, setShowCode] = useState(false)
-  const [photoMember, setPhotoMember] = useState<Member | null>(null)
+  const [lightbox, setLightbox] = useState<LightboxTarget | null>(null)
   const [photoBusy, setPhotoBusy] = useState(false)
 
   const load = useCallback(async () => {
@@ -95,11 +99,10 @@ export default function GroupScreen() {
         <View style={screen.groupHeaderRow}>
           <View style={screen.groupHeaderMain}>
             <Pressable
-              accessibilityLabel="Update group photo"
+              accessibilityLabel="View group photo"
               accessibilityRole="button"
-              disabled={photoBusy}
-              onPress={() => void updateGroupPhoto()}
-              style={photoBusy ? screen.buttonDisabled : undefined}
+              hitSlop={4}
+              onPress={() => setLightbox({ kind: 'group' })}
             >
               <Avatar
                 bucket="group-avatars"
@@ -129,7 +132,7 @@ export default function GroupScreen() {
                       accessibilityLabel="View profile photo"
                       accessibilityRole="button"
                       hitSlop={4}
-                      onPress={() => setPhotoMember(member)}
+                      onPress={() => setLightbox({ kind: 'member', member })}
                     >
                       <Avatar name={member.display_name} path={member.avatar_path} />
                     </Pressable>
@@ -171,6 +174,18 @@ export default function GroupScreen() {
             </View>
           )}
         </View>
+        <Pressable
+          accessibilityRole="button"
+          disabled={photoBusy || !group}
+          onPress={() => void updateGroupPhoto()}
+          style={({ pressed }) => [
+            screen.button,
+            (photoBusy || !group) && screen.buttonDisabled,
+            pressed && screen.rowPressed,
+          ]}
+        >
+          <Text style={screen.buttonText}>{photoBusy ? 'Updating…' : 'Change photo'}</Text>
+        </Pressable>
         {creator ? (
           <>
             <Text style={screen.label}>Rename</Text>
@@ -210,10 +225,23 @@ export default function GroupScreen() {
         onClose={() => setShowCode(false)}
       />
       <PhotoLightbox
-        visible={photoMember !== null}
-        name={photoMember?.display_name}
-        path={photoMember?.avatar_path}
-        onClose={() => setPhotoMember(null)}
+        visible={lightbox !== null}
+        bucket={lightbox?.kind === 'group' ? 'group-avatars' : 'avatars'}
+        name={
+          lightbox?.kind === 'group'
+            ? group?.name
+            : lightbox?.kind === 'member'
+              ? lightbox.member.display_name
+              : null
+        }
+        path={
+          lightbox?.kind === 'group'
+            ? group?.avatar_path
+            : lightbox?.kind === 'member'
+              ? lightbox.member.avatar_path
+              : null
+        }
+        onClose={() => setLightbox(null)}
       />
     </View>
   )
