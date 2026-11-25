@@ -1,6 +1,7 @@
 import { Check, Undo2 } from 'lucide-react-native'
 import { useState } from 'react'
 import { Animated, PanResponder, StyleSheet, Text, View } from 'react-native'
+import { habitProgressRatio } from '../lib/habitProgress'
 import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
 
 const SWIPE_THRESHOLD = 56
@@ -19,7 +20,7 @@ type Props = {
 
 /**
  * Swipe right (+1) / left (−1). Gmail-style underlay icon scales as you drag.
- * Green fill when done >= target.
+ * Green bar fills from the left by done/target (e.g. 2/3 → two-thirds width).
  */
 export function HabitSwipeRow({
   name,
@@ -34,6 +35,7 @@ export function HabitSwipeRow({
   const screen = useScreenStyles()
   const { colors } = useTheme()
   const [translateX] = useState(() => new Animated.Value(0))
+  const progress = habitProgressRatio(done, target)
 
   const addScale = translateX.interpolate({
     inputRange: [0, SWIPE_THRESHOLD * 0.45, SWIPE_THRESHOLD, SWIPE_MAX],
@@ -129,14 +131,26 @@ export function HabitSwipeRow({
           styles.foreground,
           first && screen.rowFirst,
           {
-            backgroundColor: complete ? colors.habitCompleteBg : colors.surface,
-            borderLeftWidth: complete ? 3 : 0,
-            borderLeftColor: complete ? colors.habitCompleteBorder : 'transparent',
+            backgroundColor: colors.surface,
+            borderLeftWidth: progress > 0 ? 3 : 0,
+            borderLeftColor: progress > 0 ? colors.habitCompleteBorder : 'transparent',
             transform: [{ translateX }],
           },
         ]}
       >
-        <View style={screen.rowMain}>
+        {progress > 0 ? (
+          <View
+            pointerEvents="none"
+            style={[
+              styles.progressFill,
+              {
+                width: `${progress * 100}%`,
+                backgroundColor: colors.habitCompleteBg,
+              },
+            ]}
+          />
+        ) : null}
+        <View style={[screen.rowMain, styles.content]}>
           <Text style={screen.rowTitle}>{name}</Text>
           {!readOnly ? (
             <Text style={screen.muted}>Swipe right to add · left to undo</Text>
@@ -145,7 +159,11 @@ export function HabitSwipeRow({
         <Text
           style={[
             screen.rowMeta,
-            complete && { color: colors.habitCompleteText, fontWeight: '700' },
+            styles.content,
+            (complete || progress > 0) && {
+              color: colors.habitCompleteText,
+              fontWeight: '700',
+            },
           ]}
         >
           {done}/{target}
@@ -182,5 +200,13 @@ const styles = StyleSheet.create({
   },
   foreground: {
     borderTopWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    ...StyleSheet.absoluteFill,
+    right: undefined,
+  },
+  content: {
+    zIndex: 1,
   },
 })

@@ -181,33 +181,50 @@ export default function ChromePreviewScreen() {
           { name: 'Morning Brush', done: 1, target: 1 },
           { name: 'Evening Brush', done: 0, target: 1 },
           { name: 'Mobility', done: 2, target: 3 },
-        ].map((row, index) => (
-          <View
-            key={row.name}
-            style={[
-              screen.row,
-              index === 0 && screen.rowFirst,
-              row.done >= row.target && {
-                backgroundColor: colors.habitCompleteBg,
-                borderLeftWidth: 3,
-                borderLeftColor: colors.habitCompleteBorder,
-              },
-            ]}
-          >
-            <Text style={[screen.rowTitle, screen.rowMain]}>{row.name}</Text>
-            <Text
+        ].map((row, index) => {
+          const progress = row.target > 0 ? Math.min(1, row.done / row.target) : 0
+          return (
+            <View
+              key={row.name}
               style={[
-                screen.rowMeta,
-                row.done >= row.target && {
-                  color: colors.habitCompleteText,
-                  fontWeight: '700',
+                screen.row,
+                index === 0 && screen.rowFirst,
+                {
+                  overflow: 'hidden',
+                  backgroundColor: colors.surface,
+                  borderLeftWidth: progress > 0 ? 3 : 0,
+                  borderLeftColor: progress > 0 ? colors.habitCompleteBorder : 'transparent',
                 },
               ]}
             >
-              {row.done}/{row.target}
-            </Text>
-          </View>
-        ))}
+              {progress > 0 ? (
+                <View
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: `${progress * 100}%`,
+                    backgroundColor: colors.habitCompleteBg,
+                  }}
+                />
+              ) : null}
+              <Text style={[screen.rowTitle, screen.rowMain, { zIndex: 1 }]}>{row.name}</Text>
+              <Text
+                style={[
+                  screen.rowMeta,
+                  { zIndex: 1 },
+                  progress > 0 && {
+                    color: colors.habitCompleteText,
+                    fontWeight: '700',
+                  },
+                ]}
+              >
+                {row.done}/{row.target}
+              </Text>
+            </View>
+          )
+        })}
       </View>
     )
   } else if (tab === 'groups') {
