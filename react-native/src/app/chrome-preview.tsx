@@ -5,7 +5,9 @@ import {
   Dumbbell,
   Image as ImageIcon,
   Mic,
+  Pencil,
   Plus,
+  Repeat,
   Target,
   UserRound,
   Users,
@@ -21,7 +23,7 @@ import { TabChrome } from '../components/TabChrome'
 import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
 import { localDate } from '../lib/localDate'
 
-const tabs = ['diet', 'lifts', 'groups', 'posts', 'profile'] as const
+const tabs = ['diet', 'lifts', 'habits', 'groups', 'posts', 'profile'] as const
 type Tab = (typeof tabs)[number]
 
 function FakeTabBar({ active }: { active: Tab }) {
@@ -29,6 +31,7 @@ function FakeTabBar({ active }: { active: Tab }) {
   const items: { id: Tab; label: string }[] = [
     { id: 'diet', label: 'Diet' },
     { id: 'lifts', label: 'Lifts' },
+    { id: 'habits', label: 'Habits' },
     { id: 'groups', label: 'Groups' },
     { id: 'posts', label: 'Posts' },
     { id: 'profile', label: 'Profile' },
@@ -152,6 +155,57 @@ export default function ChromePreviewScreen() {
               <Text style={screen.rowTitle}>{row.reps} reps</Text>
             </View>
             <Text style={screen.rowMeta}>60 kg</Text>
+          </View>
+        ))}
+      </View>
+    )
+  } else if (tab === 'habits') {
+    header = (
+      <>
+        <TabChrome icon={Repeat} title="Habits" trailing={<DayControls day={day} onChange={setDay} />} />
+        <View style={screen.card}>
+          <View style={screen.iconActionRow}>
+            <View style={screen.iconActionButton}>
+              <Pencil color={colors.accent} size={20} strokeWidth={2.25} />
+            </View>
+            <View style={screen.iconActionButton}>
+              <Mic color={colors.accent} size={20} strokeWidth={2.25} />
+            </View>
+          </View>
+        </View>
+      </>
+    )
+    body = (
+      <View style={screen.card}>
+        {[
+          { name: 'Morning Brush', done: 1, target: 1 },
+          { name: 'Evening Brush', done: 0, target: 1 },
+          { name: 'Mobility', done: 2, target: 3 },
+        ].map((row, index) => (
+          <View
+            key={row.name}
+            style={[
+              screen.row,
+              index === 0 && screen.rowFirst,
+              row.done >= row.target && {
+                backgroundColor: colors.toastSuccessBg,
+                borderLeftWidth: 3,
+                borderLeftColor: colors.toastSuccessBorder,
+              },
+            ]}
+          >
+            <Text style={[screen.rowTitle, screen.rowMain]}>{row.name}</Text>
+            <Text
+              style={[
+                screen.rowMeta,
+                row.done >= row.target && {
+                  color: colors.toastSuccessText,
+                  fontWeight: '700',
+                },
+              ]}
+            >
+              {row.done}/{row.target}
+            </Text>
           </View>
         ))}
       </View>

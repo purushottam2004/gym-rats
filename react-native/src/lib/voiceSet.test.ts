@@ -3,6 +3,7 @@ import { describe, it } from 'node:test'
 import {
   bytesToBase64,
   messageFromFunctionBody,
+  parseVoiceHabitResponse,
   parseVoiceIntakeResponse,
   parseVoiceSetResponse,
   resultFromFunctionsInvoke,
@@ -71,6 +72,25 @@ describe('parseVoiceIntakeResponse', () => {
     assert.deepEqual(parseVoiceIntakeResponse({ ok: false, error: ' Add a food ' }), {
       ok: false,
       error: 'Add a food',
+    })
+  })
+})
+
+describe('parseVoiceHabitResponse', () => {
+  it('returns ok completed payload', () => {
+    const result = parseVoiceHabitResponse({
+      ok: true,
+      completed: [{ habit_id: '1', habit_name: 'Morning Brush', day_count: 1 }],
+      logged_on: '2026-11-25',
+    })
+    assert.equal(result.ok, true)
+    if (result.ok) assert.equal(result.completed[0]?.habit_name, 'Morning Brush')
+  })
+
+  it('reads habit errors', () => {
+    assert.deepEqual(parseVoiceHabitResponse({ ok: false, error: ' Nothing due ' }), {
+      ok: false,
+      error: 'Nothing due',
     })
   })
 })

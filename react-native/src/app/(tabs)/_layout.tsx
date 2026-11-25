@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router'
-import { Dumbbell, Image as ImageIcon, UserRound, Users, Utensils } from 'lucide-react-native'
+import { Dumbbell, Image as ImageIcon, Repeat, UserRound, Users, Utensils } from 'lucide-react-native'
 import type { LucideIcon } from 'lucide-react-native'
 import { useTheme } from '../../theme/ThemeProvider'
 
@@ -53,6 +53,20 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size, focused }) => (
             <TabIcon
               icon={Dumbbell}
+              color={typeof color === 'string' ? color : colors.accent}
+              size={size}
+              focused={focused}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="habits"
+        options={{
+          title: 'Habits',
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon
+              icon={Repeat}
               color={typeof color === 'string' ? color : colors.accent}
               size={size}
               focused={focused}

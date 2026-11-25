@@ -28,8 +28,19 @@ export type VoiceActionErr = {
   error: string
 }
 
+export type VoiceHabitOk = {
+  ok: true
+  completed: {
+    habit_id: string
+    habit_name: string
+    day_count: number
+  }[]
+  logged_on: string
+}
+
 export type VoiceSetResult = VoiceSetOk | VoiceActionErr
 export type VoiceIntakeResult = VoiceIntakeOk | VoiceActionErr
+export type VoiceHabitResult = VoiceHabitOk | VoiceActionErr
 
 function firstNonEmptyString(...values: unknown[]): string | null {
   for (const value of values) {
@@ -96,6 +107,30 @@ export function parseVoiceIntakeResponse(
     return { ok: false, error: 'Empty response from voice food' }
   }
   return { ok: false, error: 'Could not add food from voice' }
+}
+
+export function parseVoiceHabitResponse(
+  data: unknown,
+  fallbackMessage?: string | null,
+): VoiceHabitResult {
+  if (data && typeof data === 'object') {
+    const body = data as Record<string, unknown>
+    if (body.ok === true && Array.isArray(body.completed)) {
+      return data as VoiceHabitOk
+    }
+    const fromBody = messageFromFunctionBody(data)
+    if (fromBody) {
+      return { ok: false, error: fromBody }
+    }
+  }
+
+  if (fallbackMessage?.trim()) {
+    return { ok: false, error: fallbackMessage.trim() }
+  }
+  if (!data || typeof data !== 'object') {
+    return { ok: false, error: 'Empty response from voice habits' }
+  }
+  return { ok: false, error: 'Could not complete habits from voice' }
 }
 
 type VoiceParseFn<T extends { ok: true } | VoiceActionErr> = (

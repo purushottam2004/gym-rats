@@ -8,19 +8,25 @@ import { NutrientProgressRow } from '../../components/NutrientProgressRow'
 import { OrdinalNumber } from '../../components/OrdinalNumber'
 import { Screen } from '../../components/Screen'
 import { useScreenStyles } from '../../theme/ThemeProvider'
+import { HabitSwipeRow } from '../../components/HabitSwipeRow'
 import {
   loadFoods,
+  loadHabitDayCounts,
+  loadHabits,
   loadIntakes,
   loadLifts,
   loadNutrientGoals,
   loadProfile,
   loadSets,
   measureLabel,
+  type Habit,
+  type HabitDayCount,
   type Intake,
   type NutrientGoal,
   type Profile,
   type SetLog,
 } from '../../lib/gym'
+import { habitRowsForDay } from '../../lib/habitSchedule'
 import { localDate } from '../../lib/localDate'
 import {
   foodBasisLabel,
@@ -45,6 +51,8 @@ export default function MemberScreen() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [intakes, setIntakes] = useState<Intake[]>([])
   const [sets, setSets] = useState<SetLog[]>([])
+  const [habits, setHabits] = useState<Habit[]>([])
+  const [habitCounts, setHabitCounts] = useState<HabitDayCount[]>([])
   const [goals, setGoals] = useState<NutrientGoal[]>([])
   const [error, setError] = useState<string | null>(null)
   const [infoModal, setInfoModal] = useState<InfoModalState | null>(null)
@@ -52,16 +60,21 @@ export default function MemberScreen() {
   const load = useCallback(async () => {
     if (!id) return
     try {
-      const [nextProfile, nextIntakes, nextSets, nextGoals] = await Promise.all([
-        loadProfile(id),
-        loadIntakes(id, day),
-        loadSets(id, day),
-        loadNutrientGoals(id),
-      ])
+      const [nextProfile, nextIntakes, nextSets, nextGoals, nextHabits, nextHabitCounts] =
+        await Promise.all([
+          loadProfile(id),
+          loadIntakes(id, day),
+          loadSets(id, day),
+          loadNutrientGoals(id),
+          loadHabits(id),
+          loadHabitDayCounts(id, day),
+        ])
       setProfile(nextProfile)
       setIntakes(nextIntakes)
       setSets(nextSets)
       setGoals(nextGoals)
+      setHabits(nextHabits)
+      setHabitCounts(nextHabitCounts)
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not open this person')
@@ -78,6 +91,10 @@ export default function MemberScreen() {
   const progress = useMemo(
     () => nutritionProgressLines(summarizeNutrition(intakes), goals),
     [intakes, goals],
+  )
+  const habitRows = useMemo(
+    () => habitRowsForDay(habits, habitCounts, day),
+    [habits, habitCounts, day],
   )
 
   function showNutrientInfo(nutrientId: string, nutrientName: string, unit: string) {
@@ -226,6 +243,31 @@ export default function MemberScreen() {
           ) : (
             <View style={screen.row}>
               <Text style={screen.muted}>No sets logged for this day.</Text>
+            </View>
+          )}
+        </View>
+        <View style={screen.card}>
+          <View style={[screen.row, screen.rowFirst]}>
+            <Text style={[screen.muted, screen.rowMain]}>Habits</Text>
+          </View>
+          {habitRows.length > 0 ? (
+            habitRows.map((row) => (
+              <HabitSwipeRow
+                key={row.habit.id}
+                name={row.habit.name}
+                done={row.done}
+                target={row.target}
+                complete={row.complete}
+                readOnly
+                onIncrement={() => undefined}
+                onDecrement={() => undefined}
+              />
+            ))
+          ) : (
+            <View style={screen.row}>
+              <Text style={screen.muted}>
+                {habits.length === 0 ? 'No habits.' : 'Nothing due this day.'}
+              </Text>
             </View>
           )}
         </View>

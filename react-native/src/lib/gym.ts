@@ -3,15 +3,25 @@ import { randomFileId } from './fileId'
 import type { Basis, Measure } from './measure'
 import { getSupabaseClient } from './supabase'
 import {
+  weekDates,
+  type Habit,
+  type HabitDayCount,
+  type HabitRecurrence,
+  type Weekday,
+} from './habitSchedule'
+import {
   bytesToBase64,
+  parseVoiceHabitResponse,
   parseVoiceIntakeResponse,
   parseVoiceSetResponse,
   resultFromFunctionsInvoke,
+  type VoiceHabitResult,
   type VoiceIntakeResult,
   type VoiceSetResult,
 } from './voiceSet'
 
-export type { VoiceIntakeResult, VoiceSetResult } from './voiceSet'
+export type { VoiceHabitResult, VoiceIntakeResult, VoiceSetResult } from './voiceSet'
+export type { Habit, HabitDayCount, HabitRecurrence } from './habitSchedule'
 
 export type { Basis, Measure } from './measure'
 export { basisForMeasure, measureLabel } from './measure'
@@ -459,6 +469,209 @@ export async function deleteSet(id: string): Promise<void> {
   const { error } = await db().from('sets').delete().eq('id', id)
   fail(error)
 }
+
+function mapHabitRow(row: Record<string, unknown>): Habit {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    recurrence: row.recurrence as HabitRecurrence,
+    frequency: row.frequency as number,
+    weekdays: (row.weekdays as number[]).map((n) => n as Weekday),
+    sort_order: row.sort_order as number,
+    active: Boolean(row.active),
+  }
+}
+
+/** Active Habits for a user (own or shared-group member), sort order. */
+export async function loadHabits(userId: string, opts?: { includeArchived?: boolean }): Promise<Habit[]> {
+  let query = db()
+    .from('habits')
+    .select('id, name, recurrence, frequency, weekdays, sort_order, active')
+    .eq('user_id', userId)
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true })
+  if (!opts?.includeArchived) {
+    query = query.eq('active', true)
+  }
+  const { data, error } = await query
+  fail(error)
+  return (data ?? []).map((row) => mapHabitRow(row as Record<string, unknown>))
+}
+
+/** Day counts for Habits on a calendar day, plus the Mon–Sun week for per_week progress. */
+export async function loadHabitDayCounts(userId: string, day: string): Promise<HabitDayCount[]> {
+  const days = weekDates(day)
+  const { data, error } = await db()
+    .from('habit_day_counts')
+    .select('habit_id, logged_on, count')
+    .eq('user_id', userId)
+    .in('logged_on', days)
+  fail(error)
+  return (data ?? []).map((row) => ({
+    habit_id: row.habit_id as string,
+    logged_on: row.logged_on as string,
+    count: row.count as number,
+  }))
+}
+
+export async function createHabit(input: {
+  name: string
+  recurrence: HabitRecurrence
+  frequency: number
+  weekdays: Weekday[]
+}): Promise<Habit> {
+  const { data: userData, error: userError } = await db().auth.getUser()
+  fail(userError)
+  const userId = userData.user?.id
+  if (!userId) throw new Error('Not signed in')
+
+  const existing = await loadHabits(userId, { includeArchived: true })
+  const sortOrder =
+    existing.reduce((max, habit) => Math.max(max, habit.sort_order), -1) + 1
+
+  const weekdays =
+    input.recurrence === 'per_week' ? ([0, 1, 2, 3, 4, 5, 6] as Weekday[]) : input.weekdays
+
+  const { data, error } = await db()
+    .from('habits')
+    .insert({
+      user_id: userId,
+      name: input.name.trim(),
+      recurrence: input.recurrence,
+      frequency: input.frequency,
+      weekdays,
+      sort_order: sortOrder,
+      active: true,
+    })
+    .select('id, name, recurrence, frequency, weekdays, sort_order, active')
+    .single()
+  fail(error)
+  return mapHabitRow(data as Record<string, unknown>)
+}
+
+export async function updateHabit(input: {
+  id: string
+  name: string
+  recurrence: HabitRecurrence
+  frequency: number
+  weekdays: Weekday[]
+}): Promise<void> {
+  const weekdays =
+    input.recurrence === 'per_week' ? ([0, 1, 2, 3, 4, 5, 6] as Weekday[]) : input.weekdays
+  const { error } = await db()
+    .from('habits')
+    .update({
+      name: input.name.trim(),
+      recurrence: input.recurrence,
+      frequency: input.frequency,
+      weekdays,
+    })
+    .eq('id', input.id)
+  fail(error)
+}
+
+export async function archiveHabit(id: string): Promise<void> {
+  const { error } = await db().from('habits').update({ active: false }).eq('id', id)
+  fail(error)
+}
+
+export async function reorderHabits(orderedIds: string[]): Promise<void> {
+  await Promise.all(
+    orderedIds.map(async (id, index) => {
+      const { error } = await db().from('habits').update({ sort_order: index }).eq('id', id)
+      fail(error)
+    }),
+  )
+}
+
+/** Set absolute day count for a Habit (clamped at 0). Used by swipe ±1. */
+export async function setHabitDayCount(input: {
+  habitId: string
+  day: string
+  count: number
+}): Promise<number> {
+  const { data: userData, error: userError } = await db().auth.getUser()
+  fail(userError)
+  const userId = userData.user?.id
+  if (!userId) throw new Error('Not signed in')
+
+  const next = Math.max(0, Math.floor(input.count))
+  if (next === 0) {
+    const { error } = await db()
+      .from('habit_day_counts')
+      .delete()
+      .eq('habit_id', input.habitId)
+      .eq('logged_on', input.day)
+    fail(error)
+    return 0
+  }
+
+  const { error } = await db().from('habit_day_counts').upsert(
+    {
+      habit_id: input.habitId,
+      user_id: userId,
+      logged_on: input.day,
+      count: next,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'habit_id,logged_on' },
+  )
+  fail(error)
+  return next
+}
+
+/** Increment the selected day's count by delta (may be negative). Returns new day count. */
+export async function bumpHabitDayCount(input: {
+  habitId: string
+  day: string
+  delta: number
+}): Promise<number> {
+  const { data: userData, error: userError } = await db().auth.getUser()
+  fail(userError)
+  const userId = userData.user?.id
+  if (!userId) throw new Error('Not signed in')
+
+  const { data, error } = await db()
+    .from('habit_day_counts')
+    .select('count')
+    .eq('habit_id', input.habitId)
+    .eq('logged_on', input.day)
+    .maybeSingle()
+  fail(error)
+  const current = (data?.count as number | undefined) ?? 0
+  return setHabitDayCount({
+    habitId: input.habitId,
+    day: input.day,
+    count: current + input.delta,
+  })
+}
+
+/** Sends a recording to complete_habits_from_voice (OpenAI + bump due Habits). */
+export async function completeHabitsFromVoice(input: {
+  day: string
+  audioUri: string
+  mimeType: string
+}): Promise<VoiceHabitResult> {
+  const response = await fetch(input.audioUri)
+  if (!response.ok) {
+    return { ok: false, error: 'Could not read the recording' }
+  }
+  const bytes = new Uint8Array(await response.arrayBuffer())
+  if (bytes.byteLength === 0) {
+    return { ok: false, error: 'Recording was empty' }
+  }
+
+  const { data, error } = await db().functions.invoke('complete_habits_from_voice', {
+    body: {
+      logged_on: input.day,
+      audio_base64: bytesToBase64(bytes),
+      mime_type: input.mimeType,
+    },
+  })
+
+  return resultFromFunctionsInvoke(data, error, parseVoiceHabitResponse)
+}
+
 
 export async function loadGroups(): Promise<Group[]> {
   const { data, error } = await db()

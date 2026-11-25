@@ -2,8 +2,10 @@
 
 from . import _001_data_users as user
 from . import _002_data_assets as assets
+from . import _003_data_habits as habits
 
 __all__ = [
     "user",
     "assets",
+    "habits",
 ]

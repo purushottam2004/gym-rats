@@ -60,6 +60,14 @@ _Avoid_: workout, set number, weight entry
 The Lifts a User chooses for each weekday (Sunday through Saturday). On a Day that falls on that weekday, those Lifts appear on Lifts even when the User has logged no Set for them yet, so they can add a Set from the card. Another User who shares a Group can see the plan.
 _Avoid_: workout template, routine, schedule
 
+**Habit**:
+A personal recurring completable a User defines for themselves: a name, a recurrence, and a frequency (count target). Recurrence is either per day (due on chosen weekdays, frequency is the target for each due Day) or per week (frequency is the target for the Monday–Sunday week; the Habit appears every Day that week and any Day's counts add toward the week). Habits are not shared definitions; another User who shares a Group can see the owner's Habits and Day progress read-only. Archiving hides a Habit going forward without erasing past Day counts.
+_Avoid_: routine, streak, task, reminder
+
+**Habit day count**:
+The integer number of times a User completed one Habit on one Day (zero or greater). Swiping or voice on that Day changes this number. For a per-day Habit, progress on a Day is this count against the Habit's frequency. For a per-week Habit, progress is the sum of that Habit's Day counts from Monday through Sunday of the week that contains the Day, against the Habit's frequency.
+_Avoid_: check-in, log, completion event
+
 **Post**:
 Text, one photo, or both, published by a User. At least one of text or photo is present. The author may change the text and the photo, and may delete the Post. It has an Audience the author can change later.
 _Avoid_: update, status
