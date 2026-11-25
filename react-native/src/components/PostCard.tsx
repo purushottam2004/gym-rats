@@ -2,6 +2,7 @@ import { MessageCircle, SmilePlus } from 'lucide-react-native'
 import { useRef, useState } from 'react'
 import { Animated, Image, Pressable, Text, View } from 'react-native'
 import { Avatar } from './Avatar'
+import { PhotoLightbox } from './PhotoLightbox'
 import { TrashButton } from './TrashButton'
 import { publicImageUrl, type Post } from '../lib/gym'
 import {
@@ -46,6 +47,7 @@ export function PostCard({
   const mine = post.reactions.find((row) => row.user_id === myUserId)?.emoji ?? null
   const lastTap = useRef(0)
   const [heart] = useState(() => new Animated.Value(0))
+  const [lightboxOpen, setLightboxOpen] = useState(false)
 
   function pulseHeart() {
     heart.setValue(0)
@@ -76,10 +78,12 @@ export function PostCard({
   return (
     <View style={screen.postCard}>
       <Pressable
-        accessibilityHint="Double tap to like"
+        accessibilityHint={
+          image ? 'Double tap to like. Long press to view full photo.' : 'Double tap to like'
+        }
         accessibilityRole="imagebutton"
         delayLongPress={350}
-        onLongPress={onOpenReactions}
+        onLongPress={image ? () => setLightboxOpen(true) : undefined}
         onPress={onMediaPress}
       >
         {image ? <Image source={{ uri: image }} style={screen.postImage} /> : null}
@@ -142,7 +146,6 @@ export function PostCard({
           <Pressable
             accessibilityLabel={mine ? `Your reaction ${mine}` : 'Add reaction'}
             accessibilityRole="button"
-            onLongPress={onOpenReactions}
             onPress={onOpenReactions}
             style={({ pressed }) => [screen.postActionButton, pressed && screen.rowPressed]}
           >
@@ -163,6 +166,12 @@ export function PostCard({
           </Pressable>
         </View>
       </View>
+      <PhotoLightbox
+        visible={lightboxOpen}
+        name={post.author.display_name}
+        imageUri={image}
+        onClose={() => setLightboxOpen(false)}
+      />
     </View>
   )
 }

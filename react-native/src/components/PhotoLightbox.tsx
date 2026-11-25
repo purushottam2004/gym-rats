@@ -1,4 +1,4 @@
-import { Modal, Pressable, Text, View } from 'react-native'
+import { Image, Modal, Pressable, Text, View } from 'react-native'
 import { Avatar } from './Avatar'
 import { useScreenStyles } from '../theme/ThemeProvider'
 
@@ -7,6 +7,8 @@ type Props = {
   name?: string | null
   path?: string | null
   bucket?: 'avatars' | 'group-avatars'
+  /** Full-bleed image URL (e.g. post photo). When set, Avatar path/bucket are ignored. */
+  imageUri?: string | null
   onClose: () => void
 }
 
@@ -16,6 +18,7 @@ export function PhotoLightbox({
   name,
   path,
   bucket = 'avatars',
+  imageUri,
   onClose,
 }: Props) {
   const screen = useScreenStyles()
@@ -28,7 +31,16 @@ export function PhotoLightbox({
         style={screen.photoLightboxBackdrop}
       >
         <View style={screen.photoLightboxBody}>
-          <Avatar bucket={bucket} name={name} path={path} size={220} />
+          {imageUri ? (
+            <Image
+              accessibilityLabel={name ? `${name} photo` : 'Photo'}
+              resizeMode="contain"
+              source={{ uri: imageUri }}
+              style={screen.photoLightboxImage}
+            />
+          ) : (
+            <Avatar bucket={bucket} name={name} path={path} size={220} />
+          )}
           {name ? <Text style={screen.photoLightboxName}>{name}</Text> : null}
         </View>
       </Pressable>

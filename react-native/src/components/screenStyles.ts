@@ -134,6 +134,12 @@ export function createScreenStyles(c: ThemeColors) {
     photoLightboxBody: {
       alignItems: 'center',
       gap: 16,
+      width: '100%',
+    },
+    photoLightboxImage: {
+      width: '100%',
+      height: '80%',
+      maxHeight: 560,
     },
     photoLightboxName: {
       color: '#fafaf9',
