@@ -27,6 +27,7 @@ import {
   type SetLog,
 } from '../../lib/gym'
 import { habitRowsForDay } from '../../lib/habitSchedule'
+import { liftCardsForDay } from '../../lib/liftCards'
 import { localDate } from '../../lib/localDate'
 import {
   foodBasisLabel,
@@ -96,6 +97,8 @@ export default function MemberScreen() {
     () => habitRowsForDay(habits, habitCounts, day),
     [habits, habitCounts, day],
   )
+  // Read-only day view: group logged sets by lift (no weekday plan / empty planned cards).
+  const liftCards = useMemo(() => liftCardsForDay(sets, []), [sets])
 
   function showNutrientInfo(nutrientId: string, nutrientName: string, unit: string) {
     const contributions = nutrientContributions(intakes, nutrientId)
@@ -222,27 +225,33 @@ export default function MemberScreen() {
             </View>
           </View>
         ) : null}
-        <View style={screen.card}>
-          <View style={[screen.row, screen.rowFirst]}>
-            <Text style={[screen.muted, screen.rowMain]}>Lifts</Text>
+        <View style={screen.section}>
+          <View style={screen.modalHeader}>
+            <Text style={screen.sectionTitle}>Lifts</Text>
             <InfoButton onPress={() => void showLiftCatalog()} />
           </View>
-          {sets.length > 0 ? (
-            sets.map((row) => (
-              <View key={row.id} style={screen.row}>
-                <View style={[screen.rowMain, screen.setLabelRow]}>
-                  <Text style={screen.rowTitle} numberOfLines={1}>
-                    {row.lift.name}
-                  </Text>
-                  <OrdinalNumber value={row.attempt} />
-                  <Text style={screen.rowTitle}>{row.reps} reps</Text>
+          {liftCards.length > 0 ? (
+            liftCards.map(({ lift, rows: liftRows }) => (
+              <View key={lift.id} style={screen.card}>
+                <View style={[screen.row, screen.rowFirst]}>
+                  <Text style={screen.muted}>{lift.name}</Text>
                 </View>
-                <Text style={screen.rowMeta}>{row.load_kg} kg</Text>
+                {liftRows.map((row) => (
+                  <View key={row.id} style={screen.row}>
+                    <View style={[screen.rowMain, screen.setLabelRow]}>
+                      <OrdinalNumber value={row.attempt} />
+                      <Text style={screen.rowTitle}>{row.reps} reps</Text>
+                    </View>
+                    <Text style={screen.rowMeta}>{row.load_kg} kg</Text>
+                  </View>
+                ))}
               </View>
             ))
           ) : (
-            <View style={screen.row}>
-              <Text style={screen.muted}>No sets logged for this day.</Text>
+            <View style={screen.card}>
+              <View style={[screen.row, screen.rowFirst]}>
+                <Text style={screen.muted}>No sets logged for this day.</Text>
+              </View>
             </View>
           )}
         </View>
