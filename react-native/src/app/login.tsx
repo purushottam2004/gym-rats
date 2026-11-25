@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../auth/AuthProvider'
 import { AppTextInput } from '../components/AppTextInput'
+import { BrandLoader } from '../components/BrandLoader'
 import { useTheme } from '../theme/ThemeProvider'
 
 export default function LoginScreen() {
@@ -77,7 +78,11 @@ export default function LoginScreen() {
               onPress={() => void handleSignIn()}
               style={[styles.button, loading && styles.buttonDisabled]}
             >
-              <Text style={styles.buttonText}>{loading ? 'Signing in' : 'Sign in'}</Text>
+              {loading ? (
+                <BrandLoader size="sm" />
+              ) : (
+                <Text style={styles.buttonText}>Sign in</Text>
+              )}
             </Pressable>
           </View>
         </View>

@@ -11,6 +11,7 @@ import { useCallback, useState } from 'react'
 import { Platform, Pressable, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
 import { AddSetModal } from '../../components/AddSetModal'
+import { LoadingBlock } from '../../components/BrandLoader'
 import { DayControls } from '../../components/DayControls'
 import { DeleteConfirmButton } from '../../components/DeleteConfirmButton'
 import { OrdinalNumber } from '../../components/OrdinalNumber'
@@ -54,6 +55,7 @@ export default function LiftsScreen() {
   const [day, setDay] = useState(localDate)
   const [rows, setRows] = useState<SetLog[]>([])
   const [planned, setPlanned] = useState<Lift[]>([])
+  const [hydrated, setHydrated] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [voiceBusy, setVoiceBusy] = useState(false)
   const [toast, setToast] = useState<{ kind: ToastKind; message: string } | null>(null)
@@ -71,6 +73,8 @@ export default function LiftsScreen() {
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load lifts')
+    } finally {
+      setHydrated(true)
     }
   }, [userId, day])
 
@@ -191,43 +195,47 @@ export default function LiftsScreen() {
         }
       >
         {error ? <Text style={screen.error}>{error}</Text> : null}
-        {cards.map(({ lift, rows: liftRows }) => (
-          <View key={lift.id} style={screen.card}>
-            <View style={[screen.row, screen.rowFirst]}>
-              <Text style={screen.muted}>{lift.name}</Text>
-              <Pressable
-                accessibilityLabel={`Add set for ${lift.name}`}
-                accessibilityRole="button"
-                hitSlop={8}
-                onPress={() =>
-                  setAddTarget({
-                    liftId: lift.id,
-                    liftName: lift.name,
-                    initialAttempt: nextSetAttempt(liftRows.map((row) => row.attempt)),
-                  })
-                }
-              >
-                <Plus color={colors.accent} size={22} strokeWidth={2.25} />
-              </Pressable>
-            </View>
-            {liftRows.map((row) => (
-              <View key={row.id} style={screen.row}>
-                <View style={[screen.rowMain, screen.setLabelRow]}>
-                  <OrdinalNumber value={row.attempt} />
-                  <Text style={screen.rowTitle}>{row.reps} reps</Text>
-                </View>
-                <View style={screen.choiceTrail}>
-                  <Text style={screen.rowMeta}>{row.load_kg} kg</Text>
-                  <DeleteConfirmButton
-                    title="Delete set?"
-                    message={`Remove ${row.attempt}${ordinalSuffix(row.attempt)} set (${row.reps} reps · ${row.load_kg} kg)?`}
-                    onConfirm={() => void deleteSet(row.id).then(load)}
-                  />
-                </View>
+        {!hydrated ? (
+          <LoadingBlock label="Loading lifts" />
+        ) : (
+          cards.map(({ lift, rows: liftRows }) => (
+            <View key={lift.id} style={screen.card}>
+              <View style={[screen.row, screen.rowFirst]}>
+                <Text style={screen.muted}>{lift.name}</Text>
+                <Pressable
+                  accessibilityLabel={`Add set for ${lift.name}`}
+                  accessibilityRole="button"
+                  hitSlop={8}
+                  onPress={() =>
+                    setAddTarget({
+                      liftId: lift.id,
+                      liftName: lift.name,
+                      initialAttempt: nextSetAttempt(liftRows.map((row) => row.attempt)),
+                    })
+                  }
+                >
+                  <Plus color={colors.accent} size={22} strokeWidth={2.25} />
+                </Pressable>
               </View>
-            ))}
-          </View>
-        ))}
+              {liftRows.map((row) => (
+                <View key={row.id} style={screen.row}>
+                  <View style={[screen.rowMain, screen.setLabelRow]}>
+                    <OrdinalNumber value={row.attempt} />
+                    <Text style={screen.rowTitle}>{row.reps} reps</Text>
+                  </View>
+                  <View style={screen.choiceTrail}>
+                    <Text style={screen.rowMeta}>{row.load_kg} kg</Text>
+                    <DeleteConfirmButton
+                      title="Delete set?"
+                      message={`Remove ${row.attempt}${ordinalSuffix(row.attempt)} set (${row.reps} reps · ${row.load_kg} kg)?`}
+                      onConfirm={() => void deleteSet(row.id).then(load)}
+                    />
+                  </View>
+                </View>
+              ))}
+            </View>
+          ))
+        )}
       </Screen>
       {addTarget ? (
         <AddSetModal

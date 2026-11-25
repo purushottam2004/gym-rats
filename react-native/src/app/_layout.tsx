@@ -1,7 +1,8 @@
 import { Stack, useRouter, useSegments } from 'expo-router'
 import { useEffect } from 'react'
-import { ActivityIndicator, Text, View } from 'react-native'
+import { Text, View } from 'react-native'
 import { AuthProvider, useAuth } from '../auth/AuthProvider'
+import { BrandLoader } from '../components/BrandLoader'
 import { ThemeProvider, useScreenStyles } from '../theme/ThemeProvider'
 
 function Navigation() {
@@ -22,7 +23,7 @@ function Navigation() {
   if (!ready) {
     return (
       <View style={screen.centered}>
-        <ActivityIndicator />
+        <BrandLoader label="Signing you in" size="lg" />
       </View>
     )
   }

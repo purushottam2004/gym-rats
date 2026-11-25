@@ -3,6 +3,7 @@ import { Image as ImageIcon, Plus } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
+import { LoadingBlock } from '../../components/BrandLoader'
 import { ConfirmModal } from '../../components/ConfirmModal'
 import { DayControls } from '../../components/DayControls'
 import { PostCard } from '../../components/PostCard'
@@ -31,6 +32,7 @@ export default function PostsScreen() {
   const [day, setDay] = useState(localDate)
   const [posts, setPosts] = useState<Post[]>([])
   const [names, setNames] = useState<Record<string, string>>({})
+  const [hydrated, setHydrated] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Post | null>(null)
   const [reactPostId, setReactPostId] = useState<string | null>(null)
@@ -44,6 +46,8 @@ export default function PostsScreen() {
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load posts')
+    } finally {
+      setHydrated(true)
     }
   }, [day])
 
@@ -114,23 +118,29 @@ export default function PostsScreen() {
         }
       >
         {error ? <Text style={screen.error}>{error}</Text> : null}
-        {posts.length === 0 && !error ? (
-          <Text style={screen.muted}>No posts for this day.</Text>
-        ) : null}
-        {posts.map((post) => (
-          <PostCard
-            key={post.id}
-            post={post}
-            audienceLabel={audienceLabel(post)}
-            myUserId={myUserId}
-            onDelete={
-              post.user_id === myUserId ? () => setPendingDelete(post) : undefined
-            }
-            onReact={(postId, next) => void commitReaction(postId, next)}
-            onOpenReactions={() => setReactPostId(post.id)}
-            onOpenComments={() => setCommentsPostId(post.id)}
-          />
-        ))}
+        {!hydrated ? (
+          <LoadingBlock label="Loading posts" />
+        ) : (
+          <>
+            {posts.length === 0 && !error ? (
+              <Text style={screen.muted}>No posts for this day.</Text>
+            ) : null}
+            {posts.map((post) => (
+              <PostCard
+                key={post.id}
+                post={post}
+                audienceLabel={audienceLabel(post)}
+                myUserId={myUserId}
+                onDelete={
+                  post.user_id === myUserId ? () => setPendingDelete(post) : undefined
+                }
+                onReact={(postId, next) => void commitReaction(postId, next)}
+                onOpenReactions={() => setReactPostId(post.id)}
+                onOpenComments={() => setCommentsPostId(post.id)}
+              />
+            ))}
+          </>
+        )}
       </Screen>
       <ConfirmModal
         visible={pendingDelete !== null}

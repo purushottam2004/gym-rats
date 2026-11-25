@@ -6,6 +6,7 @@ import { Pressable, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
 import { AppTextInput } from '../../components/AppTextInput'
 import { Avatar } from '../../components/Avatar'
+import { LoadingBlock } from '../../components/BrandLoader'
 import { Screen } from '../../components/Screen'
 import { TabChrome } from '../../components/TabChrome'
 import type { AppearancePreference } from '../../theme/appearancePreference'
@@ -24,6 +25,7 @@ export default function ProfileScreen() {
   const { session, signOut } = useAuth()
   const router = useRouter()
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [hydrated, setHydrated] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [editingName, setEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
@@ -39,6 +41,8 @@ export default function ProfileScreen() {
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load profile')
+    } finally {
+      setHydrated(true)
     }
   }, [session])
 
@@ -86,85 +90,93 @@ export default function ProfileScreen() {
   return (
     <Screen header={<TabChrome icon={UserRound} title="Profile" />}>
       {error ? <Text style={screen.error}>{error}</Text> : null}
-      <View style={{ alignItems: 'center', gap: 8 }}>
-        <Pressable
-          accessibilityLabel="Update profile photo"
-          accessibilityRole="button"
-          disabled={photoBusy}
-          onPress={() => void pickPhoto()}
-          style={photoBusy ? screen.buttonDisabled : undefined}
-        >
-          <Avatar name={profile?.display_name} path={profile?.avatar_path} size={84} />
-        </Pressable>
-        {editingName ? (
-          <View style={screen.nameEditRow}>
-            <AppTextInput
-              autoFocus
-              onChangeText={setNameDraft}
-              onSubmitEditing={() => void saveName()}
-              style={screen.nameEditInput}
-              value={nameDraft}
-            />
-            <Pressable onPress={() => void saveName()}>
-              <Text style={screen.addText}>Save</Text>
-            </Pressable>
-          </View>
-        ) : (
-          <View style={screen.nameEditRow}>
-            <Text style={screen.sectionTitle}>{profile?.display_name ?? 'Add a name'}</Text>
+      {!hydrated ? (
+        <LoadingBlock label="Loading profile" />
+      ) : (
+        <>
+          <View style={{ alignItems: 'center', gap: 8 }}>
             <Pressable
-              accessibilityLabel="Edit name"
+              accessibilityLabel="Update profile photo"
               accessibilityRole="button"
-              hitSlop={8}
-              onPress={() => {
-                setNameDraft(profile?.display_name ?? '')
-                setEditingName(true)
-              }}
+              disabled={photoBusy}
+              onPress={() => void pickPhoto()}
+              style={photoBusy ? screen.buttonDisabled : undefined}
             >
-              <Pencil color={colors.accent} size={18} strokeWidth={2.25} />
+              <Avatar name={profile?.display_name} path={profile?.avatar_path} size={84} />
+            </Pressable>
+            {editingName ? (
+              <View style={screen.nameEditRow}>
+                <AppTextInput
+                  autoFocus
+                  onChangeText={setNameDraft}
+                  onSubmitEditing={() => void saveName()}
+                  style={screen.nameEditInput}
+                  value={nameDraft}
+                />
+                <Pressable onPress={() => void saveName()}>
+                  <Text style={screen.addText}>Save</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <View style={screen.nameEditRow}>
+                <Text style={screen.sectionTitle}>{profile?.display_name ?? 'Add a name'}</Text>
+                <Pressable
+                  accessibilityLabel="Edit name"
+                  accessibilityRole="button"
+                  hitSlop={8}
+                  onPress={() => {
+                    setNameDraft(profile?.display_name ?? '')
+                    setEditingName(true)
+                  }}
+                >
+                  <Pencil color={colors.accent} size={18} strokeWidth={2.25} />
+                </Pressable>
+              </View>
+            )}
+          </View>
+
+          <Text style={screen.label}>Appearance</Text>
+          <View style={screen.card}>
+            {APPEARANCE_OPTIONS.map((option, index) => {
+              const selected = preference === option.value
+              return (
+                <Pressable
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected }}
+                  key={option.value}
+                  onPress={() => setPreference(option.value)}
+                  style={({ pressed }) => [
+                    screen.row,
+                    index === 0 && screen.rowFirst,
+                    selected && screen.rowSelected,
+                    pressed && (selected ? screen.rowSelectedPressed : screen.rowPressed),
+                  ]}
+                >
+                  <Text style={[screen.rowTitle, selected && screen.rowTitleSelected]}>
+                    {option.label}
+                  </Text>
+                  {selected ? <Text style={screen.addText}>Selected</Text> : null}
+                </Pressable>
+              )
+            })}
+          </View>
+
+          <View style={screen.card}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/nutrient-goals')}
+              style={({ pressed }) => [screen.row, screen.rowFirst, pressed && screen.rowPressed]}
+            >
+              <Text style={screen.rowTitle}>Nutrient goals</Text>
+              <Text style={screen.addText}>Edit</Text>
+            </Pressable>
+            <Pressable onPress={() => void signOut()} style={screen.row}>
+              <Text style={screen.rowTitle}>Sign out</Text>
             </Pressable>
           </View>
-        )}
-      </View>
-
-      <Text style={screen.label}>Appearance</Text>
-      <View style={screen.card}>
-        {APPEARANCE_OPTIONS.map((option, index) => {
-          const selected = preference === option.value
-          return (
-            <Pressable
-              accessibilityRole="radio"
-              accessibilityState={{ selected }}
-              key={option.value}
-              onPress={() => setPreference(option.value)}
-              style={({ pressed }) => [
-                screen.row,
-                index === 0 && screen.rowFirst,
-                selected && screen.rowSelected,
-                pressed && (selected ? screen.rowSelectedPressed : screen.rowPressed),
-              ]}
-            >
-              <Text style={[screen.rowTitle, selected && screen.rowTitleSelected]}>{option.label}</Text>
-              {selected ? <Text style={screen.addText}>Selected</Text> : null}
-            </Pressable>
-          )
-        })}
-      </View>
-
-      <View style={screen.card}>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.push('/nutrient-goals')}
-          style={({ pressed }) => [screen.row, screen.rowFirst, pressed && screen.rowPressed]}
-        >
-          <Text style={screen.rowTitle}>Nutrient goals</Text>
-          <Text style={screen.addText}>Edit</Text>
-        </Pressable>
-        <Pressable onPress={() => void signOut()} style={screen.row}>
-          <Text style={screen.rowTitle}>Sign out</Text>
-        </Pressable>
-      </View>
-      <Text style={screen.muted}>{session?.user.email}</Text>
+          <Text style={screen.muted}>{session?.user.email}</Text>
+        </>
+      )}
     </Screen>
   )
 }

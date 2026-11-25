@@ -10,6 +10,7 @@ import { BookOpen, Mic, Plus, Target, Utensils } from 'lucide-react-native'
 import { useCallback, useMemo, useState } from 'react'
 import { Platform, Pressable, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
+import { LoadingBlock } from '../../components/BrandLoader'
 import { DayControls } from '../../components/DayControls'
 import { DeleteConfirmButton } from '../../components/DeleteConfirmButton'
 import { InfoButton } from '../../components/InfoButton'
@@ -62,6 +63,7 @@ export default function DietScreen() {
   const [day, setDay] = useState(localDate)
   const [rows, setRows] = useState<Intake[]>([])
   const [goals, setGoals] = useState<NutrientGoal[]>([])
+  const [hydrated, setHydrated] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [infoModal, setInfoModal] = useState<InfoModalState | null>(null)
   const [voiceBusy, setVoiceBusy] = useState(false)
@@ -84,6 +86,8 @@ export default function DietScreen() {
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load diet')
+    } finally {
+      setHydrated(true)
     }
   }, [userId, day])
 
@@ -226,7 +230,8 @@ export default function DietScreen() {
         }
       >
         {error ? <Text style={screen.error}>{error}</Text> : null}
-        {rows.length > 0 ? (
+        {!hydrated ? <LoadingBlock label="Loading diet" /> : null}
+        {hydrated && rows.length > 0 ? (
           <View style={screen.card}>
             {rows.map((row, index) => (
               <View key={row.id} style={[screen.row, index === 0 && screen.rowFirst]}>
@@ -252,25 +257,27 @@ export default function DietScreen() {
             ))}
           </View>
         ) : null}
-        <View style={screen.section}>
-          <Text style={screen.sectionTitle}>{nutritionSummaryTitle(day, today)}</Text>
-          <View style={screen.card}>
-            {progress.length > 0 ? (
-              progress.map((line, index) => (
-                <NutrientProgressRow
-                  key={line.id}
-                  first={index === 0}
-                  line={line}
-                  onInfo={() => showNutrientInfo(line.id, line.name, line.unit)}
-                />
-              ))
-            ) : (
-              <View style={[screen.row, screen.rowFirst]}>
-                <Text style={screen.muted}>No nutrition logged for this day.</Text>
-              </View>
-            )}
+        {hydrated ? (
+          <View style={screen.section}>
+            <Text style={screen.sectionTitle}>{nutritionSummaryTitle(day, today)}</Text>
+            <View style={screen.card}>
+              {progress.length > 0 ? (
+                progress.map((line, index) => (
+                  <NutrientProgressRow
+                    key={line.id}
+                    first={index === 0}
+                    line={line}
+                    onInfo={() => showNutrientInfo(line.id, line.name, line.unit)}
+                  />
+                ))
+              ) : (
+                <View style={[screen.row, screen.rowFirst]}>
+                  <Text style={screen.muted}>No nutrition logged for this day.</Text>
+                </View>
+              )}
+            </View>
           </View>
-        </View>
+        ) : null}
       </Screen>
       <InfoListModal
         visible={infoModal !== null}

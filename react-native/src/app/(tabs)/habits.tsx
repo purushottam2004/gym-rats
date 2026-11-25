@@ -10,6 +10,7 @@ import { Mic, Pencil, Repeat } from 'lucide-react-native'
 import { useCallback, useMemo, useState } from 'react'
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
+import { LoadingBlock } from '../../components/BrandLoader'
 import { DayControls } from '../../components/DayControls'
 import { HabitProgressFill } from '../../components/HabitProgressFill'
 import { HabitSectionHeader } from '../../components/HabitSectionHeader'
@@ -49,6 +50,7 @@ export default function HabitsScreen() {
   const [habits, setHabits] = useState<Habit[]>([])
   const [sections, setSections] = useState<HabitSection[]>([])
   const [counts, setCounts] = useState<HabitDayCount[]>([])
+  const [hydrated, setHydrated] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [voiceBusy, setVoiceBusy] = useState(false)
   const [toast, setToast] = useState<{ kind: ToastKind; message: string } | null>(null)
@@ -67,6 +69,8 @@ export default function HabitsScreen() {
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load habits')
+    } finally {
+      setHydrated(true)
     }
   }, [userId, day])
 
@@ -226,7 +230,9 @@ export default function HabitsScreen() {
         }
       >
         {error ? <Text style={screen.error}>{error}</Text> : null}
-        {noHabitsDefined ? (
+        {!hydrated ? (
+          <LoadingBlock label="Loading habits" />
+        ) : noHabitsDefined ? (
           <View style={screen.card}>
             <View style={[screen.row, screen.rowFirst]}>
               <Text style={screen.muted}>No habits yet. Tap Edit to add some.</Text>

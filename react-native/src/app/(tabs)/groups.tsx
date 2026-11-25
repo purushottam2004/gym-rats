@@ -6,6 +6,7 @@ import { Avatar } from '../../components/Avatar'
 import { InfoButton } from '../../components/InfoButton'
 import { InfoListModal } from '../../components/InfoListModal'
 import { JoinGroupModal } from '../../components/JoinGroupModal'
+import { LoadingBlock } from '../../components/BrandLoader'
 import { PhotoLightbox } from '../../components/PhotoLightbox'
 import { Screen } from '../../components/Screen'
 import { TabChrome } from '../../components/TabChrome'
@@ -16,6 +17,7 @@ export default function GroupsScreen() {
   const screen = useScreenStyles()
   const router = useRouter()
   const [groups, setGroups] = useState<Group[]>([])
+  const [hydrated, setHydrated] = useState(false)
   const [code, setCode] = useState('')
   const [joinOpen, setJoinOpen] = useState(false)
   const [joinBusy, setJoinBusy] = useState(false)
@@ -30,6 +32,8 @@ export default function GroupsScreen() {
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load groups')
+    } finally {
+      setHydrated(true)
     }
   }, [])
 
@@ -95,47 +99,51 @@ export default function GroupsScreen() {
         }
       >
         {error ? <Text style={screen.error}>{error}</Text> : null}
-        <View style={screen.card}>
-          {groups.length > 0 ? (
-            groups.map((group, index) => (
-              <View
-                key={group.id}
-                style={[screen.row, index === 0 && screen.rowFirst]}
-              >
-                <View style={screen.memberRow}>
-                  <Pressable
-                    accessibilityLabel="View group photo"
-                    accessibilityRole="button"
-                    hitSlop={4}
-                    onPress={() => setPhotoGroup(group)}
-                  >
-                    <Avatar bucket="group-avatars" name={group.name} path={group.avatar_path} />
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Open ${group.name}`}
-                    onPress={() =>
-                      router.push({ pathname: '/group/[id]', params: { id: group.id } })
-                    }
-                    style={({ pressed }) => [
-                      { flex: 1, minWidth: 0 },
-                      pressed && screen.rowPressed,
-                    ]}
-                  >
-                    <Text numberOfLines={1} style={[screen.rowTitle, screen.memberName]}>
-                      {group.name}
-                    </Text>
-                  </Pressable>
+        {!hydrated ? (
+          <LoadingBlock label="Loading groups" />
+        ) : (
+          <View style={screen.card}>
+            {groups.length > 0 ? (
+              groups.map((group, index) => (
+                <View
+                  key={group.id}
+                  style={[screen.row, index === 0 && screen.rowFirst]}
+                >
+                  <View style={screen.memberRow}>
+                    <Pressable
+                      accessibilityLabel="View group photo"
+                      accessibilityRole="button"
+                      hitSlop={4}
+                      onPress={() => setPhotoGroup(group)}
+                    >
+                      <Avatar bucket="group-avatars" name={group.name} path={group.avatar_path} />
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Open ${group.name}`}
+                      onPress={() =>
+                        router.push({ pathname: '/group/[id]', params: { id: group.id } })
+                      }
+                      style={({ pressed }) => [
+                        { flex: 1, minWidth: 0 },
+                        pressed && screen.rowPressed,
+                      ]}
+                    >
+                      <Text numberOfLines={1} style={[screen.rowTitle, screen.memberName]}>
+                        {group.name}
+                      </Text>
+                    </Pressable>
+                  </View>
+                  <InfoButton onPress={() => setCodeGroup(group)} />
                 </View>
-                <InfoButton onPress={() => setCodeGroup(group)} />
+              ))
+            ) : (
+              <View style={[screen.row, screen.rowFirst]}>
+                <Text style={screen.muted}>No groups yet. Join one or create a new group.</Text>
               </View>
-            ))
-          ) : (
-            <View style={[screen.row, screen.rowFirst]}>
-              <Text style={screen.muted}>No groups yet. Join one or create a new group.</Text>
-            </View>
-          )}
-        </View>
+            )}
+          </View>
+        )}
       </Screen>
       <JoinGroupModal
         visible={joinOpen}

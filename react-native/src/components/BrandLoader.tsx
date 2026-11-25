@@ -1,0 +1,179 @@
+import { useEffect, useState } from 'react'
+import {
+  AccessibilityInfo,
+  Animated,
+  Easing,
+  StyleSheet,
+  Text,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native'
+import { useTheme } from '../theme/ThemeProvider'
+
+type Size = 'sm' | 'md' | 'lg'
+
+type Props = {
+  /** Optional caption under the dots (e.g. "Loading groups"). */
+  label?: string
+  size?: Size
+  /** Show the Gym Rats wordmark above the dots (default for lg). */
+  showMark?: boolean
+  style?: StyleProp<ViewStyle>
+}
+
+const DOT_COUNT = 3
+
+/**
+ * Branded waiting indicator for any async gap (auth, first tab paint, joins, uploads).
+ * Three accent “rats” bounce in a pack; respects reduce-motion.
+ */
+export function BrandLoader({ label, size = 'md', showMark, style }: Props) {
+  const { colors } = useTheme()
+  const [reduceMotion, setReduceMotion] = useState(false)
+  const [phases] = useState(() =>
+    Array.from({ length: DOT_COUNT }, () => new Animated.Value(0)),
+  )
+
+  const mark = showMark ?? size === 'lg'
+  const dot = size === 'sm' ? 7 : size === 'lg' ? 12 : 9
+  const gap = size === 'sm' ? 6 : size === 'lg' ? 10 : 8
+  const lift = size === 'sm' ? 5 : size === 'lg' ? 10 : 7
+
+  useEffect(() => {
+    let alive = true
+    void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      if (alive) setReduceMotion(enabled)
+    })
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion)
+    return () => {
+      alive = false
+      sub.remove()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (reduceMotion) {
+      phases.forEach((value) => value.setValue(0.35))
+      return
+    }
+    const loops = phases.map((value, index) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(index * 120),
+          Animated.timing(value, {
+            toValue: 1,
+            duration: 320,
+            easing: Easing.bezier(0.23, 1, 0.32, 1),
+            useNativeDriver: true,
+          }),
+          Animated.timing(value, {
+            toValue: 0,
+            duration: 320,
+            easing: Easing.bezier(0.77, 0, 0.175, 1),
+            useNativeDriver: true,
+          }),
+          Animated.delay((DOT_COUNT - 1 - index) * 120 + 180),
+        ]),
+      ),
+    )
+    loops.forEach((loop) => loop.start())
+    return () => loops.forEach((loop) => loop.stop())
+  }, [phases, reduceMotion])
+
+  return (
+    <View
+      accessibilityLabel={label ?? 'Loading'}
+      accessibilityRole="progressbar"
+      style={[styles.root, style]}
+    >
+      {mark ? (
+        <Text
+          style={[
+            styles.mark,
+            {
+              color: colors.text,
+              fontSize: size === 'lg' ? 28 : 22,
+            },
+          ]}
+        >
+          Gym Rats
+        </Text>
+      ) : null}
+      <View style={[styles.row, { gap }]}>
+        {phases.map((value, index) => (
+          <Animated.View
+            key={index}
+            style={{
+              width: dot,
+              height: dot,
+              borderRadius: dot / 2,
+              backgroundColor: colors.accent,
+              opacity: value.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.35, 1],
+              }),
+              transform: [
+                {
+                  translateY: value.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, -lift],
+                  }),
+                },
+                {
+                  scale: value.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.92, 1],
+                  }),
+                },
+              ],
+            }}
+          />
+        ))}
+      </View>
+      {label ? <Text style={[styles.label, { color: colors.textMuted }]}>{label}</Text> : null}
+    </View>
+  )
+}
+
+/** Centered page/section placeholder while the first fetch is in flight. */
+export function LoadingBlock({
+  label,
+  size = 'md',
+  showMark,
+  style,
+}: Props) {
+  return (
+    <View style={[styles.block, style]}>
+      <BrandLoader label={label} showMark={showMark} size={size} />
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  root: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 14,
+  },
+  mark: {
+    fontWeight: '700',
+    letterSpacing: -0.6,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    height: 28,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  block: {
+    minHeight: 220,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    flexGrow: 1,
+  },
+})
