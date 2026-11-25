@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { habitSectionProgress, type HabitProgressPart } from '../lib/habitProgress'
+import { HabitProgressFill } from './HabitProgressFill'
 import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
 
 type Props = {
@@ -26,18 +27,7 @@ export function HabitSectionHeader({ title, parts }: Props) {
         },
       ]}
     >
-      {ratio > 0 ? (
-        <View
-          pointerEvents="none"
-          style={[
-            styles.progressFill,
-            {
-              width: `${ratio * 100}%`,
-              backgroundColor: colors.habitCompleteBg,
-            },
-          ]}
-        />
-      ) : null}
+      <HabitProgressFill parts={parts} />
       <Text style={[screen.muted, screen.rowMain, styles.content]}>{title}</Text>
       {target > 0 ? (
         <Text
@@ -60,10 +50,6 @@ export function HabitSectionHeader({ title, parts }: Props) {
 const styles = StyleSheet.create({
   row: {
     overflow: 'hidden',
-  },
-  progressFill: {
-    ...StyleSheet.absoluteFill,
-    right: undefined,
   },
   content: {
     zIndex: 1,

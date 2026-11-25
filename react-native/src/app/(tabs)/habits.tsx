@@ -7,10 +7,11 @@ import {
 } from 'expo-audio'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { Mic, Pencil, Repeat } from 'lucide-react-native'
-import { useCallback, useState } from 'react'
-import { Platform, Pressable, Text, View } from 'react-native'
+import { useCallback, useMemo, useState } from 'react'
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
 import { DayControls } from '../../components/DayControls'
+import { HabitProgressFill } from '../../components/HabitProgressFill'
 import { HabitSectionHeader } from '../../components/HabitSectionHeader'
 import { HabitSwipeRow } from '../../components/HabitSwipeRow'
 import { Screen } from '../../components/Screen'
@@ -26,6 +27,7 @@ import {
   type HabitDayCount,
   type HabitSection,
 } from '../../lib/gym'
+import { habitSectionProgress } from '../../lib/habitProgress'
 import { habitSectionCardsForDay } from '../../lib/habitSchedule'
 import { localDate } from '../../lib/localDate'
 import { useScreenStyles, useTheme } from '../../theme/ThemeProvider'
@@ -145,6 +147,11 @@ export default function HabitsScreen() {
   }
 
   const cards = habitSectionCardsForDay(habits, sections, counts, day)
+  const dayParts = useMemo(
+    () => cards.flatMap((card) => card.rows.map((row) => ({ done: row.done, target: row.target }))),
+    [cards],
+  )
+  const dayProgress = habitSectionProgress(dayParts)
   const recording = recorderState.isRecording
   const noHabitsDefined = habits.length === 0
   const nothingDue = !noHabitsDefined && cards.length === 0
@@ -159,8 +166,19 @@ export default function HabitsScreen() {
               title="Habits"
               trailing={<DayControls day={day} onChange={setDay} />}
             />
-            <View style={screen.card}>
-              <View style={screen.iconActionRow}>
+            <View
+              style={[
+                screen.card,
+                styles.actionCard,
+                {
+                  borderLeftWidth: dayProgress.ratio > 0 ? 3 : 0,
+                  borderLeftColor:
+                    dayProgress.ratio > 0 ? colors.habitCompleteBorder : 'transparent',
+                },
+              ]}
+            >
+              <HabitProgressFill parts={dayParts} />
+              <View style={[screen.iconActionRow, styles.actionRow]}>
                 <Pressable
                   accessibilityLabel="Edit habits"
                   accessibilityRole="button"
@@ -188,6 +206,20 @@ export default function HabitsScreen() {
                     strokeWidth={2.25}
                   />
                 </Pressable>
+                {dayProgress.target > 0 ? (
+                  <Text
+                    style={[
+                      screen.rowMeta,
+                      styles.dayTotal,
+                      (dayProgress.complete || dayProgress.ratio > 0) && {
+                        color: colors.habitCompleteText,
+                        fontWeight: '700',
+                      },
+                    ]}
+                  >
+                    {dayProgress.done}/{dayProgress.target}
+                  </Text>
+                ) : null}
               </View>
             </View>
           </>
@@ -238,3 +270,16 @@ export default function HabitsScreen() {
     </View>
   )
 }
+
+const styles = StyleSheet.create({
+  actionCard: {
+    position: 'relative',
+  },
+  actionRow: {
+    zIndex: 1,
+    justifyContent: 'flex-start',
+  },
+  dayTotal: {
+    marginLeft: 'auto',
+  },
+})
