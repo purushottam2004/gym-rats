@@ -43,7 +43,17 @@ export default function AddFoodScreen() {
   }
 
   return (
-    <Screen>
+    <Screen
+      footer={
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => void save()}
+          style={screen.save}
+        >
+          <Text style={screen.buttonText}>Save</Text>
+        </Pressable>
+      }
+    >
       <Text style={screen.title}>Add food</Text>
       <Text style={screen.muted}>{day}</Text>
       {error ? <Text style={screen.error}>{error}</Text> : null}
@@ -87,9 +97,6 @@ export default function AddFoodScreen() {
       </Pressable>
       <Text style={screen.label}>Amount{selected ? ` (${measureLabel(selected.measure)})` : ''}</Text>
       <AppTextInput keyboardType="decimal-pad" onChangeText={setAmount} style={screen.input} value={amount} />
-      <Pressable onPress={() => void save()} style={screen.save}>
-        <Text style={screen.buttonText}>Save</Text>
-      </Pressable>
     </Screen>
   )
 }
