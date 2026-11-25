@@ -6,10 +6,11 @@ import {
   useAudioRecorderState,
 } from 'expo-audio'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { Dumbbell, Mic } from 'lucide-react-native'
+import { Dumbbell, Mic, Plus } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
 import { Platform, Pressable, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
+import { AddSetModal } from '../../components/AddSetModal'
 import { DayControls } from '../../components/DayControls'
 import { DeleteConfirmButton } from '../../components/DeleteConfirmButton'
 import { OrdinalNumber } from '../../components/OrdinalNumber'
@@ -19,7 +20,14 @@ import { Toast, type ToastKind } from '../../components/Toast'
 import { screen } from '../../components/screenStyles'
 import { deleteSet, loadSets, logSetFromVoice, type SetLog } from '../../lib/gym'
 import { localDate } from '../../lib/localDate'
+import { nextSetAttempt, type SetAttempt } from '../../lib/nextSetAttempt'
 import { ordinalSuffix } from '../../lib/ordinal'
+
+type AddTarget = {
+  liftId: string
+  liftName: string
+  initialAttempt: SetAttempt
+}
 
 function recordingMimeType(): string {
   return Platform.OS === 'web' ? 'audio/webm' : 'audio/mp4'
@@ -36,6 +44,7 @@ export default function LiftsScreen() {
   const [error, setError] = useState<string | null>(null)
   const [voiceBusy, setVoiceBusy] = useState(false)
   const [toast, setToast] = useState<{ kind: ToastKind; message: string } | null>(null)
+  const [addTarget, setAddTarget] = useState<AddTarget | null>(null)
 
   const load = useCallback(async () => {
     if (!userId) return
@@ -149,14 +158,31 @@ export default function LiftsScreen() {
         }
       >
         {error ? <Text style={screen.error}>{error}</Text> : null}
-        {names.map((name) => (
-          <View key={name} style={screen.card}>
-            <View style={[screen.row, screen.rowFirst]}>
-              <Text style={screen.muted}>{name}</Text>
-            </View>
-            {rows
-              .filter((row) => row.lift.name === name)
-              .map((row) => (
+        {names.map((name) => {
+          const liftRows = rows.filter((row) => row.lift.name === name)
+          const liftId = liftRows[0]?.lift.id
+          return (
+            <View key={name} style={screen.card}>
+              <View style={[screen.row, screen.rowFirst]}>
+                <Text style={screen.muted}>{name}</Text>
+                {liftId ? (
+                  <Pressable
+                    accessibilityLabel={`Add set for ${name}`}
+                    accessibilityRole="button"
+                    hitSlop={8}
+                    onPress={() =>
+                      setAddTarget({
+                        liftId,
+                        liftName: name,
+                        initialAttempt: nextSetAttempt(liftRows.map((row) => row.attempt)),
+                      })
+                    }
+                  >
+                    <Plus color="#c2410c" size={22} strokeWidth={2.25} />
+                  </Pressable>
+                ) : null}
+              </View>
+              {liftRows.map((row) => (
                 <View key={row.id} style={screen.row}>
                   <View style={[screen.rowMain, screen.setLabelRow]}>
                     <OrdinalNumber value={row.attempt} />
@@ -172,9 +198,26 @@ export default function LiftsScreen() {
                   </View>
                 </View>
               ))}
-          </View>
-        ))}
+            </View>
+          )
+        })}
       </Screen>
+      {addTarget ? (
+        <AddSetModal
+          key={`${addTarget.liftId}-${addTarget.initialAttempt}-${day}`}
+          visible
+          liftId={addTarget.liftId}
+          liftName={addTarget.liftName}
+          day={day}
+          initialAttempt={addTarget.initialAttempt}
+          onCancel={() => setAddTarget(null)}
+          onSaved={() => {
+            setAddTarget(null)
+            setToast({ kind: 'success', message: 'Set added' })
+            void load()
+          }}
+        />
+      ) : null}
       <Toast
         visible={toast !== null}
         kind={toast?.kind ?? 'success'}
