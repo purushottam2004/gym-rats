@@ -239,7 +239,11 @@ export default function DietScreen() {
                   </Text>
                   <DeleteConfirmButton
                     title="Delete food?"
-                    message={`Remove ${row.food.name} from this day's log?`}
+                    message={
+                      row.source_habit_name
+                        ? `Remove ${row.food.name} from this day's log?\n\n${row.source_habit_name} habit will also be reduced by 1`
+                        : `Remove ${row.food.name} from this day's log?`
+                    }
                     onConfirm={() => void deleteIntake(row.id).then(load)}
                   />
                   <InfoButton onPress={() => showFoodInfo(row)} />

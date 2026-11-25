@@ -64,6 +64,9 @@ export type Intake = {
   amount: number
   logged_on: string
   food: Food
+  /** Present when this Intake was created by completing a Habit. */
+  source_habit_id: string | null
+  source_habit_name: string | null
 }
 
 export type Lift = {
@@ -249,7 +252,7 @@ export async function loadIntakes(userId: string, day: string): Promise<Intake[]
   const { data, error } = await db()
     .from('intakes')
     .select(
-      'id, amount, logged_on, food:foods!intakes_food_id_fkey(id, name, measure, basis, food_nutrients(amount, nutrient:nutrients(id, name, unit)))',
+      'id, amount, logged_on, source_habit_id, food:foods!intakes_food_id_fkey(id, name, measure, basis, food_nutrients(amount, nutrient:nutrients(id, name, unit))), source_habit:habits!intakes_source_habit_id_fkey(id, name)',
     )
     .eq('user_id', userId)
     .eq('logged_on', day)
@@ -263,10 +266,13 @@ export async function loadIntakes(userId: string, day: string): Promise<Intake[]
       basis: Basis
       food_nutrients?: { amount: number; nutrient: Nutrient }[]
     }
+    const sourceHabit = row.source_habit as unknown as { id: string; name: string } | null
     return {
       id: row.id as string,
       amount: Number(row.amount),
       logged_on: row.logged_on as string,
+      source_habit_id: (row.source_habit_id as string | null) ?? null,
+      source_habit_name: sourceHabit?.name ?? null,
       food: {
         id: food.id,
         name: food.name,
