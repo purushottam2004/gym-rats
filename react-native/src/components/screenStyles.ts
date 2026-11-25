@@ -21,6 +21,14 @@ export const screen = StyleSheet.create({
     gap: 12,
     backgroundColor: '#f5f5f4',
   },
+  stickyFooter: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 16,
+    backgroundColor: '#f5f5f4',
+    borderTopWidth: 1,
+    borderTopColor: '#e7e5e4',
+  },
   scrollContent: {
     padding: 16,
     gap: 12,

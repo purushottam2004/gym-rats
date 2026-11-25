@@ -52,7 +52,17 @@ export default function LiftCatalogScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Screen>
+      <Screen
+        footer={
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/new-lift')}
+            style={screen.save}
+          >
+            <Text style={screen.buttonText}>Add New Lift</Text>
+          </Pressable>
+        }
+      >
         <Text style={screen.title}>Lift Catalog</Text>
         {error ? <Text style={screen.error}>{error}</Text> : null}
         <View style={screen.card}>
@@ -72,15 +82,6 @@ export default function LiftCatalogScreen() {
               <Text style={screen.muted}>No lifts in the catalog yet.</Text>
             </View>
           )}
-        </View>
-        <View style={screen.section}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push('/new-lift')}
-            style={screen.save}
-          >
-            <Text style={screen.buttonText}>Add New Lift</Text>
-          </Pressable>
         </View>
       </Screen>
       <ConfirmModal

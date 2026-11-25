@@ -78,7 +78,17 @@ export default function FoodCatalogScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Screen>
+      <Screen
+        footer={
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/new-food')}
+            style={screen.save}
+          >
+            <Text style={screen.buttonText}>Add New Food</Text>
+          </Pressable>
+        }
+      >
         <Text style={screen.title}>Food Catalog</Text>
         {error ? <Text style={screen.error}>{error}</Text> : null}
         <View style={screen.card}>
@@ -100,15 +110,6 @@ export default function FoodCatalogScreen() {
               <Text style={screen.muted}>No foods in your catalog yet.</Text>
             </View>
           )}
-        </View>
-        <View style={screen.section}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push('/new-food')}
-            style={screen.save}
-          >
-            <Text style={screen.buttonText}>Add New Food</Text>
-          </Pressable>
         </View>
       </Screen>
       <InfoListModal
