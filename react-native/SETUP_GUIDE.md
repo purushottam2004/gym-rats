@@ -74,34 +74,35 @@ pnpm web
 
 JS and asset changes can ship to an already-installed iOS/Android binary without a store reinstall. Native module, permission, or Expo SDK changes still need a new binary.
 
-Repo config is already in place (`expo-updates`, `eas.json` `preview` / `production` channels, `runtimeVersion.policy: fingerprint`). You still need an Expo project link before the first publish — `updates.url` and `extra.eas.projectId` are written by `eas update:configure`.
+Repo config is in place (`expo-updates`, `eas.json` `preview` / `production` channels, `runtimeVersion.policy: fingerprint`, `updates.url`, `extra.eas.projectId`, Expo `owner`). The project is linked on Expo as `@purushottamdafures-team/blankslate-react-native`. Re-run `eas init` / `update:configure` only if you recreate the Expo project or move ownership.
 
-### One-time external setup (you)
+### First preview binary + publish
 
-1. Create or sign in to an [Expo account](https://expo.dev/signup).
-2. From `react-native/`, authenticate EAS CLI:
-
-   ```bash
-   npx eas-cli@latest login
-   npx eas-cli@latest init --non-interactive
-   pnpm update:configure
-   ```
-
-   That writes `extra.eas.projectId` and `updates.url` into `app.json`. Commit those two fields.
-3. Build a binary that includes that config (simulator preview is enough to try OTA):
+1. Build a binary that includes the update URL (simulator preview is enough to try OTA; no Apple Developer Program required for the `preview` profile's iOS simulator builds):
 
    ```bash
    npx eas-cli@latest build --platform ios --profile preview
    ```
 
-   Device / App Store builds need an Apple Developer Program membership and interactive credential prompts the first time.
-4. Publish a JS update:
+   Device / App Store / internal-distribution device builds need an Apple Developer Program membership and interactive credential prompts the first time (Apple ID, team, certificates/profiles).
+2. Publish a JS update:
 
    ```bash
    pnpm update:preview -- --message "describe the change"
    ```
 
    Force-quit and reopen the preview build up to twice to download and apply it.
+
+### Re-link (only if needed)
+
+From `react-native/`, with Expo auth (`eas login` or `EXPO_TOKEN`):
+
+```bash
+npx eas-cli@latest init --non-interactive
+pnpm update:configure
+```
+
+That refreshes `extra.eas.projectId` and `updates.url` in `app.json`. Commit those fields.
 
 ### So a Cloud Agent can finish linking / publishing
 
