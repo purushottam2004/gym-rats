@@ -11,7 +11,10 @@
     "web": "expo start --web",
     "lint": "eslint .",
     "type-check": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
-    "test": "node --experimental-strip-types --test src/lib/devHost.test.ts src/lib/fileId.test.ts src/lib/foodDelete.test.ts src/lib/liftCards.test.ts src/lib/liftDelete.test.ts src/lib/localDate.test.ts src/lib/measure.test.ts src/lib/nextSetAttempt.test.ts src/lib/nutrition.test.ts src/lib/ordinal.test.ts src/lib/relativeTime.test.ts src/lib/setOrder.test.ts src/lib/voiceSet.test.ts src/lib/weekday.test.ts src/theme/appearancePreference.test.ts"
+    "test": "node --experimental-strip-types --test src/lib/devHost.test.ts src/lib/fileId.test.ts src/lib/foodDelete.test.ts src/lib/liftCards.test.ts src/lib/liftDelete.test.ts src/lib/localDate.test.ts src/lib/measure.test.ts src/lib/nextSetAttempt.test.ts src/lib/nutrition.test.ts src/lib/ordinal.test.ts src/lib/relativeTime.test.ts src/lib/setOrder.test.ts src/lib/voiceSet.test.ts src/lib/weekday.test.ts src/theme/appearancePreference.test.ts",
+    "update:configure": "eas-cli update:configure",
+    "update:preview": "eas-cli update --channel preview --environment preview",
+    "update:production": "eas-cli update --channel production --environment production"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.2",
@@ -23,6 +26,7 @@
     "expo-router": "~58.0.32",
     "expo-sqlite": "~58.0.18",
     "expo-status-bar": "~58.0.5",
+    "expo-updates": "~58.0.22",
     "lucide-react-native": "^1.77.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",

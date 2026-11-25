@@ -70,6 +70,43 @@ pnpm web
 
 `pnpm start` opens Metro. From that terminal, press `i` for the iOS simulator, `a` for the Android emulator, or `w` for the browser. Expo web listens on port **8081**. Vite stays on `5173`. FastAPI stays on `8080`.
 
+## Over-the-air updates (EAS Update)
+
+JS and asset changes can ship to an already-installed iOS/Android binary without a store reinstall. Native module, permission, or Expo SDK changes still need a new binary.
+
+Repo config is already in place (`expo-updates`, `eas.json` `preview` / `production` channels, `runtimeVersion.policy: fingerprint`). You still need an Expo project link before the first publish — `updates.url` and `extra.eas.projectId` are written by `eas update:configure`.
+
+### One-time external setup (you)
+
+1. Create or sign in to an [Expo account](https://expo.dev/signup).
+2. From `react-native/`, authenticate EAS CLI:
+
+   ```bash
+   npx eas-cli@latest login
+   npx eas-cli@latest init --non-interactive
+   pnpm update:configure
+   ```
+
+   That writes `extra.eas.projectId` and `updates.url` into `app.json`. Commit those two fields.
+3. Build a binary that includes that config (simulator preview is enough to try OTA):
+
+   ```bash
+   npx eas-cli@latest build --platform ios --profile preview
+   ```
+
+   Device / App Store builds need an Apple Developer Program membership and interactive credential prompts the first time.
+4. Publish a JS update:
+
+   ```bash
+   pnpm update:preview -- --message "describe the change"
+   ```
+
+   Force-quit and reopen the preview build up to twice to download and apply it.
+
+### So a Cloud Agent can finish linking / publishing
+
+There is no Expo MCP connector in this environment. Add an Expo access token as a Cursor Cloud Agent **environment secret** named `EXPO_TOKEN` ([create a token](https://expo.dev/accounts/[account]/settings/access-tokens)). With that secret present, an agent can run `eas init`, `eas update:configure`, `eas update`, and non-interactive builds without `eas login`. Do not paste the token into chat.
+
 ## Verify: login → Hello
 
 With Supabase and the backend already running:

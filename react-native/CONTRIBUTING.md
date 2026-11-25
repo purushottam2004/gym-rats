@@ -14,6 +14,18 @@ pnpm test
 
 `pnpm test` is a Node unit test. It does not need a simulator, Supabase, or the backend.
 
+## Shipping JS without a new binary
+
+Use Expo Update for JS/asset-only fixes. After the one-time link in [SETUP_GUIDE.md](./SETUP_GUIDE.md#over-the-air-updates-eas-update):
+
+```bash
+pnpm update:preview -- --message "short description"
+# or
+pnpm update:production -- --message "short description"
+```
+
+If you change native deps, plugins, permissions, or the Expo SDK, bump/build a new binary instead — `runtimeVersion.policy: fingerprint` will not match the old install.
+
 ## Where to change code
 
 - **Screens and URLs** → `src/app/`. A new file there is a new route. Do not put clients or helpers in this folder.

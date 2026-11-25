@@ -32,3 +32,7 @@ A file inside `src/app/` becomes a route. That is why `supabase.ts` lives in `sr
 | Styling | React Native `StyleSheet` | Login and home are small screens. Add NativeWind later if you want Tailwind `className`s |
 
 Setup: [SETUP_GUIDE.md](./SETUP_GUIDE.md). Contribution rules: [CONTRIBUTING.md](./CONTRIBUTING.md). Tests: [TESTING.md](./TESTING.md).
+
+## Over-the-air updates
+
+Release builds can pull JS/asset updates from Expo Update (`eas update`) without reinstalling. See [SETUP_GUIDE.md — Over-the-air updates](./SETUP_GUIDE.md#over-the-air-updates-eas-update) for the one-time Expo account / `EXPO_TOKEN` steps. Channels: `preview`, `production` (see `eas.json`).
