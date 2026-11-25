@@ -67,6 +67,7 @@ export type SetLog = {
   reps: number
   load_kg: number
   logged_on: string
+  created_at: string
   lift: Lift
 }
 
@@ -310,10 +311,11 @@ export { isLiftInUseError } from './liftDelete'
 export async function loadSets(userId: string, day: string): Promise<SetLog[]> {
   const { data, error } = await db()
     .from('sets')
-    .select('id, attempt, reps, load_kg, logged_on, lift:lifts!sets_lift_id_fkey(id, name)')
+    .select('id, attempt, reps, load_kg, logged_on, created_at, lift:lifts!sets_lift_id_fkey(id, name)')
     .eq('user_id', userId)
     .eq('logged_on', day)
-    .order('created_at')
+    .order('attempt', { ascending: true })
+    .order('created_at', { ascending: true })
   fail(error)
   return (data ?? []).map((row) => ({
     id: row.id as string,
@@ -321,6 +323,7 @@ export async function loadSets(userId: string, day: string): Promise<SetLog[]> {
     reps: row.reps as number,
     load_kg: Number(row.load_kg),
     logged_on: row.logged_on as string,
+    created_at: row.created_at as string,
     lift: row.lift as unknown as Lift,
   }))
 }

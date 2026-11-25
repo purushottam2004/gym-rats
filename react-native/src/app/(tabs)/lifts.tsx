@@ -22,6 +22,7 @@ import { deleteSet, loadSets, logSetFromVoice, type SetLog } from '../../lib/gym
 import { localDate } from '../../lib/localDate'
 import { nextSetAttempt, type SetAttempt } from '../../lib/nextSetAttempt'
 import { ordinalSuffix } from '../../lib/ordinal'
+import { compareSetsByAttemptThenCreated } from '../../lib/setOrder'
 
 type AddTarget = {
   liftId: string
@@ -159,7 +160,10 @@ export default function LiftsScreen() {
       >
         {error ? <Text style={screen.error}>{error}</Text> : null}
         {names.map((name) => {
-          const liftRows = rows.filter((row) => row.lift.name === name)
+          const liftRows = rows
+            .filter((row) => row.lift.name === name)
+            .slice()
+            .sort(compareSetsByAttemptThenCreated)
           const liftId = liftRows[0]?.lift.id
           return (
             <View key={name} style={screen.card}>

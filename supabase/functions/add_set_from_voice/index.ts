@@ -149,7 +149,7 @@ async function parseSetFromTranscript(
       understood: { type: "boolean" },
       error: { type: ["string", "null"] },
       lift_name: { type: ["string", "null"] },
-      attempt: { type: ["integer", "null"] },
+      attempt: { type: ["integer", "null"], minimum: 1, maximum: 5 },
       reps: { type: ["integer", "null"] },
       load_kg: { type: ["number", "null"] },
     },
@@ -175,7 +175,7 @@ async function parseSetFromTranscript(
             "- Always return lift_name using the list entry's exact spelling once matched.\n" +
             "- Only set understood=false for lift_name when no list lift is a reasonable match.\n" +
             "Numbers:\n" +
-            "- attempt and reps are whole numbers >= 1. load_kg is kilograms >= 0.\n" +
+            "- attempt is a whole number from 1 to 5. reps are whole numbers >= 1. load_kg is kilograms >= 0.\n" +
             "- Convert spoken weight units when needed (e.g. 100 pounds ≈ 45.4 kg). Do not reject unusual loads.\n" +
             "If speech is unclear or a required field cannot be determined, set understood=false and explain in error.",
         },
@@ -291,8 +291,12 @@ export default {
     const attempt = parsed.attempt;
     const reps = parsed.reps;
     const loadKg = parsed.load_kg;
-    if (!Number.isInteger(attempt) || (attempt as number) < 1) {
-      return jsonErr("Attempt must be a whole number, 1 or more");
+    if (
+      !Number.isInteger(attempt) ||
+      (attempt as number) < 1 ||
+      (attempt as number) > 5
+    ) {
+      return jsonErr("Attempt must be a whole number from 1 to 5");
     }
     if (!Number.isInteger(reps) || (reps as number) < 1) {
       return jsonErr("Reps must be a whole number, 1 or more");
