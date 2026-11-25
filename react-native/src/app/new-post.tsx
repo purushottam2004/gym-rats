@@ -67,6 +67,10 @@ export default function NewPostScreen() {
         <Text style={screen.secondaryButtonText}>{imageUri ? 'Photo chosen' : 'Add a photo'}</Text>
       </Pressable>
       <Text style={screen.muted}>Who can see it</Text>
+      <Text style={screen.body}>
+        Profile shares with people in any of your groups. A group-only post is visible only to
+        members of that group.
+      </Text>
       <View style={screen.card}>
         <Pressable
           accessibilityRole="checkbox"

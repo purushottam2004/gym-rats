@@ -22,3 +22,11 @@ export function formatDay(iso: string, now = new Date()): string {
     day: 'numeric',
   })
 }
+
+/** Inclusive start / exclusive end of a local calendar day, as UTC ISO strings. */
+export function dayBoundsIso(iso: string): { start: string; end: string } {
+  const [year, month, day] = iso.split('-').map(Number)
+  const start = new Date(year, month - 1, day)
+  const end = new Date(year, month - 1, day + 1)
+  return { start: start.toISOString(), end: end.toISOString() }
+}

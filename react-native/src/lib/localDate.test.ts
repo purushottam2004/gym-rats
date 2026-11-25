@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { formatDay, localDate, shiftDate } from './localDate.ts'
+import { dayBoundsIso, formatDay, localDate, shiftDate } from './localDate.ts'
 
 describe('localDate', () => {
   it('uses the device calendar, not UTC', () => {
@@ -17,5 +17,15 @@ describe('localDate', () => {
     const now = new Date(2026, 10, 22, 9, 0, 0)
     assert.equal(formatDay('2026-11-22', now), 'Today')
     assert.match(formatDay('2026-11-21', now), /Nov/)
+  })
+
+  it('builds exclusive local-day bounds as UTC ISO', () => {
+    const { start, end } = dayBoundsIso('2026-11-22')
+    assert.equal(new Date(start).getFullYear(), 2026)
+    assert.equal(new Date(start).getMonth(), 10)
+    assert.equal(new Date(start).getDate(), 22)
+    assert.equal(new Date(start).getHours(), 0)
+    assert.equal(new Date(end).getDate(), 23)
+    assert.equal(new Date(end).getHours(), 0)
   })
 })

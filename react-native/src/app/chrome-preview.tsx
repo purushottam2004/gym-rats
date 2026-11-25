@@ -280,24 +280,44 @@ export default function ChromePreviewScreen() {
     )
   } else if (tab === 'posts') {
     header = (
-      <TabChrome
-        icon={ImageIcon}
-        title="Posts"
-        trailing={
-          <Pressable>
-            <Text style={screen.addText}>New</Text>
-          </Pressable>
-        }
-      />
+      <>
+        <TabChrome
+          icon={ImageIcon}
+          title="Posts"
+          trailing={<DayControls day={day} onChange={setDay} />}
+        />
+        <View style={screen.card}>
+          <View style={screen.iconActionRow}>
+            <View style={screen.iconActionButton}>
+              <Plus color={colors.accent} size={22} strokeWidth={2.25} />
+            </View>
+          </View>
+        </View>
+      </>
     )
     body = (
-      <View style={screen.card}>
-        <View style={[screen.row, screen.rowFirst]}>
-          <View style={screen.memberRow}>
-            <Avatar name="Hemraj" path={null} />
-            <View style={{ flex: 1 }}>
-              <Text style={screen.rowTitle}>Testing</Text>
+      <View style={screen.postCard}>
+        <View style={screen.postTapBody}>
+          <Text style={screen.rowTitle}>Testing</Text>
+        </View>
+        <View style={screen.postBody}>
+          <View style={screen.postMetaRow}>
+            <Avatar name="Hemraj" path={null} size={40} />
+            <View style={screen.rowMain}>
               <Text style={screen.muted}>Hemraj · Hemraj Thakre Mitr Parivar</Text>
+            </View>
+          </View>
+          <View style={screen.reactionChipRow}>
+            <View style={[screen.reactionChip, screen.reactionChipMine]}>
+              <Text style={screen.reactionChipText}>❤️ 2</Text>
+            </View>
+          </View>
+          <View style={screen.postActionRow}>
+            <View style={screen.postActionButton}>
+              <Text style={screen.postActionLabel}>React</Text>
+            </View>
+            <View style={screen.postActionButton}>
+              <Text style={screen.postActionLabel}>Comment</Text>
             </View>
           </View>
         </View>

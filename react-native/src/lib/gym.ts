@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { randomFileId } from './fileId'
+import { dayBoundsIso } from './localDate'
 import type { Basis, Measure } from './measure'
 import { getSupabaseClient } from './supabase'
 import {
@@ -9,6 +10,7 @@ import {
   type HabitRecurrence,
   type Weekday,
 } from './habitSchedule'
+import type { ReactionRow } from './postSocial'
 import {
   bytesToBase64,
   parseVoiceHabitResponse,
@@ -110,6 +112,17 @@ export type Post = {
   created_at: string
   author: Profile
   audiences: Audience[]
+  reactions: ReactionRow[]
+  comment_count: number
+}
+
+export type PostComment = {
+  id: string
+  post_id: string
+  user_id: string
+  body: string
+  created_at: string
+  author: Profile
 }
 
 export function publicImageUrl(bucket: ImageBucket, path: string | null): string | null {
@@ -885,23 +898,34 @@ export async function setGroupAvatar(groupId: string, path: string): Promise<voi
   fail(error)
 }
 
-export async function loadPosts(): Promise<Post[]> {
+export async function loadPosts(day: string): Promise<Post[]> {
+  const { start, end } = dayBoundsIso(day)
   const { data, error } = await db()
     .from('posts')
     .select(
-      'id, user_id, body, image_path, created_at, author:users!posts_user_id_fkey(id, display_name, avatar_path), audiences:post_audiences(id, kind, group_id)',
+      'id, user_id, body, image_path, created_at, author:users!posts_user_id_fkey(id, display_name, avatar_path), audiences:post_audiences(id, kind, group_id), reactions:post_reactions(emoji, user_id), comments:post_comments(count)',
     )
+    .gte('created_at', start)
+    .lt('created_at', end)
     .order('created_at', { ascending: false })
   fail(error)
-  return (data ?? []).map((row) => ({
-    id: row.id as string,
-    user_id: row.user_id as string,
-    body: (row.body as string | null) ?? null,
-    image_path: (row.image_path as string | null) ?? null,
-    created_at: row.created_at as string,
-    author: row.author as unknown as Profile,
-    audiences: (row.audiences ?? []) as Audience[],
-  }))
+  return (data ?? []).map((row) => {
+    const commentRows = (row.comments ?? []) as { count: number }[]
+    return {
+      id: row.id as string,
+      user_id: row.user_id as string,
+      body: (row.body as string | null) ?? null,
+      image_path: (row.image_path as string | null) ?? null,
+      created_at: row.created_at as string,
+      author: row.author as unknown as Profile,
+      audiences: (row.audiences ?? []) as Audience[],
+      reactions: ((row.reactions ?? []) as ReactionRow[]).map((reaction) => ({
+        emoji: reaction.emoji,
+        user_id: reaction.user_id,
+      })),
+      comment_count: commentRows[0]?.count ?? 0,
+    }
+  })
 }
 
 export async function createPost(input: {
@@ -912,6 +936,9 @@ export async function createPost(input: {
 }): Promise<void> {
   const text = input.body.trim()
   if (!text && !input.imagePath) throw new Error('A post needs text or a photo')
+  if (!input.profile && input.groupIds.length === 0) {
+    throw new Error('Choose Profile or at least one group')
+  }
   const { data: userData, error: userError } = await db().auth.getUser()
   fail(userError)
   const userId = userData.user?.id
@@ -928,13 +955,89 @@ export async function createPost(input: {
     ...(input.profile ? [{ post_id: postId, kind: 'profile', group_id: null }] : []),
     ...input.groupIds.map((groupId) => ({ post_id: postId, kind: 'group', group_id: groupId })),
   ]
-  if (rows.length === 0) return
   const { error: audienceError } = await db().from('post_audiences').insert(rows)
   fail(audienceError)
 }
 
 export async function deletePost(id: string): Promise<void> {
   const { error } = await db().from('posts').delete().eq('id', id)
+  fail(error)
+}
+
+export async function setPostReaction(postId: string, emoji: string): Promise<void> {
+  const { data: userData, error: userError } = await db().auth.getUser()
+  fail(userError)
+  const userId = userData.user?.id
+  if (!userId) throw new Error('Not signed in')
+  const { error } = await db()
+    .from('post_reactions')
+    .upsert(
+      { post_id: postId, user_id: userId, emoji },
+      { onConflict: 'post_id,user_id' },
+    )
+  fail(error)
+}
+
+export async function clearPostReaction(postId: string): Promise<void> {
+  const { data: userData, error: userError } = await db().auth.getUser()
+  fail(userError)
+  const userId = userData.user?.id
+  if (!userId) throw new Error('Not signed in')
+  const { error } = await db()
+    .from('post_reactions')
+    .delete()
+    .eq('post_id', postId)
+    .eq('user_id', userId)
+  fail(error)
+}
+
+export async function loadPostComments(postId: string): Promise<PostComment[]> {
+  const { data, error } = await db()
+    .from('post_comments')
+    .select(
+      'id, post_id, user_id, body, created_at, author:users!post_comments_user_id_fkey(id, display_name, avatar_path)',
+    )
+    .eq('post_id', postId)
+    .order('created_at', { ascending: true })
+  fail(error)
+  return (data ?? []).map((row) => ({
+    id: row.id as string,
+    post_id: row.post_id as string,
+    user_id: row.user_id as string,
+    body: row.body as string,
+    created_at: row.created_at as string,
+    author: row.author as unknown as Profile,
+  }))
+}
+
+export async function addPostComment(postId: string, body: string): Promise<PostComment> {
+  const text = body.trim()
+  if (!text) throw new Error('Write a comment first')
+  const { data: userData, error: userError } = await db().auth.getUser()
+  fail(userError)
+  const userId = userData.user?.id
+  if (!userId) throw new Error('Not signed in')
+  const { data, error } = await db()
+    .from('post_comments')
+    .insert({ post_id: postId, user_id: userId, body: text })
+    .select(
+      'id, post_id, user_id, body, created_at, author:users!post_comments_user_id_fkey(id, display_name, avatar_path)',
+    )
+    .single()
+  fail(error)
+  if (!data) throw new Error('Could not add the comment')
+  return {
+    id: data.id as string,
+    post_id: data.post_id as string,
+    user_id: data.user_id as string,
+    body: data.body as string,
+    created_at: data.created_at as string,
+    author: data.author as unknown as Profile,
+  }
+}
+
+export async function deletePostComment(id: string): Promise<void> {
+  const { error } = await db().from('post_comments').delete().eq('id', id)
   fail(error)
 }
 

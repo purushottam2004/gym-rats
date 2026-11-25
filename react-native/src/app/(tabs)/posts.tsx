@@ -1,36 +1,51 @@
 import { useFocusEffect, useRouter } from 'expo-router'
-import { Image as ImageIcon } from 'lucide-react-native'
+import { Image as ImageIcon, Plus } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
-import { Image, Pressable, Text, View } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
-import { Avatar } from '../../components/Avatar'
 import { ConfirmModal } from '../../components/ConfirmModal'
+import { DayControls } from '../../components/DayControls'
+import { PostCard } from '../../components/PostCard'
+import { PostCommentsModal } from '../../components/PostCommentsModal'
+import { ReactionPickerModal } from '../../components/ReactionPickerModal'
 import { Screen } from '../../components/Screen'
 import { TabChrome } from '../../components/TabChrome'
-import { TrashButton } from '../../components/TrashButton'
-import { useScreenStyles } from '../../theme/ThemeProvider'
-import { deletePost, loadGroups, loadPosts, publicImageUrl, type Post } from '../../lib/gym'
-import { formatRelativeTime } from '../../lib/relativeTime'
+import { useScreenStyles, useTheme } from '../../theme/ThemeProvider'
+import {
+  clearPostReaction,
+  deletePost,
+  loadGroups,
+  loadPosts,
+  setPostReaction,
+  type Post,
+} from '../../lib/gym'
+import { localDate } from '../../lib/localDate'
+import { applyReactionChoice, type ReactionRow } from '../../lib/postSocial'
 
 export default function PostsScreen() {
   const screen = useScreenStyles()
+  const { colors } = useTheme()
   const { session } = useAuth()
   const router = useRouter()
+  const myUserId = session?.user.id
+  const [day, setDay] = useState(localDate)
   const [posts, setPosts] = useState<Post[]>([])
   const [names, setNames] = useState<Record<string, string>>({})
   const [error, setError] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Post | null>(null)
+  const [reactPostId, setReactPostId] = useState<string | null>(null)
+  const [commentsPostId, setCommentsPostId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try {
-      const [nextPosts, groups] = await Promise.all([loadPosts(), loadGroups()])
+      const [nextPosts, groups] = await Promise.all([loadPosts(day), loadGroups()])
       setPosts(nextPosts)
       setNames(Object.fromEntries(groups.map((group) => [group.id, group.name])))
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load posts')
     }
-  }, [])
+  }, [day])
 
   useFocusEffect(
     useCallback(() => {
@@ -38,48 +53,84 @@ export default function PostsScreen() {
     }, [load]),
   )
 
+  function audienceLabel(post: Post): string {
+    return post.audiences
+      .map((item) => (item.kind === 'profile' ? 'Profile' : names[item.group_id ?? ''] ?? 'Group'))
+      .join(' · ')
+  }
+
+  const updateCommentCount = useCallback((postId: string, count: number) => {
+    setPosts((current) =>
+      current.map((post) => (post.id === postId ? { ...post, comment_count: count } : post)),
+    )
+  }, [])
+
+  function patchReactions(postId: string, next: ReactionRow[]) {
+    setPosts((current) =>
+      current.map((post) => (post.id === postId ? { ...post, reactions: next } : post)),
+    )
+  }
+
+  async function commitReaction(postId: string, next: ReactionRow[]) {
+    if (!myUserId) return
+    const previous = posts.find((post) => post.id === postId)?.reactions ?? []
+    patchReactions(postId, next)
+    const mine = next.find((row) => row.user_id === myUserId)
+    try {
+      if (mine) await setPostReaction(postId, mine.emoji)
+      else await clearPostReaction(postId)
+    } catch (err) {
+      patchReactions(postId, previous)
+      setError(err instanceof Error ? err.message : 'Could not update reaction')
+    }
+  }
+
+  const reactTarget = posts.find((post) => post.id === reactPostId) ?? null
+  const myReaction = reactTarget?.reactions.find((row) => row.user_id === myUserId)?.emoji ?? null
+
   return (
     <View style={{ flex: 1 }}>
       <Screen
         header={
-          <TabChrome
-            icon={ImageIcon}
-            title="Posts"
-            trailing={
-              <Pressable onPress={() => router.push('/new-post')}>
-                <Text style={screen.addText}>New</Text>
-              </Pressable>
-            }
-          />
+          <>
+            <TabChrome
+              icon={ImageIcon}
+              title="Posts"
+              trailing={<DayControls day={day} onChange={setDay} />}
+            />
+            <View style={screen.card}>
+              <View style={screen.iconActionRow}>
+                <Pressable
+                  accessibilityLabel="New post"
+                  accessibilityRole="button"
+                  onPress={() => router.push('/new-post')}
+                  style={({ pressed }) => [screen.iconActionButton, pressed && screen.rowPressed]}
+                >
+                  <Plus color={colors.accent} size={22} strokeWidth={2.25} />
+                </Pressable>
+              </View>
+            </View>
+          </>
         }
       >
         {error ? <Text style={screen.error}>{error}</Text> : null}
-        {posts.map((post) => {
-          const audience = post.audiences
-            .map((item) => (item.kind === 'profile' ? 'Profile' : names[item.group_id ?? ''] ?? 'Group'))
-            .join(' · ')
-          const image = publicImageUrl('post-images', post.image_path)
-          const own = post.user_id === session?.user.id
-          const when = formatRelativeTime(post.created_at)
-          const meta = [post.author.display_name ?? 'Unnamed', audience || null, when || null]
-            .filter(Boolean)
-            .join(' · ')
-          return (
-            <View key={post.id} style={screen.postCard}>
-              {image ? <Image source={{ uri: image }} style={screen.postImage} /> : null}
-              <View style={screen.postBody}>
-                <View style={screen.postMetaRow}>
-                  <Avatar name={post.author.display_name} path={post.author.avatar_path} size={40} />
-                  <View style={screen.rowMain}>
-                    {post.body ? <Text style={screen.rowTitle}>{post.body}</Text> : null}
-                    <Text style={screen.muted}>{meta}</Text>
-                  </View>
-                  {own ? <TrashButton onPress={() => setPendingDelete(post)} /> : null}
-                </View>
-              </View>
-            </View>
-          )
-        })}
+        {posts.length === 0 && !error ? (
+          <Text style={screen.muted}>No posts for this day.</Text>
+        ) : null}
+        {posts.map((post) => (
+          <PostCard
+            key={post.id}
+            post={post}
+            audienceLabel={audienceLabel(post)}
+            myUserId={myUserId}
+            onDelete={
+              post.user_id === myUserId ? () => setPendingDelete(post) : undefined
+            }
+            onReact={(postId, next) => void commitReaction(postId, next)}
+            onOpenReactions={() => setReactPostId(post.id)}
+            onOpenComments={() => setCommentsPostId(post.id)}
+          />
+        ))}
       </Screen>
       <ConfirmModal
         visible={pendingDelete !== null}
@@ -91,6 +142,27 @@ export default function PostsScreen() {
           setPendingDelete(null)
           if (post) void deletePost(post.id).then(load)
         }}
+      />
+      <ReactionPickerModal
+        visible={reactPostId !== null}
+        selected={myReaction}
+        onClose={() => setReactPostId(null)}
+        onPick={(emoji) => {
+          const postId = reactPostId
+          setReactPostId(null)
+          if (!postId || !myUserId) return
+          const current = posts.find((post) => post.id === postId)?.reactions ?? []
+          const next = applyReactionChoice(current, myUserId, emoji)
+          void commitReaction(postId, next)
+        }}
+      />
+      <PostCommentsModal
+        key={commentsPostId ?? 'closed'}
+        visible={commentsPostId !== null}
+        postId={commentsPostId}
+        myUserId={myUserId}
+        onClose={() => setCommentsPostId(null)}
+        onCountChange={updateCommentCount}
       />
     </View>
   )
