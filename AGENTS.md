@@ -10,6 +10,10 @@ This file applies to **every** task in this monorepo.
 4. Do **not** edit the codebase or create a commit until that reading is done for the packages in scope.
 5. **Before any commit:** run the mandatory checks in [CONTRIBUTING.md — Before committing](./CONTRIBUTING.md#before-committing-mandatory) for every package you touched. Do not commit on type-check-only or “seeded OK” when lint/tests/e2e apply.
 
+## Git / branches
+
+**Always commit and push directly to `main`.** Do **not** create feature branches, `cursor/*` branches, or any other side branch for agent work. Do **not** open a PR just to land routine changes — push to `main` only.
+
 ## GitHub
 
 Use the **`gh` CLI** for all GitHub work in this repo: issues, pull requests, checks, releases, branch/PR inspection, and reviewing CI failures. Prefer `gh` over the GitHub website or inventing raw `curl`/`api.github.com` calls.
