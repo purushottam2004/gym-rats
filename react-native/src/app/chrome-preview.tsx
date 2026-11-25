@@ -6,6 +6,7 @@ import {
   Image as ImageIcon,
   Mic,
   Plus,
+  Target,
   UserRound,
   Users,
   Utensils,
@@ -58,21 +59,12 @@ function FakeTabBar({ active }: { active: Tab }) {
   )
 }
 
-function ActionRow({ addLabel, catalogLabel }: { addLabel: string; catalogLabel: string }) {
-  return (
-    <View style={screen.card}>
-      <View style={[screen.addRow, screen.addRowFirst]}>
-        <Text style={[screen.addText, screen.dietActionSide]}>{addLabel}</Text>
-        <View style={screen.dietMicButton}>
-          <Mic color="#c2410c" size={20} strokeWidth={2.25} />
-        </View>
-        <Text style={[screen.addText, screen.dietActionSide, screen.dietActionSideEnd]}>{catalogLabel}</Text>
-      </View>
-    </View>
-  )
-}
-
-function LiftsIconActionRow() {
+function IconActionRow({
+  second,
+}: {
+  second: 'week' | 'goals'
+}) {
+  const SecondIcon = second === 'week' ? CalendarDays : Target
   return (
     <View style={screen.card}>
       <View style={screen.iconActionRow}>
@@ -80,7 +72,7 @@ function LiftsIconActionRow() {
           <Plus color="#c2410c" size={22} strokeWidth={2.25} />
         </View>
         <View style={screen.iconActionButton}>
-          <CalendarDays color="#c2410c" size={20} strokeWidth={2.25} />
+          <SecondIcon color="#c2410c" size={20} strokeWidth={2.25} />
         </View>
         <View style={screen.iconActionButton}>
           <BookOpen color="#c2410c" size={20} strokeWidth={2.25} />
@@ -105,7 +97,7 @@ export default function ChromePreviewScreen() {
     header = (
       <>
         <TabChrome icon={Utensils} title="Diet" trailing={<DayControls day={day} onChange={setDay} />} />
-        <ActionRow addLabel="Add food" catalogLabel="View Catalog" />
+        <IconActionRow second="goals" />
       </>
     )
     body = (
@@ -132,7 +124,7 @@ export default function ChromePreviewScreen() {
     header = (
       <>
         <TabChrome icon={Dumbbell} title="Lifts" trailing={<DayControls day={day} onChange={setDay} />} />
-        <LiftsIconActionRow />
+        <IconActionRow second="week" />
       </>
     )
     body = (

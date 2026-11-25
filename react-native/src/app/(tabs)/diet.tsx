@@ -6,7 +6,7 @@ import {
   useAudioRecorderState,
 } from 'expo-audio'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { Mic, Utensils } from 'lucide-react-native'
+import { BookOpen, Mic, Plus, Target, Utensils } from 'lucide-react-native'
 import { useCallback, useMemo, useState } from 'react'
 import { Platform, Pressable, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
@@ -45,6 +45,8 @@ type InfoModalState = {
   rows: InfoListRow[]
   emptyMessage: string
 }
+
+const ACTION_ICON = '#c2410c'
 
 function recordingMimeType(): string {
   return Platform.OS === 'web' ? 'audio/webm' : 'audio/mp4'
@@ -179,13 +181,30 @@ export default function DietScreen() {
               trailing={<DayControls day={day} onChange={setDay} />}
             />
             <View style={screen.card}>
-              <View style={[screen.addRow, screen.addRowFirst]}>
+              <View style={screen.iconActionRow}>
                 <Pressable
+                  accessibilityLabel="Add food"
                   accessibilityRole="button"
                   onPress={() => router.push({ pathname: '/add-food', params: { day } })}
-                  style={screen.dietActionSide}
+                  style={({ pressed }) => [screen.iconActionButton, pressed && screen.rowPressed]}
                 >
-                  <Text style={screen.addText}>Add food</Text>
+                  <Plus color={ACTION_ICON} size={22} strokeWidth={2.25} />
+                </Pressable>
+                <Pressable
+                  accessibilityLabel="Nutrient goals"
+                  accessibilityRole="button"
+                  onPress={() => router.push('/nutrient-goals')}
+                  style={({ pressed }) => [screen.iconActionButton, pressed && screen.rowPressed]}
+                >
+                  <Target color={ACTION_ICON} size={20} strokeWidth={2.25} />
+                </Pressable>
+                <Pressable
+                  accessibilityLabel="View catalog"
+                  accessibilityRole="button"
+                  onPress={() => router.push('/food-catalog')}
+                  style={({ pressed }) => [screen.iconActionButton, pressed && screen.rowPressed]}
+                >
+                  <BookOpen color={ACTION_ICON} size={20} strokeWidth={2.25} />
                 </Pressable>
                 <Pressable
                   accessibilityLabel={recording ? 'Stop recording and add food' : 'Speak a food'}
@@ -193,19 +212,12 @@ export default function DietScreen() {
                   disabled={voiceBusy}
                   onPress={() => void toggleVoice()}
                   style={({ pressed }) => [
-                    screen.dietMicButton,
+                    screen.iconActionButton,
                     recording && screen.micButtonActive,
                     (pressed || voiceBusy) && screen.buttonDisabled,
                   ]}
                 >
-                  <Mic color={recording ? '#9a3412' : '#1c1917'} size={20} strokeWidth={2.25} />
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => router.push('/food-catalog')}
-                  style={[screen.dietActionSide, screen.dietActionSideEnd]}
-                >
-                  <Text style={screen.addText}>View Catalog</Text>
+                  <Mic color={recording ? '#9a3412' : ACTION_ICON} size={20} strokeWidth={2.25} />
                 </Pressable>
               </View>
             </View>
