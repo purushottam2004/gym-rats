@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'supabase/**'
+      - '.github/workflows/supabase-cd.yaml'
   workflow_dispatch:
 
 jobs:
@@ -22,9 +23,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: supabase/setup-cli@v1
+      # Pin the CLI so setup does not call the GitHub releases API for "latest"
+      # (that lookup is what failed deploy with "rate limit exceeded").
+      - uses: supabase/setup-cli@v3
         with:
-          version: latest
+          version: 3.4.0
 
       - run: supabase link --project-ref $SUPABASE_PROJECT_ID
         working-directory: supabase
