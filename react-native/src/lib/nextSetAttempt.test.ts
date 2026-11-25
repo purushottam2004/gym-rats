@@ -7,13 +7,15 @@ describe('nextSetAttempt', () => {
     assert.equal(nextSetAttempt([]), 1)
   })
 
-  it('returns the lowest unused number in 1–5', () => {
+  it('returns one past the highest attempt', () => {
     assert.equal(nextSetAttempt([1, 2, 3]), 4)
-    assert.equal(nextSetAttempt([1, 3]), 2)
-    assert.equal(nextSetAttempt([2, 3, 4, 5]), 1)
+    assert.equal(nextSetAttempt([1, 3]), 4)
+    assert.equal(nextSetAttempt([2]), 3)
   })
 
-  it('returns 1 when every slot is taken', () => {
-    assert.equal(nextSetAttempt([1, 2, 3, 4, 5]), 1)
+  it('stays on 5 when the highest is already 5', () => {
+    assert.equal(nextSetAttempt([2, 3, 4, 5]), 5)
+    assert.equal(nextSetAttempt([1, 2, 3, 4, 5]), 5)
+    assert.equal(nextSetAttempt([5]), 5)
   })
 })
