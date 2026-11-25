@@ -1,6 +1,6 @@
 import { MessageCircle, SmilePlus } from 'lucide-react-native'
 import { useRef, useState } from 'react'
-import { Animated, Image, Pressable, Text, View } from 'react-native'
+import { Animated, Image, Platform, Pressable, Text, View } from 'react-native'
 import { Avatar } from './Avatar'
 import { PhotoLightbox } from './PhotoLightbox'
 import { TrashButton } from './TrashButton'
@@ -16,6 +16,10 @@ import { formatRelativeTime } from '../lib/relativeTime'
 import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
 
 const DOUBLE_TAP_MS = 280
+
+function blockBrowserImageMenu(event: { preventDefault?: () => void }) {
+  event.preventDefault?.()
+}
 
 type Props = {
   post: Post
@@ -85,8 +89,27 @@ export function PostCard({
         delayLongPress={350}
         onLongPress={image ? () => setLightboxOpen(true) : undefined}
         onPress={onMediaPress}
+        {...(Platform.OS === 'web'
+          ? ({ onContextMenu: blockBrowserImageMenu } as object)
+          : null)}
       >
-        {image ? <Image source={{ uri: image }} style={screen.postImage} /> : null}
+        {image ? (
+          Platform.OS === 'web' ? (
+            // Background image (not <img>) so Safari/Chrome cannot open Save/Copy on long-press.
+            <View
+              style={[
+                screen.postImage,
+                {
+                  backgroundImage: `url("${image}")`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                } as object,
+              ]}
+            />
+          ) : (
+            <Image pointerEvents="none" source={{ uri: image }} style={screen.postImage} />
+          )
+        ) : null}
         {!image && post.body ? (
           <View style={screen.postTapBody}>
             <Text style={screen.rowTitle}>{post.body}</Text>
@@ -168,7 +191,6 @@ export function PostCard({
       </View>
       <PhotoLightbox
         visible={lightboxOpen}
-        name={post.author.display_name}
         imageUri={image}
         onClose={() => setLightboxOpen(false)}
       />

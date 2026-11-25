@@ -136,11 +136,6 @@ export function createScreenStyles(c: ThemeColors) {
       gap: 16,
       width: '100%',
     },
-    photoLightboxImage: {
-      width: '100%',
-      height: '80%',
-      maxHeight: 560,
-    },
     photoLightboxName: {
       color: '#fafaf9',
       fontSize: 20,
@@ -211,6 +206,12 @@ export function createScreenStyles(c: ThemeColors) {
     postImage: {
       height: 200,
       backgroundColor: c.avatarFallback,
+      // Suppress Safari/Chrome mobile image long-press callout (RN Web → DOM).
+      ...({
+        WebkitTouchCallout: 'none',
+        WebkitUserSelect: 'none',
+        userSelect: 'none',
+      } as object),
     },
     postBody: {
       paddingHorizontal: 14,

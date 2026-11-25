@@ -1,4 +1,4 @@
-import { Image, Modal, Pressable, Text, View } from 'react-native'
+import { Dimensions, Image, Modal, Pressable, Text, View } from 'react-native'
 import { Avatar } from './Avatar'
 import { useScreenStyles } from '../theme/ThemeProvider'
 
@@ -22,6 +22,8 @@ export function PhotoLightbox({
   onClose,
 }: Props) {
   const screen = useScreenStyles()
+  const window = Dimensions.get('window')
+
   return (
     <Modal animationType="fade" transparent visible={visible} onRequestClose={onClose}>
       <Pressable
@@ -30,19 +32,23 @@ export function PhotoLightbox({
         onPress={onClose}
         style={screen.photoLightboxBackdrop}
       >
-        <View style={screen.photoLightboxBody}>
-          {imageUri ? (
-            <Image
-              accessibilityLabel={name ? `${name} photo` : 'Photo'}
-              resizeMode="contain"
-              source={{ uri: imageUri }}
-              style={screen.photoLightboxImage}
-            />
-          ) : (
+        {imageUri ? (
+          <Image
+            accessibilityLabel={name ? `${name} photo` : 'Photo'}
+            resizeMode="contain"
+            source={{ uri: imageUri }}
+            style={{ width: window.width, height: window.height }}
+            {...({
+              draggable: false,
+              onContextMenu: (event: { preventDefault: () => void }) => event.preventDefault(),
+            } as object)}
+          />
+        ) : (
+          <View style={screen.photoLightboxBody}>
             <Avatar bucket={bucket} name={name} path={path} size={220} />
-          )}
-          {name ? <Text style={screen.photoLightboxName}>{name}</Text> : null}
-        </View>
+            {name ? <Text style={screen.photoLightboxName}>{name}</Text> : null}
+          </View>
+        )}
       </Pressable>
     </Modal>
   )
