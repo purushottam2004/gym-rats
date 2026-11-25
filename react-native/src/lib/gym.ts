@@ -705,6 +705,17 @@ export type BumpHabitResult = {
   foodLogError?: string
 }
 
+async function readHabitDayCount(habitId: string, day: string): Promise<number> {
+  const { data, error } = await db()
+    .from('habit_day_counts')
+    .select('count')
+    .eq('habit_id', habitId)
+    .eq('logged_on', day)
+    .maybeSingle()
+  fail(error)
+  return (data?.count as number | undefined) ?? 0
+}
+
 /** Increment the selected day's count by delta (may be negative). Syncs linked Diet Intakes. */
 export async function bumpHabitDayCount(input: {
   habitId: string
@@ -716,61 +727,64 @@ export async function bumpHabitDayCount(input: {
   const userId = userData.user?.id
   if (!userId) throw new Error('Not signed in')
 
-  const { data, error } = await db()
-    .from('habit_day_counts')
-    .select('count')
-    .eq('habit_id', input.habitId)
-    .eq('logged_on', input.day)
-    .maybeSingle()
-  fail(error)
-  const current = (data?.count as number | undefined) ?? 0
+  const current = await readHabitDayCount(input.habitId, input.day)
+
+  if (input.delta === 0) {
+    return { count: current }
+  }
+
+  const habits = await loadHabits(userId, { includeArchived: true })
+  const habit = habits.find((row) => row.id === input.habitId)
+  const hasFoodLink = Boolean(habit?.food_id && habit.food_amount != null)
+
+  // −1 with a food link: delete the Habit-created Intake; DB trigger decrements the count.
+  if (input.delta < 0 && hasFoodLink) {
+    const { data: linked, error: linkedError } = await db()
+      .from('intakes')
+      .select('id')
+      .eq('source_habit_id', input.habitId)
+      .eq('logged_on', input.day)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    fail(linkedError)
+    if (linked?.id) {
+      await deleteIntake(linked.id as string)
+      return { count: await readHabitDayCount(input.habitId, input.day) }
+    }
+    // No linked Intake left — still lower the Habit count.
+    const next = await setHabitDayCount({
+      habitId: input.habitId,
+      day: input.day,
+      count: current + input.delta,
+    })
+    return { count: next }
+  }
+
   const next = await setHabitDayCount({
     habitId: input.habitId,
     day: input.day,
     count: current + input.delta,
   })
 
-  if (input.delta === 0 || next === current) {
+  if (input.delta < 0 || !hasFoodLink || !habit?.food_id || habit.food_amount == null) {
     return { count: next }
   }
 
-  const habits = await loadHabits(userId, { includeArchived: true })
-  const habit = habits.find((row) => row.id === input.habitId)
-  if (!habit?.food_id || habit.food_amount == null) {
-    return { count: next }
-  }
-
-  if (input.delta > 0) {
-    try {
-      await logIntake(habit.food_id, habit.food_amount, input.day, {
-        sourceHabitId: habit.id,
-      })
-      return { count: next, foodLogged: true }
-    } catch (err) {
-      return {
-        count: next,
-        foodLogError:
-          err instanceof Error && err.message.trim()
-            ? err.message.trim()
-            : 'Could not log linked food',
-      }
+  try {
+    await logIntake(habit.food_id, habit.food_amount, input.day, {
+      sourceHabitId: habit.id,
+    })
+    return { count: next, foodLogged: true }
+  } catch (err) {
+    return {
+      count: next,
+      foodLogError:
+        err instanceof Error && err.message.trim()
+          ? err.message.trim()
+          : 'Could not log linked food',
     }
   }
-
-  // delta < 0: remove one Intake this Habit created on this Day (newest first).
-  const { data: linked, error: linkedError } = await db()
-    .from('intakes')
-    .select('id')
-    .eq('source_habit_id', input.habitId)
-    .eq('logged_on', input.day)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  fail(linkedError)
-  if (linked?.id) {
-    await deleteIntake(linked.id as string)
-  }
-  return { count: next }
 }
 
 /** Sends a recording to complete_habits_from_voice (OpenAI + bump due Habits). */
