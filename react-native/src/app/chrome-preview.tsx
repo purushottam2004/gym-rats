@@ -4,10 +4,12 @@ import {
   CalendarDays,
   Dumbbell,
   Image as ImageIcon,
+  MessageCircle,
   Mic,
   Pencil,
   Plus,
   Repeat,
+  SmilePlus,
   Target,
   UserRound,
   Users,
@@ -314,10 +316,11 @@ export default function ChromePreviewScreen() {
           </View>
           <View style={screen.postActionRow}>
             <View style={screen.postActionButton}>
-              <Text style={screen.postActionLabel}>React</Text>
+              <SmilePlus color={colors.accent} size={18} strokeWidth={2.25} />
             </View>
             <View style={screen.postActionButton}>
-              <Text style={screen.postActionLabel}>Comment</Text>
+              <MessageCircle color={colors.accent} size={18} strokeWidth={2.25} />
+              <Text style={screen.postActionLabel}>1</Text>
             </View>
           </View>
         </View>

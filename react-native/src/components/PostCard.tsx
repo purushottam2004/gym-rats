@@ -147,18 +147,19 @@ export function PostCard({
             style={({ pressed }) => [screen.postActionButton, pressed && screen.rowPressed]}
           >
             <SmilePlus color={colors.accent} size={18} strokeWidth={2.25} />
-            <Text style={screen.postActionLabel}>{mine ?? 'React'}</Text>
           </Pressable>
           <Pressable
-            accessibilityLabel="Comments"
+            accessibilityLabel={
+              post.comment_count > 0 ? `${post.comment_count} comments` : 'Comments'
+            }
             accessibilityRole="button"
             onPress={onOpenComments}
             style={({ pressed }) => [screen.postActionButton, pressed && screen.rowPressed]}
           >
             <MessageCircle color={colors.accent} size={18} strokeWidth={2.25} />
-            <Text style={screen.postActionLabel}>
-              {post.comment_count > 0 ? `${post.comment_count}` : 'Comment'}
-            </Text>
+            {post.comment_count > 0 ? (
+              <Text style={screen.postActionLabel}>{post.comment_count}</Text>
+            ) : null}
           </Pressable>
         </View>
       </View>
