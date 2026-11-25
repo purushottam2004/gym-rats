@@ -2,14 +2,15 @@ import * as ImagePicker from 'expo-image-picker'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { Pencil, UserRound } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
-import { Image, Pressable, Text, View } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
 import { AppTextInput } from '../../components/AppTextInput'
+import { Avatar } from '../../components/Avatar'
 import { Screen } from '../../components/Screen'
 import { TabChrome } from '../../components/TabChrome'
 import type { AppearancePreference } from '../../theme/appearancePreference'
 import { useScreenStyles, useTheme } from '../../theme/ThemeProvider'
-import { loadProfile, publicImageUrl, saveAvatarPath, saveDisplayName, uploadImage, type Profile } from '../../lib/gym'
+import { loadProfile, saveAvatarPath, saveDisplayName, uploadImage, type Profile } from '../../lib/gym'
 
 const APPEARANCE_OPTIONS: { value: AppearancePreference; label: string }[] = [
   { value: 'light', label: 'Light' },
@@ -82,8 +83,6 @@ export default function ProfileScreen() {
     }
   }
 
-  const photo = publicImageUrl('avatars', profile?.avatar_path ?? null)
-
   return (
     <Screen header={<TabChrome icon={UserRound} title="Profile" />}>
       {error ? <Text style={screen.error}>{error}</Text> : null}
@@ -95,18 +94,7 @@ export default function ProfileScreen() {
           onPress={() => void pickPhoto()}
           style={photoBusy ? screen.buttonDisabled : undefined}
         >
-          {photo ? (
-            <Image source={{ uri: photo }} style={{ width: 84, height: 84, borderRadius: 42 }} />
-          ) : (
-            <View
-              style={{
-                width: 84,
-                height: 84,
-                borderRadius: 42,
-                backgroundColor: colors.avatarFallback,
-              }}
-            />
-          )}
+          <Avatar name={profile?.display_name} path={profile?.avatar_path} size={84} />
         </Pressable>
         {editingName ? (
           <View style={screen.nameEditRow}>
