@@ -18,6 +18,9 @@ const daily: Habit = {
   weekdays: [1, 2, 3, 4, 5],
   sort_order: 0,
   active: true,
+  food_id: null,
+  food_amount: null,
+  food: null,
 }
 
 const weekly: Habit = {
@@ -28,6 +31,9 @@ const weekly: Habit = {
   weekdays: [0, 1, 2, 3, 4, 5, 6],
   sort_order: 1,
   active: true,
+  food_id: null,
+  food_amount: null,
+  food: null,
 }
 
 describe('mondayOfWeek / weekDates', () => {

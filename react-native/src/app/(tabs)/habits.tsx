@@ -122,8 +122,14 @@ export default function HabitsScreen() {
 
   async function bump(habitId: string, delta: number) {
     try {
-      await bumpHabitDayCount({ habitId, day, delta })
+      const result = await bumpHabitDayCount({ habitId, day, delta })
       await load()
+      if (result.foodLogError) {
+        setToast({
+          kind: 'error',
+          message: `Habit updated, but food was not logged: ${result.foodLogError}`,
+        })
+      }
     } catch (err) {
       setToast({
         kind: 'error',

@@ -4,6 +4,12 @@ export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6
 
 export type HabitRecurrence = 'per_day' | 'per_week'
 
+export type HabitFoodLink = {
+  id: string
+  name: string
+  measure: string
+}
+
 export type Habit = {
   id: string
   name: string
@@ -12,6 +18,10 @@ export type Habit = {
   weekdays: Weekday[]
   sort_order: number
   active: boolean
+  /** Optional Diet link: completing logs this Food. */
+  food_id: string | null
+  food_amount: number | null
+  food: HabitFoodLink | null
 }
 
 export type HabitDayCount = {

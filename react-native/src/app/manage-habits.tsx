@@ -15,14 +15,18 @@ import {
 import { useScreenStyles } from '../theme/ThemeProvider'
 
 function scheduleLabel(habit: Habit): string {
-  if (habit.recurrence === 'per_week') {
-    return `${habit.frequency}× / week`
+  const base =
+    habit.recurrence === 'per_week'
+      ? `${habit.frequency}× / week`
+      : `${habit.frequency}× · ${
+          habit.weekdays.length === 7
+            ? 'every day'
+            : `${habit.weekdays.length} weekday${habit.weekdays.length === 1 ? '' : 's'}`
+        }`
+  if (habit.food?.name && habit.food_amount != null) {
+    return `${base} · logs ${habit.food.name}`
   }
-  const days =
-    habit.weekdays.length === 7
-      ? 'every day'
-      : `${habit.weekdays.length} weekday${habit.weekdays.length === 1 ? '' : 's'}`
-  return `${habit.frequency}× · ${days}`
+  return base
 }
 
 export default function ManageHabitsScreen() {

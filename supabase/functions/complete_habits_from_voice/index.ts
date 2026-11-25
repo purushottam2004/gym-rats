@@ -10,6 +10,8 @@ type HabitRow = {
   recurrence: "per_day" | "per_week";
   frequency: number;
   weekdays: number[];
+  food_id: string | null;
+  food_amount: number | null;
 };
 
 type ParsedHabits = {
@@ -260,7 +262,7 @@ export default {
 
     const { data: habits, error: habitsError } = await ctx.supabase
       .from("habits")
-      .select("id, name, recurrence, frequency, weekdays")
+      .select("id, name, recurrence, frequency, weekdays, food_id, food_amount")
       .eq("user_id", userId)
       .eq("active", true)
       .order("sort_order");
@@ -330,6 +332,21 @@ export default {
       if (upsertError) {
         return jsonErr(upsertError.message);
       }
+
+      if (habit.food_id && habit.food_amount != null && Number(habit.food_amount) > 0) {
+        const { error: intakeError } = await ctx.supabase.from("intakes").insert({
+          user_id: userId,
+          food_id: habit.food_id,
+          amount: habit.food_amount,
+          logged_on: loggedOn,
+          source_habit_id: habit.id,
+        });
+        if (intakeError) {
+          console.error("habit food log failed", intakeError);
+          // Count already saved; surface food failure in the habit name note via completed payload.
+        }
+      }
+
       completed.push({
         habit_id: habit.id,
         habit_name: habit.name,

@@ -1,4 +1,5 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
+import { Circle, CircleCheck } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { useAuth } from '../auth/AuthProvider'
@@ -7,8 +8,11 @@ import { Screen } from '../components/Screen'
 import { Toast, type ToastKind } from '../components/Toast'
 import {
   createHabit,
+  loadFoods,
   loadHabits,
+  measureLabel,
   updateHabit,
+  type Food,
   type HabitRecurrence,
 } from '../lib/gym'
 import { WEEKDAY_LABELS, type Weekday } from '../lib/weekday'
@@ -29,17 +33,30 @@ export default function EditHabitScreen() {
   const [recurrence, setRecurrence] = useState<HabitRecurrence>('per_day')
   const [frequency, setFrequency] = useState('1')
   const [weekdays, setWeekdays] = useState<Weekday[]>(ALL_DAYS)
+  const [logFood, setLogFood] = useState(false)
+  const [foods, setFoods] = useState<Food[]>([])
+  const [foodId, setFoodId] = useState<string | null>(null)
+  const [foodAmount, setFoodAmount] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [toast, setToast] = useState<{ kind: ToastKind; message: string } | null>(null)
   const [busy, setBusy] = useState(false)
   const [loaded, setLoaded] = useState(!editing)
 
   const load = useCallback(async () => {
-    if (!editing || !id || !userId) {
+    if (!userId) {
       setLoaded(true)
       return
     }
     try {
+      const catalog = await loadFoods(userId)
+      setFoods(catalog)
+
+      if (!editing || !id) {
+        setFoodId((current) => current ?? catalog[0]?.id ?? null)
+        setLoaded(true)
+        return
+      }
+
       const habits = await loadHabits(userId, { includeArchived: true })
       const habit = habits.find((row) => row.id === id)
       if (!habit || !habit.active) {
@@ -51,6 +68,15 @@ export default function EditHabitScreen() {
       setRecurrence(habit.recurrence)
       setFrequency(String(habit.frequency))
       setWeekdays(habit.weekdays.slice() as Weekday[])
+      if (habit.food_id && habit.food_amount != null) {
+        setLogFood(true)
+        setFoodId(habit.food_id)
+        setFoodAmount(String(habit.food_amount))
+      } else {
+        setLogFood(false)
+        setFoodId(catalog[0]?.id ?? null)
+        setFoodAmount('')
+      }
       setError(null)
       setLoaded(true)
     } catch (err) {
@@ -75,6 +101,8 @@ export default function EditHabitScreen() {
     })
   }
 
+  const selectedFood = foods.find((food) => food.id === foodId)
+
   async function save() {
     const trimmed = name.trim()
     const freq = Number(frequency)
@@ -90,6 +118,19 @@ export default function EditHabitScreen() {
       setToast({ kind: 'error', message: 'Pick at least one weekday' })
       return
     }
+
+    let linkFoodId: string | null = null
+    let linkAmount: number | null = null
+    if (logFood) {
+      const amount = Number(foodAmount)
+      if (!foodId || !(amount > 0)) {
+        setToast({ kind: 'error', message: 'Choose a food and an amount greater than zero' })
+        return
+      }
+      linkFoodId = foodId
+      linkAmount = amount
+    }
+
     setBusy(true)
     try {
       if (editing && id) {
@@ -99,6 +140,8 @@ export default function EditHabitScreen() {
           recurrence,
           frequency: freq,
           weekdays,
+          foodId: linkFoodId,
+          foodAmount: linkAmount,
         })
       } else {
         await createHabit({
@@ -106,6 +149,8 @@ export default function EditHabitScreen() {
           recurrence,
           frequency: freq,
           weekdays,
+          foodId: linkFoodId,
+          foodAmount: linkAmount,
         })
       }
       router.back()
@@ -241,6 +286,71 @@ export default function EditHabitScreen() {
             Shows every day. Completions any day count toward this week (Mon–Sun).
           </Text>
         )}
+
+        <Text style={screen.label}>Log food when completed</Text>
+        <Text style={screen.muted}>
+          Optional. Each +1 on a day adds this food to Diet for that day.
+        </Text>
+        <View style={screen.card}>
+          <Pressable
+            accessibilityRole="switch"
+            accessibilityState={{ checked: logFood }}
+            onPress={() => setLogFood((value) => !value)}
+            style={[screen.row, screen.rowFirst]}
+          >
+            <Text style={[screen.rowTitle, screen.rowMain]}>Link a food</Text>
+            <Text style={screen.muted}>{logFood ? 'On' : 'Off'}</Text>
+          </Pressable>
+        </View>
+
+        {logFood ? (
+          <>
+            {foods.length > 0 ? (
+              <View style={screen.card}>
+                {foods.map((food, index) => {
+                  const selected = foodId === food.id
+                  return (
+                    <Pressable
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected }}
+                      key={food.id}
+                      onPress={() => setFoodId(food.id)}
+                      style={({ pressed }) => [
+                        screen.row,
+                        index === 0 && screen.rowFirst,
+                        selected && screen.rowSelected,
+                        pressed && (selected ? screen.rowSelectedPressed : screen.rowPressed),
+                      ]}
+                    >
+                      <Text style={[screen.rowTitle, selected && screen.rowTitleSelected]}>
+                        {food.name}
+                      </Text>
+                      <View style={screen.choiceTrail}>
+                        <Text style={screen.muted}>{measureLabel(food.measure)}</Text>
+                        {selected ? (
+                          <CircleCheck color={colors.accent} size={20} strokeWidth={2.25} />
+                        ) : (
+                          <Circle color={colors.border} size={20} strokeWidth={1.75} />
+                        )}
+                      </View>
+                    </Pressable>
+                  )
+                })}
+              </View>
+            ) : (
+              <Text style={screen.muted}>Add a food in Diet first, then link it here.</Text>
+            )}
+            <Text style={screen.label}>
+              Amount{selectedFood ? ` (${measureLabel(selectedFood.measure)})` : ''}
+            </Text>
+            <AppTextInput
+              keyboardType="decimal-pad"
+              onChangeText={setFoodAmount}
+              style={screen.input}
+              value={foodAmount}
+            />
+          </>
+        ) : null}
       </Screen>
       <Toast
         visible={toast !== null}

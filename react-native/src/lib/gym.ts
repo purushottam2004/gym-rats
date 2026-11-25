@@ -281,18 +281,30 @@ export async function loadIntakes(userId: string, day: string): Promise<Intake[]
   })
 }
 
-export async function logIntake(foodId: string, amount: number, day: string): Promise<void> {
+export async function logIntake(
+  foodId: string,
+  amount: number,
+  day: string,
+  opts?: { sourceHabitId?: string },
+): Promise<string> {
   const { data: userData, error: userError } = await db().auth.getUser()
   fail(userError)
   const userId = userData.user?.id
   if (!userId) throw new Error('Not signed in')
-  const { error } = await db().from('intakes').insert({
-    user_id: userId,
-    food_id: foodId,
-    amount,
-    logged_on: day,
-  })
+  const { data, error } = await db()
+    .from('intakes')
+    .insert({
+      user_id: userId,
+      food_id: foodId,
+      amount,
+      logged_on: day,
+      source_habit_id: opts?.sourceHabitId ?? null,
+    })
+    .select('id')
+    .single()
   fail(error)
+  if (!data?.id) throw new Error('Could not save intake')
+  return data.id as string
 }
 
 export async function deleteIntake(id: string): Promise<void> {
@@ -470,7 +482,16 @@ export async function deleteSet(id: string): Promise<void> {
   fail(error)
 }
 
+const HABIT_SELECT =
+  'id, name, recurrence, frequency, weekdays, sort_order, active, food_id, food_amount, food:foods!habits_food_id_fkey(id, name, measure)'
+
 function mapHabitRow(row: Record<string, unknown>): Habit {
+  const foodRaw = row.food as { id: string; name: string; measure: string } | null | undefined
+  const foodId = (row.food_id as string | null) ?? null
+  const foodAmount =
+    row.food_amount == null || row.food_amount === ''
+      ? null
+      : Number(row.food_amount)
   return {
     id: row.id as string,
     name: row.name as string,
@@ -479,6 +500,12 @@ function mapHabitRow(row: Record<string, unknown>): Habit {
     weekdays: (row.weekdays as number[]).map((n) => n as Weekday),
     sort_order: row.sort_order as number,
     active: Boolean(row.active),
+    food_id: foodId,
+    food_amount: foodAmount,
+    food:
+      foodId && foodRaw
+        ? { id: foodRaw.id, name: foodRaw.name, measure: foodRaw.measure }
+        : null,
   }
 }
 
@@ -486,7 +513,7 @@ function mapHabitRow(row: Record<string, unknown>): Habit {
 export async function loadHabits(userId: string, opts?: { includeArchived?: boolean }): Promise<Habit[]> {
   let query = db()
     .from('habits')
-    .select('id, name, recurrence, frequency, weekdays, sort_order, active')
+    .select(HABIT_SELECT)
     .eq('user_id', userId)
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: true })
@@ -514,11 +541,31 @@ export async function loadHabitDayCounts(userId: string, day: string): Promise<H
   }))
 }
 
+export type HabitFoodLinkInput = {
+  foodId: string | null
+  foodAmount: number | null
+}
+
+function normalizeFoodLink(link: HabitFoodLinkInput): {
+  food_id: string | null
+  food_amount: number | null
+} {
+  if (!link.foodId || link.foodAmount == null) {
+    return { food_id: null, food_amount: null }
+  }
+  if (!(link.foodAmount > 0)) {
+    throw new Error('Food amount must be greater than zero')
+  }
+  return { food_id: link.foodId, food_amount: link.foodAmount }
+}
+
 export async function createHabit(input: {
   name: string
   recurrence: HabitRecurrence
   frequency: number
   weekdays: Weekday[]
+  foodId?: string | null
+  foodAmount?: number | null
 }): Promise<Habit> {
   const { data: userData, error: userError } = await db().auth.getUser()
   fail(userError)
@@ -531,6 +578,16 @@ export async function createHabit(input: {
 
   const weekdays =
     input.recurrence === 'per_week' ? ([0, 1, 2, 3, 4, 5, 6] as Weekday[]) : input.weekdays
+  const foodLink = normalizeFoodLink({
+    foodId: input.foodId ?? null,
+    foodAmount: input.foodAmount ?? null,
+  })
+  if (foodLink.food_id) {
+    const foods = await loadFoods(userId)
+    if (!foods.some((food) => food.id === foodLink.food_id)) {
+      throw new Error('Choose a food from your catalog')
+    }
+  }
 
   const { data, error } = await db()
     .from('habits')
@@ -542,8 +599,10 @@ export async function createHabit(input: {
       weekdays,
       sort_order: sortOrder,
       active: true,
+      food_id: foodLink.food_id,
+      food_amount: foodLink.food_amount,
     })
-    .select('id, name, recurrence, frequency, weekdays, sort_order, active')
+    .select(HABIT_SELECT)
     .single()
   fail(error)
   return mapHabitRow(data as Record<string, unknown>)
@@ -555,9 +614,25 @@ export async function updateHabit(input: {
   recurrence: HabitRecurrence
   frequency: number
   weekdays: Weekday[]
+  foodId?: string | null
+  foodAmount?: number | null
 }): Promise<void> {
   const weekdays =
     input.recurrence === 'per_week' ? ([0, 1, 2, 3, 4, 5, 6] as Weekday[]) : input.weekdays
+  const foodLink = normalizeFoodLink({
+    foodId: input.foodId ?? null,
+    foodAmount: input.foodAmount ?? null,
+  })
+  if (foodLink.food_id) {
+    const { data: userData, error: userError } = await db().auth.getUser()
+    fail(userError)
+    const userId = userData.user?.id
+    if (!userId) throw new Error('Not signed in')
+    const foods = await loadFoods(userId)
+    if (!foods.some((food) => food.id === foodLink.food_id)) {
+      throw new Error('Choose a food from your catalog')
+    }
+  }
   const { error } = await db()
     .from('habits')
     .update({
@@ -565,6 +640,8 @@ export async function updateHabit(input: {
       recurrence: input.recurrence,
       frequency: input.frequency,
       weekdays,
+      food_id: foodLink.food_id,
+      food_amount: foodLink.food_amount,
     })
     .eq('id', input.id)
   fail(error)
@@ -620,12 +697,20 @@ export async function setHabitDayCount(input: {
   return next
 }
 
-/** Increment the selected day's count by delta (may be negative). Returns new day count. */
+export type BumpHabitResult = {
+  count: number
+  /** True when a linked Food Intake was inserted for this +1. */
+  foodLogged?: boolean
+  /** Set when the count changed but the linked Food log failed. */
+  foodLogError?: string
+}
+
+/** Increment the selected day's count by delta (may be negative). Syncs linked Diet Intakes. */
 export async function bumpHabitDayCount(input: {
   habitId: string
   day: string
   delta: number
-}): Promise<number> {
+}): Promise<BumpHabitResult> {
   const { data: userData, error: userError } = await db().auth.getUser()
   fail(userError)
   const userId = userData.user?.id
@@ -639,11 +724,53 @@ export async function bumpHabitDayCount(input: {
     .maybeSingle()
   fail(error)
   const current = (data?.count as number | undefined) ?? 0
-  return setHabitDayCount({
+  const next = await setHabitDayCount({
     habitId: input.habitId,
     day: input.day,
     count: current + input.delta,
   })
+
+  if (input.delta === 0 || next === current) {
+    return { count: next }
+  }
+
+  const habits = await loadHabits(userId, { includeArchived: true })
+  const habit = habits.find((row) => row.id === input.habitId)
+  if (!habit?.food_id || habit.food_amount == null) {
+    return { count: next }
+  }
+
+  if (input.delta > 0) {
+    try {
+      await logIntake(habit.food_id, habit.food_amount, input.day, {
+        sourceHabitId: habit.id,
+      })
+      return { count: next, foodLogged: true }
+    } catch (err) {
+      return {
+        count: next,
+        foodLogError:
+          err instanceof Error && err.message.trim()
+            ? err.message.trim()
+            : 'Could not log linked food',
+      }
+    }
+  }
+
+  // delta < 0: remove one Intake this Habit created on this Day (newest first).
+  const { data: linked, error: linkedError } = await db()
+    .from('intakes')
+    .select('id')
+    .eq('source_habit_id', input.habitId)
+    .eq('logged_on', input.day)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  fail(linkedError)
+  if (linked?.id) {
+    await deleteIntake(linked.id as string)
+  }
+  return { count: next }
 }
 
 /** Sends a recording to complete_habits_from_voice (OpenAI + bump due Habits). */
