@@ -6,6 +6,7 @@ import { Avatar } from '../../components/Avatar'
 import { InfoButton } from '../../components/InfoButton'
 import { InfoListModal } from '../../components/InfoListModal'
 import { JoinGroupModal } from '../../components/JoinGroupModal'
+import { PhotoLightbox } from '../../components/PhotoLightbox'
 import { Screen } from '../../components/Screen'
 import { TabChrome } from '../../components/TabChrome'
 import { useScreenStyles } from '../../theme/ThemeProvider'
@@ -21,6 +22,7 @@ export default function GroupsScreen() {
   const [joinError, setJoinError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [codeGroup, setCodeGroup] = useState<Group | null>(null)
+  const [photoGroup, setPhotoGroup] = useState<Group | null>(null)
 
   const load = useCallback(async () => {
     try {
@@ -100,22 +102,31 @@ export default function GroupsScreen() {
                 key={group.id}
                 style={[screen.row, index === 0 && screen.rowFirst]}
               >
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Open ${group.name}`}
-                  onPress={() =>
-                    router.push({ pathname: '/group/[id]', params: { id: group.id } })
-                  }
-                  style={({ pressed }) => [
-                    screen.memberRow,
-                    pressed && screen.rowPressed,
-                  ]}
-                >
-                  <Avatar bucket="group-avatars" name={group.name} path={group.avatar_path} />
-                  <Text numberOfLines={1} style={[screen.rowTitle, screen.memberName]}>
-                    {group.name}
-                  </Text>
-                </Pressable>
+                <View style={screen.memberRow}>
+                  <Pressable
+                    accessibilityLabel="View group photo"
+                    accessibilityRole="button"
+                    hitSlop={4}
+                    onPress={() => setPhotoGroup(group)}
+                  >
+                    <Avatar bucket="group-avatars" name={group.name} path={group.avatar_path} />
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Open ${group.name}`}
+                    onPress={() =>
+                      router.push({ pathname: '/group/[id]', params: { id: group.id } })
+                    }
+                    style={({ pressed }) => [
+                      { flex: 1, minWidth: 0 },
+                      pressed && screen.rowPressed,
+                    ]}
+                  >
+                    <Text numberOfLines={1} style={[screen.rowTitle, screen.memberName]}>
+                      {group.name}
+                    </Text>
+                  </Pressable>
+                </View>
                 <InfoButton onPress={() => setCodeGroup(group)} />
               </View>
             ))
@@ -146,6 +157,13 @@ export default function GroupsScreen() {
         }
         emptyMessage="No invite code."
         onClose={() => setCodeGroup(null)}
+      />
+      <PhotoLightbox
+        visible={photoGroup !== null}
+        bucket="group-avatars"
+        name={photoGroup?.name}
+        path={photoGroup?.avatar_path}
+        onClose={() => setPhotoGroup(null)}
       />
     </View>
   )
