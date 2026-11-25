@@ -41,7 +41,7 @@ An optional daily band for one Nutrient that a User sets for themselves, in that
 _Avoid_: target, allowance, RDA
 
 **Food**:
-A nutritional definition created by one User. It has a name, one measure (grams or millilitres), and a base of 100 of that measure, or of 1 kilogram when the measure is grams. The creator may pick any subset of Nutrients, including none, and sets one amount of each, in that Nutrient's unit, for the base. The name, measure, base, and amounts cannot be changed after the Food is created. The same Nutrient appears at most once on a Food. A User cannot log an Intake of a Food they have not created. Another User who shares a Group with the creator can see that User's full Food catalog. The User may delete a Food only when no Intake uses it; the nutrient amounts on it are removed with the Food.
+A nutritional definition created by one User. It has a name, one measure (grams or millilitres), and a base of 100 of that measure, or of 1 kilogram when the measure is grams. The creator may pick any subset of Nutrients, including none, and sets one amount of each, in that Nutrient's unit, for the base. The creator may change the name, measure, base, and nutrient amounts later. The same Nutrient appears at most once on a Food. A User cannot log an Intake of a Food they have not created. Another User who shares a Group with the creator can see that User's full Food catalog. The User may delete a Food only when no Intake uses it; the nutrient amounts on it are removed with the Food.
 _Avoid_: diet entry, ingredient, item, product
 
 **Intake**:
