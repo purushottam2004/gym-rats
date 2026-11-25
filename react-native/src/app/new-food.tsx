@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { AppTextInput } from '../components/AppTextInput'
 import { Screen } from '../components/Screen'
-import { screen } from '../components/screenStyles'
+import { useScreenStyles } from '../theme/ThemeProvider'
 import {
   basisForMeasure,
   createFood,
@@ -14,6 +14,7 @@ import {
 } from '../lib/gym'
 
 export default function NewFoodScreen() {
+  const screen = useScreenStyles()
   const router = useRouter()
   const [name, setName] = useState('')
   const [measure, setMeasure] = useState<Measure>('ml')

@@ -7,7 +7,7 @@ import { InfoListModal, type InfoListRow } from '../../components/InfoListModal'
 import { NutrientProgressRow } from '../../components/NutrientProgressRow'
 import { OrdinalNumber } from '../../components/OrdinalNumber'
 import { Screen } from '../../components/Screen'
-import { screen } from '../../components/screenStyles'
+import { useScreenStyles } from '../../theme/ThemeProvider'
 import {
   loadFoods,
   loadIntakes,
@@ -39,6 +39,7 @@ type InfoModalState = {
 }
 
 export default function MemberScreen() {
+  const screen = useScreenStyles()
   const { id } = useLocalSearchParams<{ id: string }>()
   const [day, setDay] = useState(localDate)
   const [profile, setProfile] = useState<Profile | null>(null)

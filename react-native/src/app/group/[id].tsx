@@ -9,7 +9,7 @@ import { InfoButton } from '../../components/InfoButton'
 import { InfoListModal } from '../../components/InfoListModal'
 import { PhotoLightbox } from '../../components/PhotoLightbox'
 import { Screen } from '../../components/Screen'
-import { screen } from '../../components/screenStyles'
+import { useScreenStyles } from '../../theme/ThemeProvider'
 import {
   leaveGroup,
   loadGroups,
@@ -24,6 +24,7 @@ import {
 } from '../../lib/gym'
 
 export default function GroupScreen() {
+  const screen = useScreenStyles()
   const { id } = useLocalSearchParams<{ id: string }>()
   const { session } = useAuth()
   const router = useRouter()

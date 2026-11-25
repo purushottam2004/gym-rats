@@ -1,5 +1,5 @@
 import { Modal, Pressable, Text, View } from 'react-native'
-import { screen } from './screenStyles'
+import { useScreenStyles } from '../theme/ThemeProvider'
 
 type Props = {
   visible: boolean
@@ -20,6 +20,7 @@ export function ConfirmModal({
   onConfirm,
   onCancel,
 }: Props) {
+  const screen = useScreenStyles()
   return (
     <Modal animationType="fade" transparent visible={visible} onRequestClose={onCancel}>
       <View style={screen.modalBackdrop}>

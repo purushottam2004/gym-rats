@@ -2,9 +2,7 @@ import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react-native'
 import { createElement, useId } from 'react'
 import { Platform, Pressable, Text, View } from 'react-native'
 import { formatDay, shiftDate } from '../lib/localDate'
-import { screen } from './screenStyles'
-
-const accent = '#c2410c'
+import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
 
 type Props = {
   day: string
@@ -12,6 +10,9 @@ type Props = {
 }
 
 export function DayControls({ day, onChange }: Props) {
+  const screen = useScreenStyles()
+  const { colors } = useTheme()
+  const accent = colors.accent
   const inputId = useId()
 
   function openPicker() {

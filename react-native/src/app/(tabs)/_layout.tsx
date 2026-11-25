@@ -1,8 +1,7 @@
 import { Tabs } from 'expo-router'
 import { Dumbbell, Image as ImageIcon, UserRound, Users, Utensils } from 'lucide-react-native'
 import type { LucideIcon } from 'lucide-react-native'
-
-const accent = '#c2410c'
+import { useTheme } from '../../theme/ThemeProvider'
 
 function TabIcon({
   icon: Icon,
@@ -19,13 +18,18 @@ function TabIcon({
 }
 
 export default function TabLayout() {
+  const { colors } = useTheme()
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: accent,
-        tabBarInactiveTintColor: '#a8a29e',
-        tabBarStyle: { backgroundColor: '#ffffff', borderTopColor: '#e7e5e4' },
+        tabBarActiveTintColor: colors.accent,
+        tabBarInactiveTintColor: colors.tabInactive,
+        tabBarStyle: {
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
+        },
       }}
     >
       <Tabs.Screen
@@ -33,7 +37,12 @@ export default function TabLayout() {
         options={{
           title: 'Diet',
           tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon icon={Utensils} color={typeof color === 'string' ? color : accent} size={size} focused={focused} />
+            <TabIcon
+              icon={Utensils}
+              color={typeof color === 'string' ? color : colors.accent}
+              size={size}
+              focused={focused}
+            />
           ),
         }}
       />
@@ -42,7 +51,12 @@ export default function TabLayout() {
         options={{
           title: 'Lifts',
           tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon icon={Dumbbell} color={typeof color === 'string' ? color : accent} size={size} focused={focused} />
+            <TabIcon
+              icon={Dumbbell}
+              color={typeof color === 'string' ? color : colors.accent}
+              size={size}
+              focused={focused}
+            />
           ),
         }}
       />
@@ -51,7 +65,12 @@ export default function TabLayout() {
         options={{
           title: 'Groups',
           tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon icon={Users} color={typeof color === 'string' ? color : accent} size={size} focused={focused} />
+            <TabIcon
+              icon={Users}
+              color={typeof color === 'string' ? color : colors.accent}
+              size={size}
+              focused={focused}
+            />
           ),
         }}
       />
@@ -60,7 +79,12 @@ export default function TabLayout() {
         options={{
           title: 'Posts',
           tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon icon={ImageIcon} color={typeof color === 'string' ? color : accent} size={size} focused={focused} />
+            <TabIcon
+              icon={ImageIcon}
+              color={typeof color === 'string' ? color : colors.accent}
+              size={size}
+              focused={focused}
+            />
           ),
         }}
       />
@@ -69,7 +93,12 @@ export default function TabLayout() {
         options={{
           title: 'Profile',
           tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon icon={UserRound} color={typeof color === 'string' ? color : accent} size={size} focused={focused} />
+            <TabIcon
+              icon={UserRound}
+              color={typeof color === 'string' ? color : colors.accent}
+              size={size}
+              focused={focused}
+            />
           ),
         }}
       />

@@ -11,7 +11,7 @@ import { JoinGroupModal } from '../../components/JoinGroupModal'
 import { PhotoLightbox } from '../../components/PhotoLightbox'
 import { Screen } from '../../components/Screen'
 import { TabChrome } from '../../components/TabChrome'
-import { screen } from '../../components/screenStyles'
+import { useScreenStyles } from '../../theme/ThemeProvider'
 import {
   joinGroup,
   loadGroups,
@@ -23,6 +23,7 @@ import {
 } from '../../lib/gym'
 
 export default function GroupsScreen() {
+  const screen = useScreenStyles()
   const { session } = useAuth()
   const router = useRouter()
   const [groups, setGroups] = useState<Group[]>([])

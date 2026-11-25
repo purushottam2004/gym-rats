@@ -3,10 +3,11 @@ import { useState } from 'react'
 import { Pressable, Text } from 'react-native'
 import { AppTextInput } from '../components/AppTextInput'
 import { Screen } from '../components/Screen'
-import { screen } from '../components/screenStyles'
+import { useScreenStyles } from '../theme/ThemeProvider'
 import { createGroup } from '../lib/gym'
 
 export default function NewGroupScreen() {
+  const screen = useScreenStyles()
   const router = useRouter()
   const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)

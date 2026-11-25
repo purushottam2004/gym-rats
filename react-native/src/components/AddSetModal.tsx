@@ -3,7 +3,7 @@ import { Modal, Pressable, Text, View } from 'react-native'
 import { logSet } from '../lib/gym'
 import { type SetAttempt } from '../lib/nextSetAttempt'
 import { AppTextInput } from './AppTextInput'
-import { screen } from './screenStyles'
+import { useScreenStyles } from '../theme/ThemeProvider'
 
 const SET_NUMBERS = [1, 2, 3, 4, 5] as const
 
@@ -27,6 +27,7 @@ export function AddSetModal({
   onSaved,
   onCancel,
 }: Props) {
+  const screen = useScreenStyles()
   const [setNumber, setSetNumber] = useState<SetAttempt>(initialAttempt)
   const [reps, setReps] = useState('')
   const [loadKg, setLoadKg] = useState('')

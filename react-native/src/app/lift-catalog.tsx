@@ -5,10 +5,11 @@ import { ConfirmModal } from '../components/ConfirmModal'
 import { Screen } from '../components/Screen'
 import { Toast, type ToastKind } from '../components/Toast'
 import { TrashButton } from '../components/TrashButton'
-import { screen } from '../components/screenStyles'
+import { useScreenStyles } from '../theme/ThemeProvider'
 import { deleteLift, isLiftInUseError, loadLifts, type Lift } from '../lib/gym'
 
 export default function LiftCatalogScreen() {
+  const screen = useScreenStyles()
   const router = useRouter()
   const [lifts, setLifts] = useState<Lift[]>([])
   const [error, setError] = useState<string | null>(null)

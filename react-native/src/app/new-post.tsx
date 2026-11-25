@@ -6,11 +6,13 @@ import { Pressable, Text, View } from 'react-native'
 import { AppTextInput } from '../components/AppTextInput'
 import { useAuth } from '../auth/AuthProvider'
 import { Screen } from '../components/Screen'
-import { screen } from '../components/screenStyles'
+import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
 import { createPost, loadGroups, uploadImage, type Group } from '../lib/gym'
 
 
 export default function NewPostScreen() {
+  const screen = useScreenStyles()
+  const { colors } = useTheme()
   const router = useRouter()
   const { session } = useAuth()
   const [body, setBody] = useState('')
@@ -79,9 +81,9 @@ export default function NewPostScreen() {
         >
           <Text style={[screen.rowTitle, profile && screen.rowTitleSelected]}>Profile</Text>
           {profile ? (
-            <CircleCheck color="#c2410c" size={20} strokeWidth={2.25} />
+            <CircleCheck color={colors.accent} size={20} strokeWidth={2.25} />
           ) : (
-            <Circle color="#d6d3d1" size={20} strokeWidth={1.75} />
+            <Circle color={colors.border} size={20} strokeWidth={1.75} />
           )}
         </Pressable>
         {groups.map((group) => {
@@ -100,9 +102,9 @@ export default function NewPostScreen() {
             >
               <Text style={[screen.rowTitle, checked && screen.rowTitleSelected]}>{group.name}</Text>
               {checked ? (
-                <CircleCheck color="#c2410c" size={20} strokeWidth={2.25} />
+                <CircleCheck color={colors.accent} size={20} strokeWidth={2.25} />
               ) : (
-                <Circle color="#d6d3d1" size={20} strokeWidth={1.75} />
+                <Circle color={colors.border} size={20} strokeWidth={1.75} />
               )}
             </Pressable>
           )

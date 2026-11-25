@@ -1,6 +1,6 @@
 import { Image, Text, View } from 'react-native'
 import { publicImageUrl, type ImageBucket } from '../lib/gym'
-import { screen } from './screenStyles'
+import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
 
 type Props = {
   path: string | null | undefined
@@ -10,6 +10,8 @@ type Props = {
 }
 
 export function Avatar({ path, name, size = 44, bucket = 'avatars' }: Props) {
+  const screen = useScreenStyles()
+  const { colors } = useTheme()
   const uri = publicImageUrl(bucket, path ?? null)
   const initial = (name?.trim()?.charAt(0) ?? '?').toUpperCase()
   const radius = size / 2
@@ -19,7 +21,12 @@ export function Avatar({ path, name, size = 44, bucket = 'avatars' }: Props) {
       <Image
         accessibilityIgnoresInvertColors
         source={{ uri }}
-        style={{ width: size, height: size, borderRadius: radius, backgroundColor: '#e7e5e4' }}
+        style={{
+          width: size,
+          height: size,
+          borderRadius: radius,
+          backgroundColor: colors.avatarFallback,
+        }}
       />
     )
   }

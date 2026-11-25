@@ -4,10 +4,12 @@ import { useCallback, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { AppTextInput } from '../components/AppTextInput'
 import { Screen } from '../components/Screen'
-import { screen } from '../components/screenStyles'
+import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
 import { loadFoods, logIntake, measureLabel, type Food } from '../lib/gym'
 
 export default function AddFoodScreen() {
+  const screen = useScreenStyles()
+  const { colors } = useTheme()
   const { day } = useLocalSearchParams<{ day: string }>()
   const router = useRouter()
   const [foods, setFoods] = useState<Food[]>([])
@@ -78,9 +80,9 @@ export default function AddFoodScreen() {
                 <View style={screen.choiceTrail}>
                   <Text style={screen.muted}>{measureLabel(food.measure)}</Text>
                   {selectedFood ? (
-                    <CircleCheck color="#c2410c" size={20} strokeWidth={2.25} />
+                    <CircleCheck color={colors.accent} size={20} strokeWidth={2.25} />
                   ) : (
-                    <Circle color="#d6d3d1" size={20} strokeWidth={1.75} />
+                    <Circle color={colors.border} size={20} strokeWidth={1.75} />
                   )}
                 </View>
               </Pressable>

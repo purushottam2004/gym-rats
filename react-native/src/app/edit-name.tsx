@@ -4,10 +4,11 @@ import { Pressable, Text } from 'react-native'
 import { AppTextInput } from '../components/AppTextInput'
 import { Screen } from '../components/Screen'
 import { useAuth } from '../auth/AuthProvider'
-import { screen } from '../components/screenStyles'
+import { useScreenStyles } from '../theme/ThemeProvider'
 import { loadProfile, saveDisplayName } from '../lib/gym'
 
 export default function EditNameScreen() {
+  const screen = useScreenStyles()
   const { session } = useAuth()
   const router = useRouter()
   const [name, setName] = useState('')

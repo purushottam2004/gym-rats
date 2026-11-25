@@ -17,7 +17,7 @@ import { OrdinalNumber } from '../../components/OrdinalNumber'
 import { Screen } from '../../components/Screen'
 import { TabChrome } from '../../components/TabChrome'
 import { Toast, type ToastKind } from '../../components/Toast'
-import { screen } from '../../components/screenStyles'
+import { useScreenStyles, useTheme } from '../../theme/ThemeProvider'
 import {
   deleteSet,
   loadSets,
@@ -38,13 +38,14 @@ type AddTarget = {
   initialAttempt: SetAttempt
 }
 
-const ACTION_ICON = '#c2410c'
-
 function recordingMimeType(): string {
   return Platform.OS === 'web' ? 'audio/webm' : 'audio/mp4'
 }
 
 export default function LiftsScreen() {
+  const screen = useScreenStyles()
+  const { colors } = useTheme()
+  const ACTION_ICON = colors.accent
   const { session } = useAuth()
   const router = useRouter()
   const userId = session?.user.id
@@ -182,7 +183,7 @@ export default function LiftsScreen() {
                     (pressed || voiceBusy) && screen.buttonDisabled,
                   ]}
                 >
-                  <Mic color={recording ? '#9a3412' : ACTION_ICON} size={20} strokeWidth={2.25} />
+                  <Mic color={recording ? colors.accentText : ACTION_ICON} size={20} strokeWidth={2.25} />
                 </Pressable>
               </View>
             </View>
@@ -206,7 +207,7 @@ export default function LiftsScreen() {
                   })
                 }
               >
-                <Plus color="#c2410c" size={22} strokeWidth={2.25} />
+                <Plus color={colors.accent} size={22} strokeWidth={2.25} />
               </Pressable>
             </View>
             {liftRows.map((row) => (

@@ -1,6 +1,6 @@
 import { Modal, Pressable, Text, View } from 'react-native'
 import { AppTextInput } from './AppTextInput'
-import { screen } from './screenStyles'
+import { useScreenStyles } from '../theme/ThemeProvider'
 
 type Props = {
   visible: boolean
@@ -21,6 +21,7 @@ export function JoinGroupModal({
   onJoin,
   onCancel,
 }: Props) {
+  const screen = useScreenStyles()
   return (
     <Modal animationType="fade" transparent visible={visible} onRequestClose={onCancel}>
       <View style={screen.modalBackdrop}>

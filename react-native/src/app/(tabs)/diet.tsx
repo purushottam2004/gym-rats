@@ -18,7 +18,7 @@ import { NutrientProgressRow } from '../../components/NutrientProgressRow'
 import { Screen } from '../../components/Screen'
 import { TabChrome } from '../../components/TabChrome'
 import { Toast, type ToastKind } from '../../components/Toast'
-import { screen } from '../../components/screenStyles'
+import { useScreenStyles, useTheme } from '../../theme/ThemeProvider'
 import {
   deleteIntake,
   loadIntakes,
@@ -46,13 +46,14 @@ type InfoModalState = {
   emptyMessage: string
 }
 
-const ACTION_ICON = '#c2410c'
-
 function recordingMimeType(): string {
   return Platform.OS === 'web' ? 'audio/webm' : 'audio/mp4'
 }
 
 export default function DietScreen() {
+  const screen = useScreenStyles()
+  const { colors } = useTheme()
+  const ACTION_ICON = colors.accent
   const { session } = useAuth()
   const router = useRouter()
   const userId = session?.user.id
@@ -217,7 +218,7 @@ export default function DietScreen() {
                     (pressed || voiceBusy) && screen.buttonDisabled,
                   ]}
                 >
-                  <Mic color={recording ? '#9a3412' : ACTION_ICON} size={20} strokeWidth={2.25} />
+                  <Mic color={recording ? colors.accentText : ACTION_ICON} size={20} strokeWidth={2.25} />
                 </Pressable>
               </View>
             </View>

@@ -18,13 +18,14 @@ import { DayControls } from '../components/DayControls'
 import { InfoButton } from '../components/InfoButton'
 import { Screen } from '../components/Screen'
 import { TabChrome } from '../components/TabChrome'
-import { screen } from '../components/screenStyles'
+import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
 import { localDate } from '../lib/localDate'
 
 const tabs = ['diet', 'lifts', 'groups', 'posts', 'profile'] as const
 type Tab = (typeof tabs)[number]
 
 function FakeTabBar({ active }: { active: Tab }) {
+  const { colors } = useTheme()
   const items: { id: Tab; label: string }[] = [
     { id: 'diet', label: 'Diet' },
     { id: 'lifts', label: 'Lifts' },
@@ -39,8 +40,8 @@ function FakeTabBar({ active }: { active: Tab }) {
         justifyContent: 'space-around',
         paddingVertical: 10,
         borderTopWidth: 1,
-        borderTopColor: '#e7e5e4',
-        backgroundColor: '#ffffff',
+        borderTopColor: colors.border,
+        backgroundColor: colors.surface,
       }}
     >
       {items.map((item) => (
@@ -49,7 +50,7 @@ function FakeTabBar({ active }: { active: Tab }) {
           style={{
             fontSize: 12,
             fontWeight: '600',
-            color: item.id === active ? '#c2410c' : '#a8a29e',
+            color: item.id === active ? colors.accent : colors.tabInactive,
           }}
         >
           {item.label}
@@ -64,21 +65,23 @@ function IconActionRow({
 }: {
   second: 'week' | 'goals'
 }) {
+  const screen = useScreenStyles()
+  const { colors } = useTheme()
   const SecondIcon = second === 'week' ? CalendarDays : Target
   return (
     <View style={screen.card}>
       <View style={screen.iconActionRow}>
         <View style={screen.iconActionButton}>
-          <Plus color="#c2410c" size={22} strokeWidth={2.25} />
+          <Plus color={colors.accent} size={22} strokeWidth={2.25} />
         </View>
         <View style={screen.iconActionButton}>
-          <SecondIcon color="#c2410c" size={20} strokeWidth={2.25} />
+          <SecondIcon color={colors.accent} size={20} strokeWidth={2.25} />
         </View>
         <View style={screen.iconActionButton}>
-          <BookOpen color="#c2410c" size={20} strokeWidth={2.25} />
+          <BookOpen color={colors.accent} size={20} strokeWidth={2.25} />
         </View>
         <View style={screen.iconActionButton}>
-          <Mic color="#c2410c" size={20} strokeWidth={2.25} />
+          <Mic color={colors.accent} size={20} strokeWidth={2.25} />
         </View>
       </View>
     </View>
@@ -86,6 +89,8 @@ function IconActionRow({
 }
 
 export default function ChromePreviewScreen() {
+  const screen = useScreenStyles()
+  const { colors } = useTheme()
   const { tab: raw } = useLocalSearchParams<{ tab?: string }>()
   const tab = (tabs.includes(raw as Tab) ? raw : 'diet') as Tab
   const [day, setDay] = useState(localDate)
@@ -232,7 +237,14 @@ export default function ChromePreviewScreen() {
     body = (
       <>
         <View style={{ alignItems: 'center', gap: 8 }}>
-          <View style={{ width: 84, height: 84, borderRadius: 42, backgroundColor: '#e7e5e4' }} />
+          <View
+            style={{
+              width: 84,
+              height: 84,
+              borderRadius: 42,
+              backgroundColor: colors.avatarFallback,
+            }}
+          />
           <Text style={screen.sectionTitle}>Purushottam</Text>
         </View>
         <View style={screen.card}>
@@ -251,7 +263,7 @@ export default function ChromePreviewScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f5f5f4' }}>
+    <View style={{ flex: 1, backgroundColor: colors.pageBg }}>
       <Screen header={header}>{body}</Screen>
       <FakeTabBar active={tab} />
     </View>

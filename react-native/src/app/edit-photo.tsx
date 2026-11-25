@@ -4,10 +4,11 @@ import { useState } from 'react'
 import { Pressable, Text } from 'react-native'
 import { Screen } from '../components/Screen'
 import { useAuth } from '../auth/AuthProvider'
-import { screen } from '../components/screenStyles'
+import { useScreenStyles } from '../theme/ThemeProvider'
 import { saveAvatarPath, uploadImage } from '../lib/gym'
 
 export default function EditPhotoScreen() {
+  const screen = useScreenStyles()
   const { session } = useAuth()
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)

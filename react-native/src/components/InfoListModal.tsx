@@ -1,6 +1,6 @@
 import { X } from 'lucide-react-native'
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native'
-import { screen } from './screenStyles'
+import { useScreenStyles } from '../theme/ThemeProvider'
 
 export type InfoListRow = {
   key: string
@@ -18,6 +18,7 @@ type Props = {
 }
 
 export function InfoListModal({ visible, title, subtitle, rows, emptyMessage, onClose }: Props) {
+  const screen = useScreenStyles()
   return (
     <Modal animationType="fade" transparent visible={visible} onRequestClose={onClose}>
       <View style={screen.modalBackdrop}>

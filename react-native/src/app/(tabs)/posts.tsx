@@ -8,11 +8,12 @@ import { ConfirmModal } from '../../components/ConfirmModal'
 import { Screen } from '../../components/Screen'
 import { TabChrome } from '../../components/TabChrome'
 import { TrashButton } from '../../components/TrashButton'
-import { screen } from '../../components/screenStyles'
+import { useScreenStyles } from '../../theme/ThemeProvider'
 import { deletePost, loadGroups, loadPosts, publicImageUrl, type Post } from '../../lib/gym'
 import { formatRelativeTime } from '../../lib/relativeTime'
 
 export default function PostsScreen() {
+  const screen = useScreenStyles()
   const { session } = useAuth()
   const router = useRouter()
   const [posts, setPosts] = useState<Post[]>([])

@@ -4,12 +4,14 @@ import { useCallback, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { AppTextInput } from '../components/AppTextInput'
 import { Screen } from '../components/Screen'
-import { screen } from '../components/screenStyles'
+import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
 import { loadLifts, logSet, type Lift } from '../lib/gym'
 
 const SET_NUMBERS = [1, 2, 3, 4, 5] as const
 
 export default function AddSetScreen() {
+  const screen = useScreenStyles()
+  const { colors } = useTheme()
   const { day } = useLocalSearchParams<{ day: string }>()
   const router = useRouter()
   const [lifts, setLifts] = useState<Lift[]>([])
@@ -77,9 +79,9 @@ export default function AddSetScreen() {
               >
                 <Text style={[screen.rowTitle, selectedLift && screen.rowTitleSelected]}>{lift.name}</Text>
                 {selectedLift ? (
-                  <CircleCheck color="#c2410c" size={20} strokeWidth={2.25} />
+                  <CircleCheck color={colors.accent} size={20} strokeWidth={2.25} />
                 ) : (
-                  <Circle color="#d6d3d1" size={20} strokeWidth={1.75} />
+                  <Circle color={colors.border} size={20} strokeWidth={1.75} />
                 )}
               </Pressable>
             )

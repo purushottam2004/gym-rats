@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Pressable, Text } from 'react-native'
 import { getHello, type HelloResponse } from '../lib/backendClient'
-import { screen } from './screenStyles'
+import { useScreenStyles } from '../theme/ThemeProvider'
 
 export function HelloButton() {
+  const screen = useScreenStyles()
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<HelloResponse | null>(null)
   const [error, setError] = useState<string | null>(null)

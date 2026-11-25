@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   KeyboardAvoidingView,
   Platform,
@@ -10,13 +10,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../auth/AuthProvider'
 import { AppTextInput } from '../components/AppTextInput'
+import { useTheme } from '../theme/ThemeProvider'
 
 export default function LoginScreen() {
   const { signIn } = useAuth()
+  const { colors } = useTheme()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const styles = useMemo(() => createLoginStyles(colors), [colors])
 
   async function handleSignIn() {
     setLoading(true)
@@ -83,75 +86,88 @@ export default function LoginScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  page: {
-    flex: 1,
-    backgroundColor: '#f5f5f4',
-  },
-  fill: {
-    flex: 1,
-  },
-  block: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingBottom: 32,
-  },
-  mark: {
-    fontSize: 40,
-    fontWeight: '700',
-    letterSpacing: -1,
-    color: '#1c1917',
-  },
-  lead: {
-    marginTop: 8,
-    maxWidth: 280,
-    fontSize: 16,
-    lineHeight: 22,
-    color: '#78716c',
-  },
-  card: {
-    marginTop: 28,
-    padding: 16,
-    borderRadius: 20,
-    backgroundColor: '#ffffff',
-    gap: 8,
-  },
-  label: {
-    marginTop: 4,
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#78716c',
-  },
-  input: {
-    borderRadius: 12,
-    backgroundColor: '#fafaf9',
-    borderWidth: 1,
-    borderColor: '#e7e5e4',
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    fontSize: 17,
-    color: '#1c1917',
-  },
-  error: {
-    marginTop: 4,
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#b91c1c',
-  },
-  button: {
-    marginTop: 8,
-    borderRadius: 14,
-    backgroundColor: '#1c1917',
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  buttonDisabled: {
-    opacity: 0.45,
-  },
-  buttonText: {
-    color: '#fafaf9',
-    fontSize: 17,
-    fontWeight: '600',
-  },
-})
+function createLoginStyles(colors: {
+  pageBg: string
+  text: string
+  textMuted: string
+  surface: string
+  border: string
+  rowPressed: string
+  inputBorder: string
+  buttonBg: string
+  buttonText: string
+  danger: string
+}) {
+  return StyleSheet.create({
+    page: {
+      flex: 1,
+      backgroundColor: colors.pageBg,
+    },
+    fill: {
+      flex: 1,
+    },
+    block: {
+      flex: 1,
+      justifyContent: 'center',
+      paddingHorizontal: 24,
+      paddingBottom: 32,
+    },
+    mark: {
+      fontSize: 40,
+      fontWeight: '700',
+      letterSpacing: -1,
+      color: colors.text,
+    },
+    lead: {
+      marginTop: 8,
+      maxWidth: 280,
+      fontSize: 16,
+      lineHeight: 22,
+      color: colors.textMuted,
+    },
+    card: {
+      marginTop: 28,
+      padding: 16,
+      borderRadius: 20,
+      backgroundColor: colors.surface,
+      gap: 8,
+    },
+    label: {
+      marginTop: 4,
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.textMuted,
+    },
+    input: {
+      borderRadius: 12,
+      backgroundColor: colors.rowPressed,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: 14,
+      paddingVertical: 14,
+      fontSize: 17,
+      color: colors.text,
+    },
+    error: {
+      marginTop: 4,
+      fontSize: 14,
+      lineHeight: 20,
+      color: colors.danger,
+    },
+    button: {
+      marginTop: 8,
+      borderRadius: 14,
+      backgroundColor: colors.buttonBg,
+      paddingVertical: 16,
+      alignItems: 'center',
+    },
+    buttonDisabled: {
+      opacity: 0.45,
+    },
+    buttonText: {
+      color: colors.buttonText,
+      fontSize: 17,
+      fontWeight: '600',
+    },
+  })
+}

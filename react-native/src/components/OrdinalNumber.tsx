@@ -1,5 +1,5 @@
 import { Text, View, type StyleProp, type ViewStyle } from 'react-native'
-import { screen } from './screenStyles'
+import { useScreenStyles } from '../theme/ThemeProvider'
 
 type Props = {
   value: number
@@ -11,6 +11,7 @@ type Props = {
  * Prefer this over ordinal text like `1st]` — quieter and consistent across platforms.
  */
 export function OrdinalNumber({ value, style }: Props) {
+  const screen = useScreenStyles()
   return (
     <View
       accessibilityLabel={`set ${value}`}

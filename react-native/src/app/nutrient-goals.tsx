@@ -4,7 +4,7 @@ import { Pressable, Text, View } from 'react-native'
 import { useAuth } from '../auth/AuthProvider'
 import { AppTextInput } from '../components/AppTextInput'
 import { Screen } from '../components/Screen'
-import { screen } from '../components/screenStyles'
+import { useScreenStyles } from '../theme/ThemeProvider'
 import {
   loadNutrientGoals,
   loadNutrients,
@@ -13,6 +13,7 @@ import {
 } from '../lib/gym'
 
 export default function NutrientGoalsScreen() {
+  const screen = useScreenStyles()
   const { session } = useAuth()
   const userId = session?.user.id
   const [nutrients, setNutrients] = useState<Nutrient[]>([])

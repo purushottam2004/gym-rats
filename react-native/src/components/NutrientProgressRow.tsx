@@ -4,7 +4,7 @@ import {
   type NutritionProgressLine,
 } from '../lib/nutrition'
 import { InfoButton } from './InfoButton'
-import { screen } from './screenStyles'
+import { useScreenStyles } from '../theme/ThemeProvider'
 
 type Props = {
   line: NutritionProgressLine
@@ -13,6 +13,7 @@ type Props = {
 }
 
 export function NutrientProgressRow({ line, first, onInfo }: Props) {
+  const screen = useScreenStyles()
   const hasBand = line.min != null || line.max != null
   const fill = line.progress == null ? 0 : Math.max(0, Math.min(1, line.progress))
   const meta = formatNutrientGoalMeta(line.total, line.min, line.max, line.unit)

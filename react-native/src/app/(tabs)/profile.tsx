@@ -7,10 +7,19 @@ import { useAuth } from '../../auth/AuthProvider'
 import { AppTextInput } from '../../components/AppTextInput'
 import { Screen } from '../../components/Screen'
 import { TabChrome } from '../../components/TabChrome'
-import { screen } from '../../components/screenStyles'
+import type { AppearancePreference } from '../../theme/appearancePreference'
+import { useScreenStyles, useTheme } from '../../theme/ThemeProvider'
 import { loadProfile, publicImageUrl, saveAvatarPath, saveDisplayName, uploadImage, type Profile } from '../../lib/gym'
 
+const APPEARANCE_OPTIONS: { value: AppearancePreference; label: string }[] = [
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+  { value: 'system', label: 'System' },
+]
+
 export default function ProfileScreen() {
+  const screen = useScreenStyles()
+  const { colors, preference, setPreference } = useTheme()
   const { session, signOut } = useAuth()
   const router = useRouter()
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -89,7 +98,14 @@ export default function ProfileScreen() {
           {photo ? (
             <Image source={{ uri: photo }} style={{ width: 84, height: 84, borderRadius: 42 }} />
           ) : (
-            <View style={{ width: 84, height: 84, borderRadius: 42, backgroundColor: '#e7e5e4' }} />
+            <View
+              style={{
+                width: 84,
+                height: 84,
+                borderRadius: 42,
+                backgroundColor: colors.avatarFallback,
+              }}
+            />
           )}
         </Pressable>
         {editingName ? (
@@ -117,10 +133,34 @@ export default function ProfileScreen() {
                 setEditingName(true)
               }}
             >
-              <Pencil color="#c2410c" size={18} strokeWidth={2.25} />
+              <Pencil color={colors.accent} size={18} strokeWidth={2.25} />
             </Pressable>
           </View>
         )}
+      </View>
+
+      <Text style={screen.label}>Appearance</Text>
+      <View style={screen.card}>
+        {APPEARANCE_OPTIONS.map((option, index) => {
+          const selected = preference === option.value
+          return (
+            <Pressable
+              accessibilityRole="radio"
+              accessibilityState={{ selected }}
+              key={option.value}
+              onPress={() => setPreference(option.value)}
+              style={({ pressed }) => [
+                screen.row,
+                index === 0 && screen.rowFirst,
+                selected && screen.rowSelected,
+                pressed && (selected ? screen.rowSelectedPressed : screen.rowPressed),
+              ]}
+            >
+              <Text style={[screen.rowTitle, selected && screen.rowTitleSelected]}>{option.label}</Text>
+              {selected ? <Text style={screen.addText}>Selected</Text> : null}
+            </Pressable>
+          )
+        })}
       </View>
 
       <View style={screen.card}>

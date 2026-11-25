@@ -1,6 +1,6 @@
 import { Modal, Pressable, Text, View } from 'react-native'
 import { Avatar } from './Avatar'
-import { screen } from './screenStyles'
+import { useScreenStyles } from '../theme/ThemeProvider'
 
 type Props = {
   visible: boolean
@@ -18,6 +18,7 @@ export function PhotoLightbox({
   bucket = 'avatars',
   onClose,
 }: Props) {
+  const screen = useScreenStyles()
   return (
     <Modal animationType="fade" transparent visible={visible} onRequestClose={onClose}>
       <Pressable

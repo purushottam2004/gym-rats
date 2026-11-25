@@ -7,7 +7,7 @@ import { InfoListModal, type InfoListRow } from '../components/InfoListModal'
 import { Screen } from '../components/Screen'
 import { Toast, type ToastKind } from '../components/Toast'
 import { TrashButton } from '../components/TrashButton'
-import { screen } from '../components/screenStyles'
+import { useScreenStyles } from '../theme/ThemeProvider'
 import { isFoodInUseError } from '../lib/foodDelete'
 import { deleteFood, loadFoods, measureLabel, type Food } from '../lib/gym'
 import {
@@ -17,6 +17,7 @@ import {
 } from '../lib/nutrition'
 
 export default function FoodCatalogScreen() {
+  const screen = useScreenStyles()
   const router = useRouter()
   const [foods, setFoods] = useState<Food[]>([])
   const [error, setError] = useState<string | null>(null)

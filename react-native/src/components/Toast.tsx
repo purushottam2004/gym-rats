@@ -1,7 +1,7 @@
 import { CheckCircle2, CircleAlert } from 'lucide-react-native'
 import { useEffect } from 'react'
 import { Text, View } from 'react-native'
-import { screen } from './screenStyles'
+import { useScreenStyles } from '../theme/ThemeProvider'
 
 export type ToastKind = 'success' | 'error'
 
@@ -14,6 +14,7 @@ type Props = {
 }
 
 export function Toast({ visible, kind, message, onHide, durationMs = 2800 }: Props) {
+  const screen = useScreenStyles()
   useEffect(() => {
     if (!visible) return
     const timer = setTimeout(onHide, durationMs)

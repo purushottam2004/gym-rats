@@ -1,10 +1,11 @@
 import { Redirect } from 'expo-router'
 import { Text } from 'react-native'
 import { Screen } from '../components/Screen'
-import { screen } from '../components/screenStyles'
+import { useScreenStyles } from '../theme/ThemeProvider'
 
 /** Dev-only tall page so scroll can be checked without signing in. */
 export default function ScrollSmokeScreen() {
+  const screen = useScreenStyles()
   if (!__DEV__) {
     return <Redirect href="/diet" />
   }

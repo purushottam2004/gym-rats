@@ -5,7 +5,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { Screen } from '../components/Screen'
 import { Toast, type ToastKind } from '../components/Toast'
 import { TrashButton } from '../components/TrashButton'
-import { screen } from '../components/screenStyles'
+import { useScreenStyles } from '../theme/ThemeProvider'
 import {
   addWeekdayLift,
   loadLifts,
@@ -25,6 +25,7 @@ function parseWeekday(raw: string | undefined): Weekday {
 }
 
 export default function WeekdayLiftsScreen() {
+  const screen = useScreenStyles()
   const { session } = useAuth()
   const userId = session?.user.id
   const params = useLocalSearchParams<{ weekday?: string; day?: string }>()

@@ -1,7 +1,7 @@
 import type { PropsWithChildren, ReactNode } from 'react'
 import { ScrollView, View, type StyleProp, type ViewStyle } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { screen } from './screenStyles'
+import { useScreenStyles } from '../theme/ThemeProvider'
 
 type Props = PropsWithChildren<{
   /** Stays fixed above the scroll area (tab chrome, action rows). */
@@ -13,6 +13,7 @@ type Props = PropsWithChildren<{
 
 /** Full-height page with scroll so long lists work on web and native. */
 export function Screen({ children, header, footer, contentContainerStyle }: Props) {
+  const screen = useScreenStyles()
   return (
     <SafeAreaView style={screen.safe}>
       {header ? <View style={screen.stickyHeader}>{header}</View> : null}
