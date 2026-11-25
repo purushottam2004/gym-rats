@@ -236,11 +236,11 @@ export default function ChromePreviewScreen() {
         title="Groups"
         trailing={
           <>
-            <Pressable style={screen.chromeAction}>
-              <Text style={screen.addText}>Join</Text>
+            <Pressable style={screen.chromeChip}>
+              <Text style={screen.chromeChipText}>Join</Text>
             </Pressable>
-            <Pressable style={screen.chromeAction}>
-              <Text style={screen.addText}>New</Text>
+            <Pressable style={screen.chromeChip}>
+              <Text style={screen.chromeChipText}>New</Text>
             </Pressable>
           </>
         }

@@ -78,16 +78,16 @@ export default function GroupsScreen() {
                 <Pressable
                   accessibilityRole="button"
                   onPress={openJoin}
-                  style={screen.chromeAction}
+                  style={({ pressed }) => [screen.chromeChip, pressed && { opacity: 0.85 }]}
                 >
-                  <Text style={screen.addText}>Join</Text>
+                  <Text style={screen.chromeChipText}>Join</Text>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
                   onPress={() => router.push('/new-group')}
-                  style={screen.chromeAction}
+                  style={({ pressed }) => [screen.chromeChip, pressed && { opacity: 0.85 }]}
                 >
-                  <Text style={screen.addText}>New</Text>
+                  <Text style={screen.chromeChipText}>New</Text>
                 </Pressable>
               </>
             }

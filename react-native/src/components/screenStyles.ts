@@ -447,6 +447,19 @@ export function createScreenStyles(c: ThemeColors) {
       paddingVertical: 4,
       paddingHorizontal: 2,
     },
+    chromeChip: {
+      backgroundColor: c.accentSoft,
+      borderRadius: 999,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderWidth: 1,
+      borderColor: c.accentSoftBorder,
+    },
+    chromeChipText: {
+      color: c.accentText,
+      fontSize: 15,
+      fontWeight: '600',
+    },
     dayRow: {
       flexDirection: 'row',
       alignItems: 'center',
