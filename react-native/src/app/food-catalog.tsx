@@ -1,6 +1,7 @@
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
+import { LoadingBlock } from '../components/BrandLoader'
 import { ConfirmModal } from '../components/ConfirmModal'
 import { InfoButton } from '../components/InfoButton'
 import { InfoListModal, type InfoListRow } from '../components/InfoListModal'
@@ -20,6 +21,7 @@ export default function FoodCatalogScreen() {
   const screen = useScreenStyles()
   const router = useRouter()
   const [foods, setFoods] = useState<Food[]>([])
+  const [hydrated, setHydrated] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [infoModal, setInfoModal] = useState<{
     title: string
@@ -35,6 +37,8 @@ export default function FoodCatalogScreen() {
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load foods')
+    } finally {
+      setHydrated(true)
     }
   }, [])
 
@@ -92,26 +96,30 @@ export default function FoodCatalogScreen() {
       >
         <Text style={screen.title}>Food Catalog</Text>
         {error ? <Text style={screen.error}>{error}</Text> : null}
-        <View style={screen.card}>
-          {foods.length > 0 ? (
-            foods.map((food, index) => (
-              <View key={food.id} style={[screen.row, index === 0 && screen.rowFirst]}>
-                <View style={screen.rowMain}>
-                  <Text style={screen.rowTitle}>{food.name}</Text>
-                  <Text style={screen.muted}>{measureLabel(food.measure)}</Text>
+        {!hydrated ? (
+          <LoadingBlock label="Loading foods" />
+        ) : (
+          <View style={screen.card}>
+            {foods.length > 0 ? (
+              foods.map((food, index) => (
+                <View key={food.id} style={[screen.row, index === 0 && screen.rowFirst]}>
+                  <View style={screen.rowMain}>
+                    <Text style={screen.rowTitle}>{food.name}</Text>
+                    <Text style={screen.muted}>{measureLabel(food.measure)}</Text>
+                  </View>
+                  <View style={screen.choiceTrail}>
+                    <TrashButton onPress={() => setPendingDelete(food)} />
+                    <InfoButton onPress={() => showFoodInfo(food)} />
+                  </View>
                 </View>
-                <View style={screen.choiceTrail}>
-                  <TrashButton onPress={() => setPendingDelete(food)} />
-                  <InfoButton onPress={() => showFoodInfo(food)} />
-                </View>
+              ))
+            ) : (
+              <View style={[screen.row, screen.rowFirst]}>
+                <Text style={screen.muted}>No foods in your catalog yet.</Text>
               </View>
-            ))
-          ) : (
-            <View style={[screen.row, screen.rowFirst]}>
-              <Text style={screen.muted}>No foods in your catalog yet.</Text>
-            </View>
-          )}
-        </View>
+            )}
+          </View>
+        )}
       </Screen>
       <InfoListModal
         visible={infoModal !== null}

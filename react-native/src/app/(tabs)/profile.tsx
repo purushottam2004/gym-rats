@@ -6,7 +6,7 @@ import { Pressable, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
 import { AppTextInput } from '../../components/AppTextInput'
 import { Avatar } from '../../components/Avatar'
-import { LoadingBlock } from '../../components/BrandLoader'
+import { BusyOverlay, LoadingBlock } from '../../components/BrandLoader'
 import { Screen } from '../../components/Screen'
 import { TabChrome } from '../../components/TabChrome'
 import type { AppearancePreference } from '../../theme/appearancePreference'
@@ -177,6 +177,7 @@ export default function ProfileScreen() {
           <Text style={screen.muted}>{session?.user.email}</Text>
         </>
       )}
+      <BusyOverlay visible={photoBusy} label="Updating photo…" />
     </Screen>
   )
 }

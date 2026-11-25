@@ -3,6 +3,7 @@ import {
   AccessibilityInfo,
   Animated,
   Easing,
+  Modal,
   StyleSheet,
   Text,
   View,
@@ -150,6 +151,26 @@ export function LoadingBlock({
   )
 }
 
+/** Full-screen dimmed wait for in-flight actions (voice, uploads). */
+export function BusyOverlay({
+  visible,
+  label,
+}: {
+  visible: boolean
+  label?: string
+}) {
+  const { colors } = useTheme()
+  return (
+    <Modal animationType="fade" transparent visible={visible}>
+      <View style={[styles.overlay, { backgroundColor: colors.modalBackdrop }]}>
+        <View style={[styles.overlayCard, { backgroundColor: colors.surface }]}>
+          <BrandLoader label={label} showMark size="md" />
+        </View>
+      </View>
+    </Modal>
+  )
+}
+
 const styles = StyleSheet.create({
   root: {
     alignItems: 'center',
@@ -175,5 +196,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 40,
     flexGrow: 1,
+  },
+  overlay: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  overlayCard: {
+    borderRadius: 20,
+    paddingHorizontal: 28,
+    paddingVertical: 24,
+    minWidth: 200,
+    alignItems: 'center',
   },
 })

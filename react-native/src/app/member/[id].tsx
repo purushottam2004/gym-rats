@@ -1,6 +1,7 @@
 import { useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useCallback, useMemo, useState } from 'react'
 import { Text, View } from 'react-native'
+import { LoadingBlock } from '../../components/BrandLoader'
 import { DayControls } from '../../components/DayControls'
 import { InfoButton } from '../../components/InfoButton'
 import { InfoListModal, type InfoListRow } from '../../components/InfoListModal'
@@ -59,6 +60,7 @@ export default function MemberScreen() {
   const [habitSections, setHabitSections] = useState<HabitSection[]>([])
   const [habitCounts, setHabitCounts] = useState<HabitDayCount[]>([])
   const [goals, setGoals] = useState<NutrientGoal[]>([])
+  const [hydrated, setHydrated] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [infoModal, setInfoModal] = useState<InfoModalState | null>(null)
 
@@ -92,6 +94,8 @@ export default function MemberScreen() {
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not open this person')
+    } finally {
+      setHydrated(true)
     }
   }, [id, day])
 
@@ -198,108 +202,114 @@ export default function MemberScreen() {
         }
       >
         {error ? <Text style={screen.error}>{error}</Text> : null}
-        <View style={screen.card}>
-          <View style={[screen.row, screen.rowFirst]}>
-            <Text style={[screen.muted, screen.rowMain]}>Diet</Text>
-            <InfoButton onPress={() => void showFoodCatalog()} />
-          </View>
-          {intakes.length > 0 ? (
-            intakes.map((row) => (
-              <View key={row.id} style={screen.row}>
-                <Text style={[screen.rowTitle, screen.rowMain]}>{row.food.name}</Text>
-                <View style={screen.choiceTrail}>
-                  <Text style={screen.rowMeta}>
-                    {row.amount} {measureLabel(row.food.measure)}
-                  </Text>
-                  <InfoButton onPress={() => showFoodInfo(row)} />
-                </View>
-              </View>
-            ))
-          ) : (
-            <View style={screen.row}>
-              <Text style={screen.muted}>No food logged for this day.</Text>
-            </View>
-          )}
-        </View>
-        {progress.length > 0 ? (
-          <View style={screen.section}>
-            <Text style={screen.sectionTitle}>
-              {day === today ? "Today's Nutrition Summary" : "Day's Nutrition Summary"}
-            </Text>
-            <View style={screen.card}>
-              {progress.map((line, index) => (
-                <NutrientProgressRow
-                  key={line.id}
-                  first={index === 0}
-                  line={line}
-                  onInfo={() => showNutrientInfo(line.id, line.name, line.unit)}
-                />
-              ))}
-            </View>
-          </View>
-        ) : null}
-        <View style={screen.section}>
-          <View style={screen.modalHeader}>
-            <Text style={screen.sectionTitle}>Lifts</Text>
-            <InfoButton onPress={() => void showLiftCatalog()} />
-          </View>
-          {liftCards.length > 0 ? (
-            liftCards.map(({ lift, rows: liftRows }) => (
-              <View key={lift.id} style={screen.card}>
-                <View style={[screen.row, screen.rowFirst]}>
-                  <Text style={screen.muted}>{lift.name}</Text>
-                </View>
-                {liftRows.map((row) => (
-                  <View key={row.id} style={screen.row}>
-                    <View style={[screen.rowMain, screen.setLabelRow]}>
-                      <OrdinalNumber value={row.attempt} />
-                      <Text style={screen.rowTitle}>{row.reps} reps</Text>
-                    </View>
-                    <Text style={screen.rowMeta}>{row.load_kg} kg</Text>
-                  </View>
-                ))}
-              </View>
-            ))
-          ) : (
+        {!hydrated ? (
+          <LoadingBlock label="Loading member" showMark />
+        ) : (
+          <>
             <View style={screen.card}>
               <View style={[screen.row, screen.rowFirst]}>
-                <Text style={screen.muted}>No sets logged for this day.</Text>
+                <Text style={[screen.muted, screen.rowMain]}>Diet</Text>
+                <InfoButton onPress={() => void showFoodCatalog()} />
               </View>
+              {intakes.length > 0 ? (
+                intakes.map((row) => (
+                  <View key={row.id} style={screen.row}>
+                    <Text style={[screen.rowTitle, screen.rowMain]}>{row.food.name}</Text>
+                    <View style={screen.choiceTrail}>
+                      <Text style={screen.rowMeta}>
+                        {row.amount} {measureLabel(row.food.measure)}
+                      </Text>
+                      <InfoButton onPress={() => showFoodInfo(row)} />
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <View style={screen.row}>
+                  <Text style={screen.muted}>No food logged for this day.</Text>
+                </View>
+              )}
             </View>
-          )}
-        </View>
-        {habitCards.length > 0 ? (
-          habitCards.map((card) => (
-            <View key={card.key} style={screen.card}>
-              <HabitSectionHeader
-                title={card.title}
-                parts={card.rows.map((row) => ({ done: row.done, target: row.target }))}
-              />
-              {card.rows.map((row) => (
-                <HabitSwipeRow
-                  key={row.habit.id}
-                  name={row.habit.name}
-                  done={row.done}
-                  target={row.target}
-                  complete={row.complete}
-                  readOnly
-                  onIncrement={() => undefined}
-                  onDecrement={() => undefined}
-                />
-              ))}
+            {progress.length > 0 ? (
+              <View style={screen.section}>
+                <Text style={screen.sectionTitle}>
+                  {day === today ? "Today's Nutrition Summary" : "Day's Nutrition Summary"}
+                </Text>
+                <View style={screen.card}>
+                  {progress.map((line, index) => (
+                    <NutrientProgressRow
+                      key={line.id}
+                      first={index === 0}
+                      line={line}
+                      onInfo={() => showNutrientInfo(line.id, line.name, line.unit)}
+                    />
+                  ))}
+                </View>
+              </View>
+            ) : null}
+            <View style={screen.section}>
+              <View style={screen.modalHeader}>
+                <Text style={screen.sectionTitle}>Lifts</Text>
+                <InfoButton onPress={() => void showLiftCatalog()} />
+              </View>
+              {liftCards.length > 0 ? (
+                liftCards.map(({ lift, rows: liftRows }) => (
+                  <View key={lift.id} style={screen.card}>
+                    <View style={[screen.row, screen.rowFirst]}>
+                      <Text style={screen.muted}>{lift.name}</Text>
+                    </View>
+                    {liftRows.map((row) => (
+                      <View key={row.id} style={screen.row}>
+                        <View style={[screen.rowMain, screen.setLabelRow]}>
+                          <OrdinalNumber value={row.attempt} />
+                          <Text style={screen.rowTitle}>{row.reps} reps</Text>
+                        </View>
+                        <Text style={screen.rowMeta}>{row.load_kg} kg</Text>
+                      </View>
+                    ))}
+                  </View>
+                ))
+              ) : (
+                <View style={screen.card}>
+                  <View style={[screen.row, screen.rowFirst]}>
+                    <Text style={screen.muted}>No sets logged for this day.</Text>
+                  </View>
+                </View>
+              )}
             </View>
-          ))
-        ) : (
-          <View style={screen.card}>
-            <View style={[screen.row, screen.rowFirst]}>
-              <Text style={[screen.muted, screen.rowMain]}>Habits</Text>
-            </View>
-            <View style={screen.row}>
-              <Text style={screen.muted}>
-                {habits.length === 0 ? 'No habits.' : 'Nothing due this day.'}
-              </Text>
-            </View>
-          </View>
+            {habitCards.length > 0 ? (
+              habitCards.map((card) => (
+                <View key={card.key} style={screen.card}>
+                  <HabitSectionHeader
+                    title={card.title}
+                    parts={card.rows.map((row) => ({ done: row.done, target: row.target }))}
+                  />
+                  {card.rows.map((row) => (
+                    <HabitSwipeRow
+                      key={row.habit.id}
+                      name={row.habit.name}
+                      done={row.done}
+                      target={row.target}
+                      complete={row.complete}
+                      readOnly
+                      onIncrement={() => undefined}
+                      onDecrement={() => undefined}
+                    />
+                  ))}
+                </View>
+              ))
+            ) : (
+              <View style={screen.card}>
+                <View style={[screen.row, screen.rowFirst]}>
+                  <Text style={[screen.muted, screen.rowMain]}>Habits</Text>
+                </View>
+                <View style={screen.row}>
+                  <Text style={screen.muted}>
+                    {habits.length === 0 ? 'No habits.' : 'Nothing due this day.'}
+                  </Text>
+                </View>
+              </View>
+            )}
+          </>
         )}
       </Screen>
       <InfoListModal

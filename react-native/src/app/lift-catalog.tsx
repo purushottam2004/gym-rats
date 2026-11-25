@@ -1,6 +1,7 @@
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
+import { LoadingBlock } from '../components/BrandLoader'
 import { ConfirmModal } from '../components/ConfirmModal'
 import { Screen } from '../components/Screen'
 import { Toast, type ToastKind } from '../components/Toast'
@@ -12,6 +13,7 @@ export default function LiftCatalogScreen() {
   const screen = useScreenStyles()
   const router = useRouter()
   const [lifts, setLifts] = useState<Lift[]>([])
+  const [hydrated, setHydrated] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Lift | null>(null)
   const [toast, setToast] = useState<{ kind: ToastKind; message: string } | null>(null)
@@ -22,6 +24,8 @@ export default function LiftCatalogScreen() {
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load lifts')
+    } finally {
+      setHydrated(true)
     }
   }, [])
 
@@ -66,24 +70,28 @@ export default function LiftCatalogScreen() {
       >
         <Text style={screen.title}>Lift Catalog</Text>
         {error ? <Text style={screen.error}>{error}</Text> : null}
-        <View style={screen.card}>
-          {lifts.length > 0 ? (
-            lifts.map((lift, index) => (
-              <View key={lift.id} style={[screen.row, index === 0 && screen.rowFirst]}>
-                <View style={screen.rowMain}>
-                  <Text style={screen.rowTitle}>{lift.name}</Text>
+        {!hydrated ? (
+          <LoadingBlock label="Loading lifts" />
+        ) : (
+          <View style={screen.card}>
+            {lifts.length > 0 ? (
+              lifts.map((lift, index) => (
+                <View key={lift.id} style={[screen.row, index === 0 && screen.rowFirst]}>
+                  <View style={screen.rowMain}>
+                    <Text style={screen.rowTitle}>{lift.name}</Text>
+                  </View>
+                  <View style={screen.choiceTrail}>
+                    <TrashButton onPress={() => setPendingDelete(lift)} />
+                  </View>
                 </View>
-                <View style={screen.choiceTrail}>
-                  <TrashButton onPress={() => setPendingDelete(lift)} />
-                </View>
+              ))
+            ) : (
+              <View style={[screen.row, screen.rowFirst]}>
+                <Text style={screen.muted}>No lifts in the catalog yet.</Text>
               </View>
-            ))
-          ) : (
-            <View style={[screen.row, screen.rowFirst]}>
-              <Text style={screen.muted}>No lifts in the catalog yet.</Text>
-            </View>
-          )}
-        </View>
+            )}
+          </View>
+        )}
       </Screen>
       <ConfirmModal
         visible={pendingDelete !== null}

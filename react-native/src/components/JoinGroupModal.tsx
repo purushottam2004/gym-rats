@@ -1,5 +1,6 @@
 import { Modal, Pressable, Text, View } from 'react-native'
 import { AppTextInput } from './AppTextInput'
+import { BrandLoader } from './BrandLoader'
 import { useScreenStyles } from '../theme/ThemeProvider'
 
 type Props = {
@@ -57,7 +58,11 @@ export function JoinGroupModal({
                 pressed && screen.rowPressed,
               ]}
             >
-              <Text style={screen.confirmPrimaryText}>Join</Text>
+              {busy ? (
+                <BrandLoader size="sm" />
+              ) : (
+                <Text style={screen.confirmPrimaryText}>Join</Text>
+              )}
             </Pressable>
           </View>
         </View>

@@ -5,7 +5,7 @@ import { Pressable, Text, View } from 'react-native'
 import { AppTextInput } from '../../components/AppTextInput'
 import { useAuth } from '../../auth/AuthProvider'
 import { Avatar } from '../../components/Avatar'
-import { LoadingBlock } from '../../components/BrandLoader'
+import { BrandLoader, BusyOverlay, LoadingBlock } from '../../components/BrandLoader'
 import { InfoButton } from '../../components/InfoButton'
 import { InfoListModal } from '../../components/InfoListModal'
 import { PhotoLightbox } from '../../components/PhotoLightbox'
@@ -196,7 +196,11 @@ export default function GroupScreen() {
                 pressed && screen.rowPressed,
               ]}
             >
-              <Text style={screen.buttonText}>{photoBusy ? 'Updating…' : 'Change photo'}</Text>
+              {photoBusy ? (
+                <BrandLoader size="sm" />
+              ) : (
+                <Text style={screen.buttonText}>Change photo</Text>
+              )}
             </Pressable>
             {creator ? (
               <>
@@ -259,6 +263,7 @@ export default function GroupScreen() {
         }
         onClose={() => setLightbox(null)}
       />
+      <BusyOverlay visible={photoBusy} label="Updating photo…" />
     </View>
   )
 }

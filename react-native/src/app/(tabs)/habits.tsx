@@ -10,7 +10,7 @@ import { Mic, Pencil, Repeat } from 'lucide-react-native'
 import { useCallback, useMemo, useState } from 'react'
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
-import { LoadingBlock } from '../../components/BrandLoader'
+import { BusyOverlay, LoadingBlock } from '../../components/BrandLoader'
 import { DayControls } from '../../components/DayControls'
 import { HabitProgressFill } from '../../components/HabitProgressFill'
 import { HabitSectionHeader } from '../../components/HabitSectionHeader'
@@ -273,6 +273,7 @@ export default function HabitsScreen() {
         durationMs={toast?.kind === 'error' ? 5600 : 2800}
         onHide={() => setToast(null)}
       />
+      <BusyOverlay visible={voiceBusy} label="Updating habits…" />
     </View>
   )
 }
