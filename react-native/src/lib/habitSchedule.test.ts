@@ -2,12 +2,16 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
   habitDoneOnDay,
+  habitManageGroups,
   habitRowsForDay,
+  habitSectionCardsForDay,
   isHabitDueOnDay,
   mondayOfWeek,
+  OTHER_HABITS_SECTION_ID,
   weekDates,
   type Habit,
   type HabitDayCount,
+  type HabitSection,
 } from './habitSchedule.ts'
 
 const daily: Habit = {
@@ -18,6 +22,7 @@ const daily: Habit = {
   weekdays: [1, 2, 3, 4, 5],
   sort_order: 0,
   active: true,
+  section_id: 'sec-hygiene',
   food_id: null,
   food_amount: null,
   food: null,
@@ -31,10 +36,14 @@ const weekly: Habit = {
   weekdays: [0, 1, 2, 3, 4, 5, 6],
   sort_order: 1,
   active: true,
+  section_id: null,
   food_id: null,
   food_amount: null,
   food: null,
 }
+
+const hygiene: HabitSection = { id: 'sec-hygiene', name: 'Hygiene', sort_order: 0 }
+const emptySection: HabitSection = { id: 'sec-empty', name: 'Empty', sort_order: 1 }
 
 describe('mondayOfWeek / weekDates', () => {
   it('treats weeks as Mon–Sun', () => {
@@ -89,6 +98,51 @@ describe('habitRowsForDay', () => {
     assert.deepEqual(
       rows.map((r) => r.habit.id),
       ['h1', 'h2'],
+    )
+  })
+})
+
+describe('habitSectionCardsForDay', () => {
+  it('groups due habits under sections and appends Other habits', () => {
+    const cards = habitSectionCardsForDay(
+      [weekly, daily],
+      [emptySection, hygiene],
+      [],
+      '2026-11-25',
+    )
+    assert.deepEqual(
+      cards.map((card) => ({ key: card.key, title: card.title, ids: card.rows.map((r) => r.habit.id) })),
+      [
+        { key: 'sec-hygiene', title: 'Hygiene', ids: ['h1'] },
+        { key: OTHER_HABITS_SECTION_ID, title: 'Other habits', ids: ['h2'] },
+      ],
+    )
+  })
+
+  it('skips empty named sections and orphans unknown section ids into Other', () => {
+    const orphan: Habit = { ...daily, id: 'h3', name: 'Orphan', section_id: 'gone', sort_order: 2 }
+    const cards = habitSectionCardsForDay([orphan], [hygiene], [], '2026-11-25')
+    assert.deepEqual(
+      cards.map((card) => card.key),
+      [OTHER_HABITS_SECTION_ID],
+    )
+  })
+})
+
+describe('habitManageGroups', () => {
+  it('keeps empty sections and always ends with Other habits', () => {
+    const groups = habitManageGroups([weekly, daily], [hygiene, emptySection])
+    assert.deepEqual(
+      groups.map((group) => ({
+        key: group.key,
+        title: group.title,
+        ids: group.habits.map((habit) => habit.id),
+      })),
+      [
+        { key: 'sec-hygiene', title: 'Hygiene', ids: ['h1'] },
+        { key: 'sec-empty', title: 'Empty', ids: [] },
+        { key: OTHER_HABITS_SECTION_ID, title: 'Other habits', ids: ['h2'] },
+      ],
     )
   })
 })

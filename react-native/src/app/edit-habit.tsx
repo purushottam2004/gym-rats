@@ -9,11 +9,13 @@ import { Toast, type ToastKind } from '../components/Toast'
 import {
   createHabit,
   loadFoods,
+  loadHabitSections,
   loadHabits,
   measureLabel,
   updateHabit,
   type Food,
   type HabitRecurrence,
+  type HabitSection,
 } from '../lib/gym'
 import { WEEKDAY_LABELS, type Weekday } from '../lib/weekday'
 import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
@@ -33,6 +35,8 @@ export default function EditHabitScreen() {
   const [recurrence, setRecurrence] = useState<HabitRecurrence>('per_day')
   const [frequency, setFrequency] = useState('1')
   const [weekdays, setWeekdays] = useState<Weekday[]>(ALL_DAYS)
+  const [sectionId, setSectionId] = useState<string | null>(null)
+  const [sections, setSections] = useState<HabitSection[]>([])
   const [logFood, setLogFood] = useState(false)
   const [foods, setFoods] = useState<Food[]>([])
   const [foodId, setFoodId] = useState<string | null>(null)
@@ -48,8 +52,12 @@ export default function EditHabitScreen() {
       return
     }
     try {
-      const catalog = await loadFoods(userId)
+      const [catalog, nextSections] = await Promise.all([
+        loadFoods(userId),
+        loadHabitSections(userId),
+      ])
       setFoods(catalog)
+      setSections(nextSections)
 
       if (!editing || !id) {
         setFoodId((current) => current ?? catalog[0]?.id ?? null)
@@ -68,6 +76,7 @@ export default function EditHabitScreen() {
       setRecurrence(habit.recurrence)
       setFrequency(String(habit.frequency))
       setWeekdays(habit.weekdays.slice() as Weekday[])
+      setSectionId(habit.section_id)
       if (habit.food_id && habit.food_amount != null) {
         setLogFood(true)
         setFoodId(habit.food_id)
@@ -140,6 +149,7 @@ export default function EditHabitScreen() {
           recurrence,
           frequency: freq,
           weekdays,
+          sectionId,
           foodId: linkFoodId,
           foodAmount: linkAmount,
         })
@@ -149,6 +159,7 @@ export default function EditHabitScreen() {
           recurrence,
           frequency: freq,
           weekdays,
+          sectionId,
           foodId: linkFoodId,
           foodAmount: linkAmount,
         })
@@ -197,6 +208,56 @@ export default function EditHabitScreen() {
           style={screen.input}
           value={name}
         />
+
+        <Text style={screen.label}>Section</Text>
+        <Text style={screen.muted}>Optional. Unassigned habits show under Other habits.</Text>
+        <View style={screen.card}>
+          <Pressable
+            accessibilityRole="radio"
+            accessibilityState={{ selected: sectionId == null }}
+            onPress={() => setSectionId(null)}
+            style={({ pressed }) => [
+              screen.row,
+              screen.rowFirst,
+              sectionId == null && screen.rowSelected,
+              pressed && (sectionId == null ? screen.rowSelectedPressed : screen.rowPressed),
+            ]}
+          >
+            <Text style={[screen.rowTitle, sectionId == null && screen.rowTitleSelected]}>
+              Other habits
+            </Text>
+            {sectionId == null ? (
+              <CircleCheck color={colors.accent} size={20} strokeWidth={2.25} />
+            ) : (
+              <Circle color={colors.border} size={20} strokeWidth={1.75} />
+            )}
+          </Pressable>
+          {sections.map((section) => {
+            const selected = sectionId === section.id
+            return (
+              <Pressable
+                accessibilityRole="radio"
+                accessibilityState={{ selected }}
+                key={section.id}
+                onPress={() => setSectionId(section.id)}
+                style={({ pressed }) => [
+                  screen.row,
+                  selected && screen.rowSelected,
+                  pressed && (selected ? screen.rowSelectedPressed : screen.rowPressed),
+                ]}
+              >
+                <Text style={[screen.rowTitle, selected && screen.rowTitleSelected]}>
+                  {section.name}
+                </Text>
+                {selected ? (
+                  <CircleCheck color={colors.accent} size={20} strokeWidth={2.25} />
+                ) : (
+                  <Circle color={colors.border} size={20} strokeWidth={1.75} />
+                )}
+              </Pressable>
+            )
+          })}
+        </View>
 
         <Text style={screen.label}>Recurrence</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>

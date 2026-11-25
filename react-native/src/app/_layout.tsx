@@ -50,6 +50,10 @@ function Navigation() {
       <Stack.Screen name="lift-catalog" />
       <Stack.Screen name="weekday-lifts" />
       <Stack.Screen name="new-lift" />
+      <Stack.Screen name="manage-habits" />
+      <Stack.Screen name="edit-habit" />
+      <Stack.Screen name="manage-habit-sections" />
+      <Stack.Screen name="edit-habit-section" />
       <Stack.Screen name="new-group" />
       <Stack.Screen name="new-post" />
       <Stack.Screen name="edit-name" />

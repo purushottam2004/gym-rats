@@ -10,6 +10,12 @@ export type HabitFoodLink = {
   measure: string
 }
 
+export type HabitSection = {
+  id: string
+  name: string
+  sort_order: number
+}
+
 export type Habit = {
   id: string
   name: string
@@ -18,6 +24,8 @@ export type Habit = {
   weekdays: Weekday[]
   sort_order: number
   active: boolean
+  /** Optional named group; null → "Other habits". */
+  section_id: string | null
   /** Optional Diet link: completing logs this Food. */
   food_id: string | null
   food_amount: number | null
@@ -127,4 +135,87 @@ export function habitRowsForDay(
         complete: habitComplete(habit, done),
       }
     })
+}
+
+export const OTHER_HABITS_SECTION_ID = '__other_habits__'
+
+export type HabitSectionCard = {
+  /** Named section id, or `OTHER_HABITS_SECTION_ID` for unsectioned habits. */
+  key: string
+  title: string
+  rows: HabitDayRow[]
+}
+
+/**
+ * Day view cards: named sections (with due habits) in section order,
+ * then an "Other habits" card for unsectioned / orphaned rows.
+ */
+export function habitSectionCardsForDay(
+  habits: Habit[],
+  sections: HabitSection[],
+  counts: HabitDayCount[],
+  day: string,
+): HabitSectionCard[] {
+  const rows = habitRowsForDay(habits, counts, day)
+  const sectionOrder = sections
+    .slice()
+    .sort((a, b) => {
+      if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order
+      return a.name.localeCompare(b.name)
+    })
+  const knownIds = new Set(sectionOrder.map((section) => section.id))
+  const cards: HabitSectionCard[] = []
+
+  for (const section of sectionOrder) {
+    const sectionRows = rows.filter((row) => row.habit.section_id === section.id)
+    if (sectionRows.length === 0) continue
+    cards.push({ key: section.id, title: section.name, rows: sectionRows })
+  }
+
+  const otherRows = rows.filter(
+    (row) => row.habit.section_id == null || !knownIds.has(row.habit.section_id),
+  )
+  if (otherRows.length > 0) {
+    cards.push({
+      key: OTHER_HABITS_SECTION_ID,
+      title: 'Other habits',
+      rows: otherRows,
+    })
+  }
+
+  return cards
+}
+
+/** Manage / edit grouping: every section (even empty), then Other habits. */
+export function habitManageGroups(
+  habits: Habit[],
+  sections: HabitSection[],
+): { key: string; title: string; habits: Habit[] }[] {
+  const active = habits
+    .filter((habit) => habit.active)
+    .slice()
+    .sort((a, b) => {
+      if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order
+      return a.name.localeCompare(b.name)
+    })
+  const sectionOrder = sections
+    .slice()
+    .sort((a, b) => {
+      if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order
+      return a.name.localeCompare(b.name)
+    })
+  const knownIds = new Set(sectionOrder.map((section) => section.id))
+  const groups = sectionOrder.map((section) => ({
+    key: section.id,
+    title: section.name,
+    habits: active.filter((habit) => habit.section_id === section.id),
+  }))
+  groups.push({
+    key: OTHER_HABITS_SECTION_ID,
+    title: 'Other habits',
+    habits: active.filter(
+      (habit) => habit.section_id == null || !knownIds.has(habit.section_id),
+    ),
+  })
+  return groups
 }

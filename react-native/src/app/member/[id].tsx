@@ -12,6 +12,7 @@ import { HabitSwipeRow } from '../../components/HabitSwipeRow'
 import {
   loadFoods,
   loadHabitDayCounts,
+  loadHabitSections,
   loadHabits,
   loadIntakes,
   loadLifts,
@@ -21,12 +22,13 @@ import {
   measureLabel,
   type Habit,
   type HabitDayCount,
+  type HabitSection,
   type Intake,
   type NutrientGoal,
   type Profile,
   type SetLog,
 } from '../../lib/gym'
-import { habitRowsForDay } from '../../lib/habitSchedule'
+import { habitSectionCardsForDay } from '../../lib/habitSchedule'
 import { liftCardsForDay } from '../../lib/liftCards'
 import { localDate } from '../../lib/localDate'
 import {
@@ -53,6 +55,7 @@ export default function MemberScreen() {
   const [intakes, setIntakes] = useState<Intake[]>([])
   const [sets, setSets] = useState<SetLog[]>([])
   const [habits, setHabits] = useState<Habit[]>([])
+  const [habitSections, setHabitSections] = useState<HabitSection[]>([])
   const [habitCounts, setHabitCounts] = useState<HabitDayCount[]>([])
   const [goals, setGoals] = useState<NutrientGoal[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -61,20 +64,29 @@ export default function MemberScreen() {
   const load = useCallback(async () => {
     if (!id) return
     try {
-      const [nextProfile, nextIntakes, nextSets, nextGoals, nextHabits, nextHabitCounts] =
-        await Promise.all([
-          loadProfile(id),
-          loadIntakes(id, day),
-          loadSets(id, day),
-          loadNutrientGoals(id),
-          loadHabits(id),
-          loadHabitDayCounts(id, day),
-        ])
+      const [
+        nextProfile,
+        nextIntakes,
+        nextSets,
+        nextGoals,
+        nextHabits,
+        nextHabitSections,
+        nextHabitCounts,
+      ] = await Promise.all([
+        loadProfile(id),
+        loadIntakes(id, day),
+        loadSets(id, day),
+        loadNutrientGoals(id),
+        loadHabits(id),
+        loadHabitSections(id),
+        loadHabitDayCounts(id, day),
+      ])
       setProfile(nextProfile)
       setIntakes(nextIntakes)
       setSets(nextSets)
       setGoals(nextGoals)
       setHabits(nextHabits)
+      setHabitSections(nextHabitSections)
       setHabitCounts(nextHabitCounts)
       setError(null)
     } catch (err) {
@@ -93,9 +105,9 @@ export default function MemberScreen() {
     () => nutritionProgressLines(summarizeNutrition(intakes), goals),
     [intakes, goals],
   )
-  const habitRows = useMemo(
-    () => habitRowsForDay(habits, habitCounts, day),
-    [habits, habitCounts, day],
+  const habitCards = useMemo(
+    () => habitSectionCardsForDay(habits, habitSections, habitCounts, day),
+    [habits, habitSections, habitCounts, day],
   )
   // Read-only day view: group logged sets by lift (no weekday plan / empty planned cards).
   const liftCards = useMemo(() => liftCardsForDay(sets, []), [sets])
@@ -255,31 +267,38 @@ export default function MemberScreen() {
             </View>
           )}
         </View>
-        <View style={screen.card}>
-          <View style={[screen.row, screen.rowFirst]}>
-            <Text style={[screen.muted, screen.rowMain]}>Habits</Text>
-          </View>
-          {habitRows.length > 0 ? (
-            habitRows.map((row) => (
-              <HabitSwipeRow
-                key={row.habit.id}
-                name={row.habit.name}
-                done={row.done}
-                target={row.target}
-                complete={row.complete}
-                readOnly
-                onIncrement={() => undefined}
-                onDecrement={() => undefined}
-              />
-            ))
-          ) : (
+        {habitCards.length > 0 ? (
+          habitCards.map((card) => (
+            <View key={card.key} style={screen.card}>
+              <View style={[screen.row, screen.rowFirst]}>
+                <Text style={[screen.muted, screen.rowMain]}>{card.title}</Text>
+              </View>
+              {card.rows.map((row) => (
+                <HabitSwipeRow
+                  key={row.habit.id}
+                  name={row.habit.name}
+                  done={row.done}
+                  target={row.target}
+                  complete={row.complete}
+                  readOnly
+                  onIncrement={() => undefined}
+                  onDecrement={() => undefined}
+                />
+              ))}
+            </View>
+          ))
+        ) : (
+          <View style={screen.card}>
+            <View style={[screen.row, screen.rowFirst]}>
+              <Text style={[screen.muted, screen.rowMain]}>Habits</Text>
+            </View>
             <View style={screen.row}>
               <Text style={screen.muted}>
                 {habits.length === 0 ? 'No habits.' : 'Nothing due this day.'}
               </Text>
             </View>
-          )}
-        </View>
+          </View>
+        )}
       </Screen>
       <InfoListModal
         visible={infoModal !== null}

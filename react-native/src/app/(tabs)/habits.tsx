@@ -19,11 +19,13 @@ import {
   bumpHabitDayCount,
   completeHabitsFromVoice,
   loadHabitDayCounts,
+  loadHabitSections,
   loadHabits,
   type Habit,
   type HabitDayCount,
+  type HabitSection,
 } from '../../lib/gym'
-import { habitRowsForDay } from '../../lib/habitSchedule'
+import { habitSectionCardsForDay } from '../../lib/habitSchedule'
 import { localDate } from '../../lib/localDate'
 import { useScreenStyles, useTheme } from '../../theme/ThemeProvider'
 
@@ -42,6 +44,7 @@ export default function HabitsScreen() {
   const recorderState = useAudioRecorderState(audioRecorder)
   const [day, setDay] = useState(localDate)
   const [habits, setHabits] = useState<Habit[]>([])
+  const [sections, setSections] = useState<HabitSection[]>([])
   const [counts, setCounts] = useState<HabitDayCount[]>([])
   const [error, setError] = useState<string | null>(null)
   const [voiceBusy, setVoiceBusy] = useState(false)
@@ -50,11 +53,13 @@ export default function HabitsScreen() {
   const load = useCallback(async () => {
     if (!userId) return
     try {
-      const [nextHabits, nextCounts] = await Promise.all([
+      const [nextHabits, nextSections, nextCounts] = await Promise.all([
         loadHabits(userId),
+        loadHabitSections(userId),
         loadHabitDayCounts(userId, day),
       ])
       setHabits(nextHabits)
+      setSections(nextSections)
       setCounts(nextCounts)
       setError(null)
     } catch (err) {
@@ -138,10 +143,10 @@ export default function HabitsScreen() {
     }
   }
 
-  const rows = habitRowsForDay(habits, counts, day)
+  const cards = habitSectionCardsForDay(habits, sections, counts, day)
   const recording = recorderState.isRecording
   const noHabitsDefined = habits.length === 0
-  const nothingDue = !noHabitsDefined && rows.length === 0
+  const nothingDue = !noHabitsDefined && cards.length === 0
 
   return (
     <View style={{ flex: 1 }}>
@@ -188,30 +193,38 @@ export default function HabitsScreen() {
         }
       >
         {error ? <Text style={screen.error}>{error}</Text> : null}
-        <View style={screen.card}>
-          {noHabitsDefined ? (
+        {noHabitsDefined ? (
+          <View style={screen.card}>
             <View style={[screen.row, screen.rowFirst]}>
               <Text style={screen.muted}>No habits yet. Tap Edit to add some.</Text>
             </View>
-          ) : nothingDue ? (
+          </View>
+        ) : nothingDue ? (
+          <View style={screen.card}>
             <View style={[screen.row, screen.rowFirst]}>
               <Text style={screen.muted}>Nothing due this day.</Text>
             </View>
-          ) : (
-            rows.map((row, index) => (
-              <HabitSwipeRow
-                key={row.habit.id}
-                name={row.habit.name}
-                done={row.done}
-                target={row.target}
-                complete={row.complete}
-                first={index === 0}
-                onIncrement={() => void bump(row.habit.id, 1)}
-                onDecrement={() => void bump(row.habit.id, -1)}
-              />
-            ))
-          )}
-        </View>
+          </View>
+        ) : (
+          cards.map((card) => (
+            <View key={card.key} style={screen.card}>
+              <View style={[screen.row, screen.rowFirst]}>
+                <Text style={screen.muted}>{card.title}</Text>
+              </View>
+              {card.rows.map((row) => (
+                <HabitSwipeRow
+                  key={row.habit.id}
+                  name={row.habit.name}
+                  done={row.done}
+                  target={row.target}
+                  complete={row.complete}
+                  onIncrement={() => void bump(row.habit.id, 1)}
+                  onDecrement={() => void bump(row.habit.id, -1)}
+                />
+              ))}
+            </View>
+          ))
+        )}
       </Screen>
       <Toast
         visible={toast !== null}

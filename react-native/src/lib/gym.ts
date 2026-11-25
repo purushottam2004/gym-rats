@@ -8,6 +8,7 @@ import {
   type Habit,
   type HabitDayCount,
   type HabitRecurrence,
+  type HabitSection,
   type Weekday,
 } from './habitSchedule'
 import type { ReactionRow } from './postSocial'
@@ -23,7 +24,7 @@ import {
 } from './voiceSet'
 
 export type { VoiceHabitResult, VoiceIntakeResult, VoiceSetResult } from './voiceSet'
-export type { Habit, HabitDayCount, HabitRecurrence } from './habitSchedule'
+export type { Habit, HabitDayCount, HabitRecurrence, HabitSection } from './habitSchedule'
 
 export type { Basis, Measure } from './measure'
 export { basisForMeasure, measureLabel } from './measure'
@@ -502,7 +503,7 @@ export async function deleteSet(id: string): Promise<void> {
 }
 
 const HABIT_SELECT =
-  'id, name, recurrence, frequency, weekdays, sort_order, active, food_id, food_amount, food:foods!habits_food_id_fkey(id, name, measure)'
+  'id, name, recurrence, frequency, weekdays, sort_order, active, section_id, food_id, food_amount, food:foods!habits_food_id_fkey(id, name, measure)'
 
 function mapHabitRow(row: Record<string, unknown>): Habit {
   const foodRaw = row.food as { id: string; name: string; measure: string } | null | undefined
@@ -519,6 +520,7 @@ function mapHabitRow(row: Record<string, unknown>): Habit {
     weekdays: (row.weekdays as number[]).map((n) => n as Weekday),
     sort_order: row.sort_order as number,
     active: Boolean(row.active),
+    section_id: (row.section_id as string | null) ?? null,
     food_id: foodId,
     food_amount: foodAmount,
     food:
@@ -526,6 +528,75 @@ function mapHabitRow(row: Record<string, unknown>): Habit {
         ? { id: foodRaw.id, name: foodRaw.name, measure: foodRaw.measure }
         : null,
   }
+}
+
+function mapHabitSectionRow(row: Record<string, unknown>): HabitSection {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    sort_order: row.sort_order as number,
+  }
+}
+
+/** Habit sections for a user (own or shared-group member), sort order. */
+export async function loadHabitSections(userId: string): Promise<HabitSection[]> {
+  const { data, error } = await db()
+    .from('habit_sections')
+    .select('id, name, sort_order')
+    .eq('user_id', userId)
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true })
+  fail(error)
+  return (data ?? []).map((row) => mapHabitSectionRow(row as Record<string, unknown>))
+}
+
+export async function createHabitSection(name: string): Promise<HabitSection> {
+  const { data: userData, error: userError } = await db().auth.getUser()
+  fail(userError)
+  const userId = userData.user?.id
+  if (!userId) throw new Error('Not signed in')
+
+  const existing = await loadHabitSections(userId)
+  const sortOrder =
+    existing.reduce((max, section) => Math.max(max, section.sort_order), -1) + 1
+
+  const { data, error } = await db()
+    .from('habit_sections')
+    .insert({
+      user_id: userId,
+      name: name.trim(),
+      sort_order: sortOrder,
+    })
+    .select('id, name, sort_order')
+    .single()
+  fail(error)
+  return mapHabitSectionRow(data as Record<string, unknown>)
+}
+
+export async function updateHabitSection(input: { id: string; name: string }): Promise<void> {
+  const { error } = await db()
+    .from('habit_sections')
+    .update({ name: input.name.trim() })
+    .eq('id', input.id)
+  fail(error)
+}
+
+/** Deletes a section; linked habits move to Other (DB ON DELETE SET NULL). */
+export async function deleteHabitSection(id: string): Promise<void> {
+  const { error } = await db().from('habit_sections').delete().eq('id', id)
+  fail(error)
+}
+
+export async function reorderHabitSections(orderedIds: string[]): Promise<void> {
+  await Promise.all(
+    orderedIds.map(async (id, index) => {
+      const { error } = await db()
+        .from('habit_sections')
+        .update({ sort_order: index })
+        .eq('id', id)
+      fail(error)
+    }),
+  )
 }
 
 /** Active Habits for a user (own or shared-group member), sort order. */
@@ -578,11 +649,24 @@ function normalizeFoodLink(link: HabitFoodLinkInput): {
   return { food_id: link.foodId, food_amount: link.foodAmount }
 }
 
+async function resolveHabitSectionId(
+  userId: string,
+  sectionId: string | null | undefined,
+): Promise<string | null> {
+  if (sectionId == null || sectionId === '') return null
+  const sections = await loadHabitSections(userId)
+  if (!sections.some((section) => section.id === sectionId)) {
+    throw new Error('Choose a habit section you own')
+  }
+  return sectionId
+}
+
 export async function createHabit(input: {
   name: string
   recurrence: HabitRecurrence
   frequency: number
   weekdays: Weekday[]
+  sectionId?: string | null
   foodId?: string | null
   foodAmount?: number | null
 }): Promise<Habit> {
@@ -607,6 +691,7 @@ export async function createHabit(input: {
       throw new Error('Choose a food from your catalog')
     }
   }
+  const sectionId = await resolveHabitSectionId(userId, input.sectionId)
 
   const { data, error } = await db()
     .from('habits')
@@ -618,6 +703,7 @@ export async function createHabit(input: {
       weekdays,
       sort_order: sortOrder,
       active: true,
+      section_id: sectionId,
       food_id: foodLink.food_id,
       food_amount: foodLink.food_amount,
     })
@@ -633,6 +719,7 @@ export async function updateHabit(input: {
   recurrence: HabitRecurrence
   frequency: number
   weekdays: Weekday[]
+  sectionId?: string | null
   foodId?: string | null
   foodAmount?: number | null
 }): Promise<void> {
@@ -642,27 +729,28 @@ export async function updateHabit(input: {
     foodId: input.foodId ?? null,
     foodAmount: input.foodAmount ?? null,
   })
+  const { data: userData, error: userError } = await db().auth.getUser()
+  fail(userError)
+  const userId = userData.user?.id
+  if (!userId) throw new Error('Not signed in')
   if (foodLink.food_id) {
-    const { data: userData, error: userError } = await db().auth.getUser()
-    fail(userError)
-    const userId = userData.user?.id
-    if (!userId) throw new Error('Not signed in')
     const foods = await loadFoods(userId)
     if (!foods.some((food) => food.id === foodLink.food_id)) {
       throw new Error('Choose a food from your catalog')
     }
   }
-  const { error } = await db()
-    .from('habits')
-    .update({
-      name: input.name.trim(),
-      recurrence: input.recurrence,
-      frequency: input.frequency,
-      weekdays,
-      food_id: foodLink.food_id,
-      food_amount: foodLink.food_amount,
-    })
-    .eq('id', input.id)
+  const patch: Record<string, unknown> = {
+    name: input.name.trim(),
+    recurrence: input.recurrence,
+    frequency: input.frequency,
+    weekdays,
+    food_id: foodLink.food_id,
+    food_amount: foodLink.food_amount,
+  }
+  if (input.sectionId !== undefined) {
+    patch.section_id = await resolveHabitSectionId(userId, input.sectionId)
+  }
+  const { error } = await db().from('habits').update(patch).eq('id', input.id)
   fail(error)
 }
 
