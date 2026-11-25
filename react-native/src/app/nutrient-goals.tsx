@@ -90,7 +90,18 @@ export default function NutrientGoalsScreen() {
   }
 
   return (
-    <Screen>
+    <Screen
+      footer={
+        <Pressable
+          accessibilityRole="button"
+          disabled={busy}
+          onPress={() => void saveGoals()}
+          style={({ pressed }) => [screen.save, busy && screen.buttonDisabled, pressed && screen.rowPressed]}
+        >
+          <Text style={screen.buttonText}>{busy ? 'Saving' : 'Save goals'}</Text>
+        </Pressable>
+      }
+    >
       <Text style={screen.title}>Nutrient goals</Text>
       <Text style={screen.muted}>Optional min and/or max for the Diet summary bands.</Text>
       {error ? <Text style={screen.error}>{error}</Text> : null}
@@ -127,14 +138,6 @@ export default function NutrientGoalsScreen() {
           </View>
         ))}
       </View>
-      <Pressable
-        accessibilityRole="button"
-        disabled={busy}
-        onPress={() => void saveGoals()}
-        style={({ pressed }) => [screen.save, busy && screen.buttonDisabled, pressed && screen.rowPressed]}
-      >
-        <Text style={screen.buttonText}>{busy ? 'Saving' : 'Save goals'}</Text>
-      </Pressable>
     </Screen>
   )
 }
