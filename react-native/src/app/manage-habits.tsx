@@ -164,7 +164,7 @@ export default function ManageHabitsScreen() {
       >
         <Text style={screen.title}>Habits</Text>
         <Text style={screen.muted}>
-          Create, reorder, and archive habits. Group them under sections like lifts.
+          Create, reorder, and archive habits. Group them under sections like lifts under muscles.
         </Text>
         {error ? <Text style={screen.error}>{error}</Text> : null}
         {habits.length === 0 && sections.length === 0 ? (

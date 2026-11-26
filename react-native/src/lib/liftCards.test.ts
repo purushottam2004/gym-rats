@@ -3,9 +3,9 @@ import { describe, it } from 'node:test'
 import { liftCardsForDay } from './liftCards.ts'
 import type { Lift, SetLog } from './gym.ts'
 
-const bench: Lift = { id: 'b', name: 'Flat Bench Press' }
-const squat: Lift = { id: 's', name: 'Squat' }
-const rowLift: Lift = { id: 'r', name: 'Row' }
+const bench: Lift = { id: 'b', name: 'Flat Bench Press', muscle_id: null }
+const squat: Lift = { id: 's', name: 'Squat', muscle_id: null }
+const rowLift: Lift = { id: 'r', name: 'Row', muscle_id: null }
 
 function set(partial: Partial<SetLog> & { lift: Lift; attempt: number }): SetLog {
   return {

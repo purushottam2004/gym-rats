@@ -84,9 +84,16 @@ export type Intake = {
   source_habit_name: string | null
 }
 
+export type Muscle = {
+  id: string
+  name: string
+  sort_order: number
+}
+
 export type Lift = {
   id: string
   name: string
+  muscle_id: string | null
 }
 
 export type SetLog = {
@@ -364,14 +371,107 @@ export async function deleteIntake(id: string): Promise<void> {
   fail(error)
 }
 
-export async function loadLifts(): Promise<Lift[]> {
-  const { data, error } = await db().from('lifts').select('id, name').order('name')
-  fail(error)
-  return (data ?? []) as Lift[]
+function mapLiftRow(row: Record<string, unknown>): Lift {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    muscle_id: (row.muscle_id as string | null) ?? null,
+  }
 }
 
-export async function createLift(name: string): Promise<void> {
-  const { error } = await db().from('lifts').insert({ name: name.trim() })
+function mapMuscleRow(row: Record<string, unknown>): Muscle {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    sort_order: row.sort_order as number,
+  }
+}
+
+/** Global muscle names that section the Lift catalog. */
+export async function loadMuscles(): Promise<Muscle[]> {
+  const { data, error } = await db()
+    .from('muscles')
+    .select('id, name, sort_order')
+    .order('sort_order', { ascending: true })
+    .order('name', { ascending: true })
+  fail(error)
+  return (data ?? []).map((row) => mapMuscleRow(row as Record<string, unknown>))
+}
+
+export async function createMuscle(name: string): Promise<Muscle> {
+  const existing = await loadMuscles()
+  const sortOrder =
+    existing.reduce((max, muscle) => Math.max(max, muscle.sort_order), -1) + 1
+  const { data, error } = await db()
+    .from('muscles')
+    .insert({ name: name.trim(), sort_order: sortOrder })
+    .select('id, name, sort_order')
+    .single()
+  fail(error)
+  return mapMuscleRow(data as Record<string, unknown>)
+}
+
+export async function updateMuscle(input: { id: string; name: string }): Promise<void> {
+  const { error } = await db()
+    .from('muscles')
+    .update({ name: input.name.trim() })
+    .eq('id', input.id)
+  fail(error)
+}
+
+/** Deletes a muscle; linked lifts move to Other (DB ON DELETE SET NULL). */
+export async function deleteMuscle(id: string): Promise<void> {
+  const { error } = await db().from('muscles').delete().eq('id', id)
+  fail(error)
+}
+
+export async function reorderMuscles(orderedIds: string[]): Promise<void> {
+  for (let index = 0; index < orderedIds.length; index += 1) {
+    const { error } = await db()
+      .from('muscles')
+      .update({ sort_order: index })
+      .eq('id', orderedIds[index]!)
+    fail(error)
+  }
+}
+
+async function resolveMuscleId(muscleId: string | null | undefined): Promise<string | null> {
+  if (muscleId == null || muscleId === '') return null
+  const muscles = await loadMuscles()
+  if (!muscles.some((muscle) => muscle.id === muscleId)) {
+    throw new Error('Choose a muscle from the catalog')
+  }
+  return muscleId
+}
+
+export async function loadLifts(): Promise<Lift[]> {
+  const { data, error } = await db()
+    .from('lifts')
+    .select('id, name, muscle_id')
+    .order('name')
+  fail(error)
+  return (data ?? []).map((row) => mapLiftRow(row as Record<string, unknown>))
+}
+
+export async function createLift(input: {
+  name: string
+  muscleId?: string | null
+}): Promise<void> {
+  const muscleId = await resolveMuscleId(input.muscleId)
+  const { error } = await db().from('lifts').insert({
+    name: input.name.trim(),
+    muscle_id: muscleId,
+  })
+  fail(error)
+}
+
+/** Assign or clear the Muscle for a Lift (name stays immutable). */
+export async function updateLiftMuscle(input: {
+  id: string
+  muscleId: string | null
+}): Promise<void> {
+  const muscleId = await resolveMuscleId(input.muscleId)
+  const { error } = await db().from('lifts').update({ muscle_id: muscleId }).eq('id', input.id)
   fail(error)
 }
 
@@ -390,13 +490,13 @@ export type WeekdayLift = Lift & {
 export async function loadWeekdayLifts(userId: string, weekday: number): Promise<Lift[]> {
   const { data, error } = await db()
     .from('weekday_lifts')
-    .select('position, lift:lifts!weekday_lifts_lift_id_fkey(id, name)')
+    .select('position, lift:lifts!weekday_lifts_lift_id_fkey(id, name, muscle_id)')
     .eq('user_id', userId)
     .eq('weekday', weekday)
     .order('position', { ascending: true })
     .order('created_at', { ascending: true })
   fail(error)
-  return (data ?? []).map((row) => row.lift as unknown as Lift)
+  return (data ?? []).map((row) => mapLiftRow(row.lift as unknown as Record<string, unknown>))
 }
 
 export async function addWeekdayLift(input: {
@@ -438,7 +538,9 @@ export async function removeWeekdayLift(input: {
 export async function loadSets(userId: string, day: string): Promise<SetLog[]> {
   const { data, error } = await db()
     .from('sets')
-    .select('id, attempt, reps, load_kg, logged_on, created_at, lift:lifts!sets_lift_id_fkey(id, name)')
+    .select(
+      'id, attempt, reps, load_kg, logged_on, created_at, lift:lifts!sets_lift_id_fkey(id, name, muscle_id)',
+    )
     .eq('user_id', userId)
     .eq('logged_on', day)
     .order('attempt', { ascending: true })
@@ -451,7 +553,7 @@ export async function loadSets(userId: string, day: string): Promise<SetLog[]> {
     load_kg: Number(row.load_kg),
     logged_on: row.logged_on as string,
     created_at: row.created_at as string,
-    lift: row.lift as unknown as Lift,
+    lift: mapLiftRow(row.lift as unknown as Record<string, unknown>),
   }))
 }
 

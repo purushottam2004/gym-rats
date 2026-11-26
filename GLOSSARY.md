@@ -48,9 +48,13 @@ _Avoid_: diet entry, ingredient, item, product
 One recorded consumption by a User of one of their Foods on a Day: which Food, and how much, as a number greater than zero in the Food's measure. A User may have many Intakes on the same Day, and may change or delete their own. Any User who shares a Group with them can see the Intake.
 _Avoid_: diet entry, meal, serving
 
+**Muscle**:
+A named body region on one global catalog every User shares. Muscles group Lifts in the Lift catalog the way Habit sections group Habits. Any signed-in User may add a name; names are unique ignoring letter case and outer spaces. A User may rename, reorder, or delete a Muscle; deleting it leaves its Lifts ungrouped under Other lifts.
+_Avoid_: muscle group, body part, body region label
+
 **Lift**:
-An exercise on one global catalog every User shares. Any signed-in User may add a name; names are unique ignoring letter case and outer spaces, and cannot be changed after the Lift is created. Any User may log a Set of any Lift in the catalog. Any User may delete a Lift only when no Set uses it.
-_Avoid_: lift entry, weight, exercise
+An exercise on one global catalog every User shares. Any signed-in User may add a name; names are unique ignoring letter case and outer spaces, and cannot be changed after the Lift is created. A Lift may optionally sit under one Muscle; with none it appears under Other lifts, and the Muscle may be changed later. Any User may log a Set of any Lift in the catalog. Any User may delete a Lift only when no Set uses it.
+_Avoid_: lift entry, weight, exercise, exercise type
 
 **Set**:
 One log line for a Lift on a Day: an attempt (an integer from 1 to 5), reps (an integer of 1 or greater), and a load in kilograms (zero or greater). The attempt does not have to be unique. The author may change or delete their own Set. Any User who shares a Group with them can see the Set.

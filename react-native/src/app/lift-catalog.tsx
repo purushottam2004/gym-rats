@@ -1,18 +1,27 @@
 import { useFocusEffect, useRouter } from 'expo-router'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { LoadingBlock } from '../components/BrandLoader'
 import { ConfirmModal } from '../components/ConfirmModal'
 import { Screen } from '../components/Screen'
 import { Toast, type ToastKind } from '../components/Toast'
 import { TrashButton } from '../components/TrashButton'
+import {
+  deleteLift,
+  isLiftInUseError,
+  loadLifts,
+  loadMuscles,
+  type Lift,
+  type Muscle,
+} from '../lib/gym'
+import { liftCatalogGroups } from '../lib/liftCatalog'
 import { useScreenStyles } from '../theme/ThemeProvider'
-import { deleteLift, isLiftInUseError, loadLifts, type Lift } from '../lib/gym'
 
 export default function LiftCatalogScreen() {
   const screen = useScreenStyles()
   const router = useRouter()
   const [lifts, setLifts] = useState<Lift[]>([])
+  const [muscles, setMuscles] = useState<Muscle[]>([])
   const [hydrated, setHydrated] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Lift | null>(null)
@@ -20,7 +29,9 @@ export default function LiftCatalogScreen() {
 
   const load = useCallback(async () => {
     try {
-      setLifts(await loadLifts())
+      const [nextLifts, nextMuscles] = await Promise.all([loadLifts(), loadMuscles()])
+      setLifts(nextLifts)
+      setMuscles(nextMuscles)
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load lifts')
@@ -34,6 +45,8 @@ export default function LiftCatalogScreen() {
       void load()
     }, [load]),
   )
+
+  const groups = useMemo(() => liftCatalogGroups(lifts, muscles), [lifts, muscles])
 
   async function confirmDelete() {
     const lift = pendingDelete
@@ -59,38 +72,65 @@ export default function LiftCatalogScreen() {
     <View style={{ flex: 1 }}>
       <Screen
         footer={
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push('/new-lift')}
-            style={screen.save}
-          >
-            <Text style={screen.buttonText}>Add New Lift</Text>
-          </Pressable>
+          <View style={{ gap: 10 }}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/manage-muscles')}
+              style={screen.save}
+            >
+              <Text style={screen.buttonText}>Manage Muscles</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/new-lift')}
+              style={screen.save}
+            >
+              <Text style={screen.buttonText}>Add New Lift</Text>
+            </Pressable>
+          </View>
         }
       >
         <Text style={screen.title}>Lift Catalog</Text>
+        <Text style={screen.muted}>Lifts grouped by muscle. Unassigned lifts stay under Other lifts.</Text>
         {error ? <Text style={screen.error}>{error}</Text> : null}
         {!hydrated ? (
           <LoadingBlock label="Loading lifts" />
-        ) : (
+        ) : lifts.length === 0 && muscles.length === 0 ? (
           <View style={screen.card}>
-            {lifts.length > 0 ? (
-              lifts.map((lift, index) => (
-                <View key={lift.id} style={[screen.row, index === 0 && screen.rowFirst]}>
-                  <View style={screen.rowMain}>
-                    <Text style={screen.rowTitle}>{lift.name}</Text>
-                  </View>
-                  <View style={screen.choiceTrail}>
-                    <TrashButton onPress={() => setPendingDelete(lift)} />
-                  </View>
-                </View>
-              ))
-            ) : (
-              <View style={[screen.row, screen.rowFirst]}>
-                <Text style={screen.muted}>No lifts in the catalog yet.</Text>
-              </View>
-            )}
+            <View style={[screen.row, screen.rowFirst]}>
+              <Text style={screen.muted}>No lifts in the catalog yet.</Text>
+            </View>
           </View>
+        ) : (
+          groups.map((group) => (
+            <View key={group.key} style={screen.card}>
+              <View style={[screen.row, screen.rowFirst]}>
+                <Text style={screen.muted}>{group.title}</Text>
+              </View>
+              {group.lifts.length > 0 ? (
+                group.lifts.map((lift) => (
+                  <View key={lift.id} style={screen.row}>
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() =>
+                        router.push({ pathname: '/new-lift', params: { id: lift.id } })
+                      }
+                      style={screen.rowMain}
+                    >
+                      <Text style={screen.rowTitle}>{lift.name}</Text>
+                    </Pressable>
+                    <View style={screen.choiceTrail}>
+                      <TrashButton onPress={() => setPendingDelete(lift)} />
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <View style={screen.row}>
+                  <Text style={screen.muted}>No lifts in this muscle yet.</Text>
+                </View>
+              )}
+            </View>
+          ))
         )}
       </Screen>
       <ConfirmModal
