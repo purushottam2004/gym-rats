@@ -26,8 +26,13 @@ export function HabitProgressFill({ parts }: Props) {
 }
 
 const styles = StyleSheet.create({
+  // Same pattern as diet nutrientFill — left/top/bottom only.
+  // Spreading StyleSheet.absoluteFill + right: undefined breaks height on iOS
+  // (Yoga / WebKit treat the unresolved right edge differently than Chrome).
   fill: {
-    ...StyleSheet.absoluteFill,
-    right: undefined,
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
   },
 })

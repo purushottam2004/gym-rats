@@ -21,6 +21,9 @@ export function Screen({ children, header, footer, contentContainerStyle }: Prop
         style={screen.scroll}
         contentContainerStyle={[screen.scrollContent, contentContainerStyle]}
         keyboardShouldPersistTaps="handled"
+        // iOS: lock to the first scroll axis so vertical list scrolling does not
+        // steal mid-gesture from horizontal row swipes (e.g. habit complete).
+        directionalLockEnabled
       >
         {children}
       </ScrollView>

@@ -6,6 +6,9 @@ import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
 
 const SWIPE_THRESHOLD = 56
 const SWIPE_MAX = 88
+/** Small horizontal move that still counts if fling velocity is high. */
+const SWIPE_FLICK_DX = 24
+const SWIPE_FLICK_VX = 0.55
 
 type Props = {
   name: string
@@ -16,6 +19,10 @@ type Props = {
   readOnly?: boolean
   onIncrement: () => void
   onDecrement: () => void
+}
+
+function shouldClaimHorizontal(_: unknown, gesture: { dx: number; dy: number }) {
+  return Math.abs(gesture.dx) > 8 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.25
 }
 
 /**
@@ -61,15 +68,20 @@ export function HabitSwipeRow({
   const panHandlers = readOnly
     ? {}
     : PanResponder.create({
-        onMoveShouldSetPanResponder: (_, gesture) =>
-          Math.abs(gesture.dx) > 8 && Math.abs(gesture.dx) > Math.abs(gesture.dy),
+        onMoveShouldSetPanResponder: shouldClaimHorizontal,
+        // Claim before the parent ScrollView on iOS so the swipe does not die mid-drag.
+        onMoveShouldSetPanResponderCapture: shouldClaimHorizontal,
+        onPanResponderTerminationRequest: () => false,
+        onShouldBlockNativeResponder: () => true,
         onPanResponderMove: (_, gesture) => {
           translateX.setValue(Math.max(-SWIPE_MAX, Math.min(SWIPE_MAX, gesture.dx)))
         },
         onPanResponderRelease: (_, gesture) => {
-          if (gesture.dx >= SWIPE_THRESHOLD) {
+          const flickRight = gesture.dx >= SWIPE_FLICK_DX && gesture.vx >= SWIPE_FLICK_VX
+          const flickLeft = gesture.dx <= -SWIPE_FLICK_DX && gesture.vx <= -SWIPE_FLICK_VX
+          if (gesture.dx >= SWIPE_THRESHOLD || flickRight) {
             onIncrement()
-          } else if (gesture.dx <= -SWIPE_THRESHOLD) {
+          } else if (gesture.dx <= -SWIPE_THRESHOLD || flickLeft) {
             onDecrement()
           }
           Animated.spring(translateX, {
@@ -175,7 +187,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   underlay: {
-    ...StyleSheet.absoluteFill,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
@@ -199,9 +215,12 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
   },
+  // Match HabitProgressFill / nutrientFill — full row height on iOS.
   progressFill: {
-    ...StyleSheet.absoluteFill,
-    right: undefined,
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
   },
   content: {
     zIndex: 1,
