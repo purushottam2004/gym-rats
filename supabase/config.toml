@@ -464,3 +464,9 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/complete_habits_from_voice/deno.json"
 entrypoint = "./functions/complete_habits_from_voice/index.ts"
+
+[functions.estimate_food_from_photo]
+enabled = true
+verify_jwt = true
+import_map = "./functions/estimate_food_from_photo/deno.json"
+entrypoint = "./functions/estimate_food_from_photo/index.ts"

@@ -3,6 +3,7 @@ import { describe, it } from 'node:test'
 import {
   bytesToBase64,
   messageFromFunctionBody,
+  parseFoodPhotoEstimateResponse,
   parseVoiceHabitResponse,
   parseVoiceIntakeResponse,
   parseVoiceSetResponse,
@@ -91,6 +92,27 @@ describe('parseVoiceHabitResponse', () => {
     assert.deepEqual(parseVoiceHabitResponse({ ok: false, error: ' Nothing due ' }), {
       ok: false,
       error: 'Nothing due',
+    })
+  })
+})
+
+describe('parseFoodPhotoEstimateResponse', () => {
+  it('returns ok food estimate payload', () => {
+    const result = parseFoodPhotoEstimateResponse({
+      ok: true,
+      food: {
+        name: 'Oatmeal',
+        nutrients: [{ nutrient_id: 'n1', name: 'Energy', unit: 'kcal', amount: 300 }],
+      },
+    })
+    assert.equal(result.ok, true)
+    if (result.ok) assert.equal(result.food.name, 'Oatmeal')
+  })
+
+  it('reads estimate errors', () => {
+    assert.deepEqual(parseFoodPhotoEstimateResponse({ ok: false, error: ' Not food ' }), {
+      ok: false,
+      error: 'Not food',
     })
   })
 })

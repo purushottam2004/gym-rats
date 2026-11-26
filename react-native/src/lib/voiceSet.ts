@@ -38,9 +38,23 @@ export type VoiceHabitOk = {
   logged_on: string
 }
 
+export type FoodPhotoEstimateOk = {
+  ok: true
+  food: {
+    name: string
+    nutrients: {
+      nutrient_id: string
+      name: string
+      unit: string
+      amount: number
+    }[]
+  }
+}
+
 export type VoiceSetResult = VoiceSetOk | VoiceActionErr
 export type VoiceIntakeResult = VoiceIntakeOk | VoiceActionErr
 export type VoiceHabitResult = VoiceHabitOk | VoiceActionErr
+export type FoodPhotoEstimateResult = FoodPhotoEstimateOk | VoiceActionErr
 
 function firstNonEmptyString(...values: unknown[]): string | null {
   for (const value of values) {
@@ -131,6 +145,33 @@ export function parseVoiceHabitResponse(
     return { ok: false, error: 'Empty response from voice habits' }
   }
   return { ok: false, error: 'Could not complete habits from voice' }
+}
+
+export function parseFoodPhotoEstimateResponse(
+  data: unknown,
+  fallbackMessage?: string | null,
+): FoodPhotoEstimateResult {
+  if (data && typeof data === 'object') {
+    const body = data as Record<string, unknown>
+    if (body.ok === true && body.food && typeof body.food === 'object') {
+      const food = body.food as Record<string, unknown>
+      if (typeof food.name === 'string' && Array.isArray(food.nutrients)) {
+        return data as FoodPhotoEstimateOk
+      }
+    }
+    const fromBody = messageFromFunctionBody(data)
+    if (fromBody) {
+      return { ok: false, error: fromBody }
+    }
+  }
+
+  if (fallbackMessage?.trim()) {
+    return { ok: false, error: fallbackMessage.trim() }
+  }
+  if (!data || typeof data !== 'object') {
+    return { ok: false, error: 'Empty response from food photo estimate' }
+  }
+  return { ok: false, error: 'Could not estimate food from photo' }
 }
 
 type VoiceParseFn<T extends { ok: true } | VoiceActionErr> = (

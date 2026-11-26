@@ -5,8 +5,9 @@ import {
   useAudioRecorder,
   useAudioRecorderState,
 } from 'expo-audio'
+import * as ImagePicker from 'expo-image-picker'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { BookOpen, Mic, Plus, Target, Utensils } from 'lucide-react-native'
+import { BookOpen, Camera, Mic, Plus, Target, Utensils } from 'lucide-react-native'
 import { useCallback, useMemo, useState } from 'react'
 import { Platform, Pressable, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
@@ -16,12 +17,14 @@ import { DeleteConfirmButton } from '../../components/DeleteConfirmButton'
 import { InfoButton } from '../../components/InfoButton'
 import { InfoListModal, type InfoListRow } from '../../components/InfoListModal'
 import { NutrientProgressRow } from '../../components/NutrientProgressRow'
+import { PhotoConfirmModal } from '../../components/PhotoConfirmModal'
 import { Screen } from '../../components/Screen'
 import { TabChrome } from '../../components/TabChrome'
 import { Toast, type ToastKind } from '../../components/Toast'
 import { useScreenStyles, useTheme } from '../../theme/ThemeProvider'
 import {
   deleteIntake,
+  estimateFoodFromPhoto,
   loadIntakes,
   loadNutrientGoals,
   logIntakeFromVoice,
@@ -39,6 +42,7 @@ import {
   nutritionSummaryTitle,
   summarizeNutrition,
 } from '../../lib/nutrition'
+import { formatEstimatedAmount, setOtherFoodDraft } from '../../lib/otherFoodDraft'
 
 type InfoModalState = {
   title: string
@@ -67,6 +71,10 @@ export default function DietScreen() {
   const [error, setError] = useState<string | null>(null)
   const [infoModal, setInfoModal] = useState<InfoModalState | null>(null)
   const [voiceBusy, setVoiceBusy] = useState(false)
+  const [photoBusy, setPhotoBusy] = useState(false)
+  const [pendingPhoto, setPendingPhoto] = useState<{ uri: string; mimeType?: string } | null>(
+    null,
+  )
   const [toast, setToast] = useState<{ kind: ToastKind; message: string } | null>(null)
   const today = localDate()
   const progress = useMemo(
@@ -127,8 +135,63 @@ export default function DietScreen() {
     })
   }
 
+  async function captureFoodPhoto() {
+    if (photoBusy || voiceBusy) return
+    const permission = await ImagePicker.requestCameraPermissionsAsync()
+    if (!permission.granted) {
+      setToast({ kind: 'error', message: 'Camera permission is required' })
+      return
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      quality: 0.55,
+      exif: false,
+    })
+    if (result.canceled || !result.assets[0]?.uri) return
+    const asset = result.assets[0]
+    setPendingPhoto({
+      uri: asset.uri,
+      mimeType: asset.mimeType ?? undefined,
+    })
+  }
+
+  async function continueWithPhoto() {
+    const photo = pendingPhoto
+    if (!photo || photoBusy) return
+    setPendingPhoto(null)
+    setPhotoBusy(true)
+    try {
+      const result = await estimateFoodFromPhoto({
+        imageUri: photo.uri,
+        mimeType: photo.mimeType,
+      })
+      if (!result.ok) {
+        setToast({ kind: 'error', message: result.error })
+        return
+      }
+      const amounts: Record<string, string> = {}
+      for (const row of result.food.nutrients) {
+        const formatted = formatEstimatedAmount(row.amount)
+        if (formatted) amounts[row.nutrient_id] = formatted
+      }
+      if (Object.keys(amounts).length === 0) {
+        setToast({ kind: 'error', message: 'No nutrient amounts estimated' })
+        return
+      }
+      setOtherFoodDraft({ name: result.food.name, amounts })
+      router.push({ pathname: '/log-other', params: { day } })
+    } catch (err) {
+      setToast({
+        kind: 'error',
+        message: err instanceof Error && err.message.trim() ? err.message.trim() : 'Could not estimate food',
+      })
+    } finally {
+      setPhotoBusy(false)
+    }
+  }
+
   async function toggleVoice() {
-    if (voiceBusy) return
+    if (voiceBusy || photoBusy) return
 
     if (recorderState.isRecording) {
       setVoiceBusy(true)
@@ -214,14 +277,26 @@ export default function DietScreen() {
                   <BookOpen color={ACTION_ICON} size={20} strokeWidth={2.25} />
                 </Pressable>
                 <Pressable
+                  accessibilityLabel="Photograph food"
+                  accessibilityRole="button"
+                  disabled={photoBusy || voiceBusy}
+                  onPress={() => void captureFoodPhoto()}
+                  style={({ pressed }) => [
+                    screen.iconActionButton,
+                    (pressed || photoBusy || voiceBusy) && screen.buttonDisabled,
+                  ]}
+                >
+                  <Camera color={ACTION_ICON} size={20} strokeWidth={2.25} />
+                </Pressable>
+                <Pressable
                   accessibilityLabel={recording ? 'Stop recording and add food' : 'Speak a food'}
                   accessibilityRole="button"
-                  disabled={voiceBusy}
+                  disabled={voiceBusy || photoBusy}
                   onPress={() => void toggleVoice()}
                   style={({ pressed }) => [
                     screen.iconActionButton,
                     recording && screen.micButtonActive,
-                    (pressed || voiceBusy) && screen.buttonDisabled,
+                    (pressed || voiceBusy || photoBusy) && screen.buttonDisabled,
                   ]}
                 >
                   <Mic color={recording ? colors.accentText : ACTION_ICON} size={20} strokeWidth={2.25} />
@@ -293,6 +368,16 @@ export default function DietScreen() {
         emptyMessage={infoModal?.emptyMessage ?? ''}
         onClose={() => setInfoModal(null)}
       />
+      <PhotoConfirmModal
+        visible={pendingPhoto !== null}
+        imageUri={pendingPhoto?.uri ?? null}
+        onCancel={() => setPendingPhoto(null)}
+        onRetake={() => {
+          setPendingPhoto(null)
+          void captureFoodPhoto()
+        }}
+        onContinue={() => void continueWithPhoto()}
+      />
       <Toast
         visible={toast !== null}
         kind={toast?.kind ?? 'success'}
@@ -300,7 +385,10 @@ export default function DietScreen() {
         durationMs={toast?.kind === 'error' ? 5600 : 2800}
         onHide={() => setToast(null)}
       />
-      <BusyOverlay visible={voiceBusy} label="Adding food…" />
+      <BusyOverlay
+        visible={voiceBusy || photoBusy}
+        label={photoBusy ? 'Estimating food…' : 'Adding food…'}
+      />
     </View>
   )
 }

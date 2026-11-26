@@ -17,16 +17,23 @@ import { parseReminderTime } from './habitReminders'
 import type { ReactionRow } from './postSocial'
 import {
   bytesToBase64,
+  parseFoodPhotoEstimateResponse,
   parseVoiceHabitResponse,
   parseVoiceIntakeResponse,
   parseVoiceSetResponse,
   resultFromFunctionsInvoke,
+  type FoodPhotoEstimateResult,
   type VoiceHabitResult,
   type VoiceIntakeResult,
   type VoiceSetResult,
 } from './voiceSet'
 
-export type { VoiceHabitResult, VoiceIntakeResult, VoiceSetResult } from './voiceSet'
+export type {
+  FoodPhotoEstimateResult,
+  VoiceHabitResult,
+  VoiceIntakeResult,
+  VoiceSetResult,
+} from './voiceSet'
 export type { Habit, HabitDayCount, HabitRecurrence, HabitSection } from './habitSchedule'
 
 export type { Basis, Measure } from './measure'
@@ -520,6 +527,35 @@ export async function logIntakeFromVoice(input: {
   })
 
   return resultFromFunctionsInvoke(data, error, parseVoiceIntakeResponse)
+}
+
+/** Photo → nutrient suggestions for Other. Does not write to the database. */
+export async function estimateFoodFromPhoto(input: {
+  imageUri: string
+  mimeType?: string
+}): Promise<FoodPhotoEstimateResult> {
+  const response = await fetch(input.imageUri)
+  if (!response.ok) {
+    return { ok: false, error: 'Could not read the photo' }
+  }
+  const bytes = new Uint8Array(await response.arrayBuffer())
+  if (bytes.byteLength === 0) {
+    return { ok: false, error: 'Photo was empty' }
+  }
+
+  const headerMime = response.headers.get('content-type')?.split(';')[0]?.trim()
+  const mime =
+    input.mimeType?.trim() ||
+    (headerMime && headerMime.startsWith('image/') ? headerMime : 'image/jpeg')
+
+  const { data, error } = await db().functions.invoke('estimate_food_from_photo', {
+    body: {
+      image_base64: bytesToBase64(bytes),
+      mime_type: mime,
+    },
+  })
+
+  return resultFromFunctionsInvoke(data, error, parseFoodPhotoEstimateResponse)
 }
 
 export async function deleteSet(id: string): Promise<void> {

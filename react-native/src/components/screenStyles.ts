@@ -592,6 +592,12 @@ export function createScreenStyles(c: ThemeColors) {
       fontSize: 17,
       fontWeight: '600',
     },
+    photoConfirmPreview: {
+      width: '100%',
+      height: 220,
+      borderRadius: 14,
+      backgroundColor: c.surfaceAlt,
+    },
     toast: {
       position: 'absolute',
       left: 16,

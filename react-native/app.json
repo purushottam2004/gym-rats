@@ -22,7 +22,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Gym Rats uses photos you choose for your profile and posts."
+          "photosPermission": "Gym Rats uses photos you choose for your profile and posts.",
+          "cameraPermission": "Gym Rats uses the camera so you can photograph food to estimate nutrients."
         }
       ],
       [

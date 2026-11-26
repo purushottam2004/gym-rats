@@ -5,16 +5,23 @@ import { AppTextInput } from '../components/AppTextInput'
 import { Screen } from '../components/Screen'
 import { useScreenStyles } from '../theme/ThemeProvider'
 import { loadNutrients, logOtherIntake, type Nutrient } from '../lib/gym'
+import { consumeOtherFoodDraft, type OtherFoodDraft } from '../lib/otherFoodDraft'
+
+function takeInitialDraft(): OtherFoodDraft | null {
+  return consumeOtherFoodDraft()
+}
 
 export default function LogOtherScreen() {
   const screen = useScreenStyles()
   const { day } = useLocalSearchParams<{ day: string }>()
   const router = useRouter()
-  const [name, setName] = useState('')
+  const [draft] = useState(takeInitialDraft)
+  const [name, setName] = useState(() => draft?.name ?? '')
   const [nutrients, setNutrients] = useState<Nutrient[]>([])
-  const [amounts, setAmounts] = useState<Record<string, string>>({})
+  const [amounts, setAmounts] = useState<Record<string, string>>(() => draft?.amounts ?? {})
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const fromPhoto = draft != null
 
   useEffect(() => {
     void loadNutrients()
@@ -67,7 +74,9 @@ export default function LogOtherScreen() {
     >
       <Text style={screen.title}>Other</Text>
       <Text style={screen.muted}>
-        One-off nutrients for this day only. Not added to your food catalog.
+        {fromPhoto
+          ? 'Review the photo estimate, edit anything that looks off, then save. Not added to your catalog.'
+          : 'One-off nutrients for this day only. Not added to your food catalog.'}
       </Text>
       {error ? <Text style={screen.error}>{error}</Text> : null}
       <Text style={screen.label}>Name (optional)</Text>

@@ -101,6 +101,12 @@ User-JWT functions used by the React Native **Lifts** and **Diet** mic controls.
 2. Restart / serve functions after changing secrets: `supabase stop && supabase start`, or `supabase functions serve`.
 3. The app calls `supabase.functions.invoke(…)` with the signed-in session. Create at least one lift / catalog food first so the model can match a name.
 
+#### Food photo estimate (`estimate_food_from_photo`)
+
+User-JWT function used by the React Native **Diet** camera control. It sends the plate photo to OpenAI vision (`gpt-4o`), returns suggested name + nutrient totals for an **Other** entry, and **does not** insert foods/intakes — the app opens the Other screen for review.
+
+Same `OPENAI_API_KEY` setup as voice logging.
+
 ### Regenerate types after a migration
 
 ```bash
