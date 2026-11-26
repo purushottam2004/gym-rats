@@ -47,13 +47,34 @@ export default function AddFoodScreen() {
   return (
     <Screen
       footer={
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => void save()}
-          style={screen.save}
-        >
-          <Text style={screen.buttonText}>Save</Text>
-        </Pressable>
+        <View style={{ gap: 10 }}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/new-food')}
+            style={({ pressed }) => [screen.addCard, pressed && screen.rowPressed]}
+          >
+            <Text style={screen.addText}>New food</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.replace({ pathname: '/log-other', params: { day } })}
+            style={({ pressed }) => [screen.addCard, pressed && screen.rowPressed]}
+          >
+            <Text style={screen.addText}>Other (custom nutrients)</Text>
+          </Pressable>
+          <Text style={screen.label}>
+            Amount{selected ? ` (${measureLabel(selected.measure)})` : ''}
+          </Text>
+          <AppTextInput
+            keyboardType="decimal-pad"
+            onChangeText={setAmount}
+            style={screen.input}
+            value={amount}
+          />
+          <Pressable accessibilityRole="button" onPress={() => void save()} style={screen.save}>
+            <Text style={screen.buttonText}>Save</Text>
+          </Pressable>
+        </View>
       }
     >
       <Text style={screen.title}>Add food</Text>
@@ -90,22 +111,6 @@ export default function AddFoodScreen() {
           })}
         </View>
       ) : null}
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => router.push('/new-food')}
-        style={({ pressed }) => [screen.addCard, pressed && screen.rowPressed]}
-      >
-        <Text style={screen.addText}>New food</Text>
-      </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => router.replace({ pathname: '/log-other', params: { day } })}
-        style={({ pressed }) => [screen.addCard, pressed && screen.rowPressed]}
-      >
-        <Text style={screen.addText}>Other (custom nutrients)</Text>
-      </Pressable>
-      <Text style={screen.label}>Amount{selected ? ` (${measureLabel(selected.measure)})` : ''}</Text>
-      <AppTextInput keyboardType="decimal-pad" onChangeText={setAmount} style={screen.input} value={amount} />
     </Screen>
   )
 }
