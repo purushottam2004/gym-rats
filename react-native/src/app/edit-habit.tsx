@@ -398,10 +398,6 @@ export default function EditHabitScreen() {
         )}
 
         <Text style={screen.label}>Shared with</Text>
-        <Text style={screen.body}>
-          By default every Group you share can see this Habit. Turn that off to pick specific
-          Groups.
-        </Text>
         <View style={screen.card}>
           <Pressable
             accessibilityRole="checkbox"
