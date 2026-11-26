@@ -310,7 +310,7 @@ export default {
     for (const habit of matched) {
       const { data: existing, error: readError } = await ctx.supabase
         .from("habit_day_counts")
-        .select("count")
+        .select("count, completed_at")
         .eq("habit_id", habit.id)
         .eq("logged_on", loggedOn)
         .maybeSingle();
@@ -318,7 +318,40 @@ export default {
         return jsonErr(readError.message);
       }
       const current = (existing?.count as number | undefined) ?? 0;
+      const existingCompletedAt =
+        (existing as { completed_at?: string | null } | null)?.completed_at ?? null;
       const next = current + 1;
+
+      let progressAfter = next;
+      if (habit.recurrence === "per_week") {
+        // ISO week Mon–Sun containing loggedOn.
+        const logged = new Date(`${loggedOn}T12:00:00Z`);
+        const isoDow = ((logged.getUTCDay() + 6) % 7) + 1; // 1=Mon … 7=Sun
+        const monday = new Date(logged);
+        monday.setUTCDate(logged.getUTCDate() - (isoDow - 1));
+        const weekDays: string[] = [];
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(monday);
+          d.setUTCDate(monday.getUTCDate() + i);
+          weekDays.push(d.toISOString().slice(0, 10));
+        }
+        const { data: weekRows, error: weekError } = await ctx.supabase
+          .from("habit_day_counts")
+          .select("logged_on, count")
+          .eq("habit_id", habit.id)
+          .in("logged_on", weekDays);
+        if (weekError) {
+          return jsonErr(weekError.message);
+        }
+        progressAfter = 0;
+        for (const row of weekRows ?? []) {
+          if ((row.logged_on as string) === loggedOn) continue;
+          progressAfter += row.count as number;
+        }
+        progressAfter += next;
+      }
+
+      const willComplete = progressAfter >= habit.frequency;
       const { error: upsertError } = await ctx.supabase.from("habit_day_counts").upsert(
         {
           habit_id: habit.id,
@@ -326,6 +359,9 @@ export default {
           logged_on: loggedOn,
           count: next,
           updated_at: new Date().toISOString(),
+          completed_at: willComplete
+            ? (existingCompletedAt ?? new Date().toISOString())
+            : null,
         },
         { onConflict: "habit_id,logged_on" },
       );

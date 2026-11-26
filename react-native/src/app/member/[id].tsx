@@ -30,6 +30,7 @@ import {
   type Profile,
   type SetLog,
 } from '../../lib/gym'
+import { formatHabitCompletedAt } from '../../lib/habitReminders'
 import { habitSectionCardsForDay } from '../../lib/habitSchedule'
 import { liftCardsForDay } from '../../lib/liftCards'
 import { localDate } from '../../lib/localDate'
@@ -290,6 +291,7 @@ export default function MemberScreen() {
                       done={row.done}
                       target={row.target}
                       complete={row.complete}
+                      completedLabel={formatHabitCompletedAt(row.completed_at)}
                       readOnly
                       onIncrement={() => undefined}
                       onDecrement={() => undefined}

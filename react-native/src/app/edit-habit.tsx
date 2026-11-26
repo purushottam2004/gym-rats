@@ -12,6 +12,7 @@ import {
   loadFoods,
   loadGroups,
   loadHabitAudienceGroupIds,
+  loadHabitDayCounts,
   loadHabitSections,
   loadHabits,
   measureLabel,
@@ -21,6 +22,12 @@ import {
   type HabitRecurrence,
   type HabitSection,
 } from '../lib/gym'
+import { syncHabitReminderNotifications } from '../lib/habitReminderNotifications'
+import {
+  formatReminderTime,
+  normalizeHabitReminderInput,
+} from '../lib/habitReminders'
+import { localDate } from '../lib/localDate'
 import { WEEKDAY_LABELS, type Weekday } from '../lib/weekday'
 import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
 
@@ -54,6 +61,9 @@ export default function EditHabitScreen() {
   const [foods, setFoods] = useState<Food[]>([])
   const [foodId, setFoodId] = useState<string | null>(null)
   const [foodAmount, setFoodAmount] = useState('')
+  const [remindEnabled, setRemindEnabled] = useState(false)
+  const [remindFirstTime, setRemindFirstTime] = useState('08:00')
+  const [remindEveryMinutes, setRemindEveryMinutes] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [toast, setToast] = useState<{ kind: ToastKind; message: string } | null>(null)
   const [busy, setBusy] = useState(false)
@@ -113,6 +123,13 @@ export default function EditHabitScreen() {
         setFoodId(catalog[0]?.id ?? null)
         setFoodAmount('')
       }
+      setRemindEnabled(habit.remind_enabled)
+      setRemindFirstTime(
+        habit.remind_first_time ? formatReminderTime(habit.remind_first_time) : '08:00',
+      )
+      setRemindEveryMinutes(
+        habit.remind_every_minutes != null ? String(habit.remind_every_minutes) : '',
+      )
       setError(null)
       setLoaded(true)
     } catch (err) {
@@ -176,6 +193,16 @@ export default function EditHabitScreen() {
       }
     }
 
+    const reminders = normalizeHabitReminderInput({
+      enabled: remindEnabled,
+      firstTimeText: remindFirstTime,
+      everyMinutesText: remindEveryMinutes,
+    })
+    if (!reminders.ok) {
+      setToast({ kind: 'error', message: reminders.error })
+      return
+    }
+
     setBusy(true)
     try {
       if (editing && id) {
@@ -189,6 +216,9 @@ export default function EditHabitScreen() {
           foodId: linkFoodId,
           foodAmount: linkAmount,
           shareGroupIds,
+          remindEnabled: reminders.remind_enabled,
+          remindFirstTime: reminders.remind_first_time,
+          remindEveryMinutes: reminders.remind_every_minutes,
         })
       } else {
         await createHabit({
@@ -200,7 +230,21 @@ export default function EditHabitScreen() {
           foodId: linkFoodId,
           foodAmount: linkAmount,
           shareGroupIds,
+          remindEnabled: reminders.remind_enabled,
+          remindFirstTime: reminders.remind_first_time,
+          remindEveryMinutes: reminders.remind_every_minutes,
         })
+      }
+      if (userId) {
+        try {
+          const [nextHabits, nextCounts] = await Promise.all([
+            loadHabits(userId),
+            loadHabitDayCounts(userId, localDate()),
+          ])
+          await syncHabitReminderNotifications({ habits: nextHabits, counts: nextCounts })
+        } catch {
+          // Reminder reschedule is best-effort; Habit save already succeeded.
+        }
       }
       router.back()
     } catch (err) {
@@ -486,6 +530,46 @@ export default function EditHabitScreen() {
           ) : (
             <Text style={screen.muted}>Join or create a group before limiting who can see this.</Text>
           )
+        ) : null}
+
+        <Text style={screen.label}>Reminders</Text>
+        <Text style={screen.muted}>
+          Local notifications on this device. First at the time you set; optional repeats while this
+          habit is still incomplete today.
+        </Text>
+        <View style={screen.card}>
+          <Pressable
+            accessibilityRole="switch"
+            accessibilityState={{ checked: remindEnabled }}
+            onPress={() => setRemindEnabled((value) => !value)}
+            style={[screen.row, screen.rowFirst]}
+          >
+            <Text style={[screen.rowTitle, screen.rowMain]}>Notify me</Text>
+            <Text style={screen.muted}>{remindEnabled ? 'On' : 'Off'}</Text>
+          </Pressable>
+        </View>
+        {remindEnabled ? (
+          <>
+            <Text style={screen.label}>First notification</Text>
+            <AppTextInput
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="numbers-and-punctuation"
+              onChangeText={setRemindFirstTime}
+              placeholder="08:00"
+              style={screen.input}
+              value={remindFirstTime}
+            />
+            <Text style={screen.label}>Then every (minutes)</Text>
+            <Text style={screen.muted}>Leave blank for a single reminder. Minimum 5 minutes.</Text>
+            <AppTextInput
+              keyboardType="number-pad"
+              onChangeText={setRemindEveryMinutes}
+              placeholder="30"
+              style={screen.input}
+              value={remindEveryMinutes}
+            />
+          </>
         ) : null}
 
         <Text style={screen.label}>Log food when completed</Text>

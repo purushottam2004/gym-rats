@@ -30,6 +30,9 @@ SEED_HABITS = [
         "sort_order": 0,
         "active": True,
         "section_id": HABIT_SECTION_HYGIENE_ID,
+        "remind_enabled": True,
+        "remind_first_time": "07:30:00",
+        "remind_every_minutes": 30,
     },
     {
         "id": HABIT_EVENING_BRUSH_ID,
@@ -41,6 +44,9 @@ SEED_HABITS = [
         "sort_order": 1,
         "active": True,
         "section_id": HABIT_SECTION_HYGIENE_ID,
+        "remind_enabled": True,
+        "remind_first_time": "21:00:00",
+        "remind_every_minutes": None,
     },
     {
         "id": HABIT_BATH_ID,

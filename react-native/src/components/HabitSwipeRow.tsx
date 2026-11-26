@@ -15,6 +15,8 @@ type Props = {
   done: number
   target: number
   complete: boolean
+  /** Local clock label when complete, e.g. "8:42 AM". */
+  completedLabel?: string | null
   first?: boolean
   readOnly?: boolean
   onIncrement: () => void
@@ -34,6 +36,7 @@ export function HabitSwipeRow({
   done,
   target,
   complete,
+  completedLabel,
   first,
   readOnly,
   onIncrement,
@@ -164,6 +167,9 @@ export function HabitSwipeRow({
         ) : null}
         <View style={[screen.rowMain, styles.content]}>
           <Text style={screen.rowTitle}>{name}</Text>
+          {complete && completedLabel ? (
+            <Text style={[screen.muted, styles.completedAt]}>Done {completedLabel}</Text>
+          ) : null}
         </View>
         <Text
           style={[
@@ -224,5 +230,9 @@ const styles = StyleSheet.create({
   },
   content: {
     zIndex: 1,
+  },
+  completedAt: {
+    marginTop: 2,
+    fontSize: 12,
   },
 })

@@ -4,6 +4,8 @@ import { dayBoundsIso } from './localDate'
 import type { Basis, Measure } from './measure'
 import { getSupabaseClient } from './supabase'
 import {
+  habitComplete,
+  habitDoneOnDay,
   weekDates,
   type Habit,
   type HabitDayCount,
@@ -11,6 +13,7 @@ import {
   type HabitSection,
   type Weekday,
 } from './habitSchedule'
+import { parseReminderTime } from './habitReminders'
 import type { ReactionRow } from './postSocial'
 import {
   bytesToBase64,
@@ -525,7 +528,7 @@ export async function deleteSet(id: string): Promise<void> {
 }
 
 const HABIT_SELECT =
-  'id, name, recurrence, frequency, weekdays, sort_order, active, section_id, food_id, food_amount, food:foods!habits_food_id_fkey(id, name, measure)'
+  'id, name, recurrence, frequency, weekdays, sort_order, active, section_id, food_id, food_amount, remind_enabled, remind_first_time, remind_every_minutes, food:foods!habits_food_id_fkey(id, name, measure)'
 
 function mapHabitRow(row: Record<string, unknown>): Habit {
   const foodRaw = row.food as { id: string; name: string; measure: string } | null | undefined
@@ -534,6 +537,15 @@ function mapHabitRow(row: Record<string, unknown>): Habit {
     row.food_amount == null || row.food_amount === ''
       ? null
       : Number(row.food_amount)
+  const remindEnabled = Boolean(row.remind_enabled)
+  const remindFirstRaw =
+    typeof row.remind_first_time === 'string' ? row.remind_first_time : null
+  const remindFirst = remindEnabled ? parseReminderTime(remindFirstRaw) : null
+  const remindEveryRaw = row.remind_every_minutes
+  const remindEvery =
+    remindEnabled && remindEveryRaw != null && remindEveryRaw !== ''
+      ? Number(remindEveryRaw)
+      : null
   return {
     id: row.id as string,
     name: row.name as string,
@@ -548,6 +560,12 @@ function mapHabitRow(row: Record<string, unknown>): Habit {
     food:
       foodId && foodRaw
         ? { id: foodRaw.id, name: foodRaw.name, measure: foodRaw.measure }
+        : null,
+    remind_enabled: remindEnabled && remindFirst != null,
+    remind_first_time: remindFirst,
+    remind_every_minutes:
+      remindEnabled && remindFirst != null && Number.isInteger(remindEvery) && (remindEvery as number) >= 5
+        ? (remindEvery as number)
         : null,
   }
 }
@@ -642,7 +660,7 @@ export async function loadHabitDayCounts(userId: string, day: string): Promise<H
   const days = weekDates(day)
   const { data, error } = await db()
     .from('habit_day_counts')
-    .select('habit_id, logged_on, count')
+    .select('habit_id, logged_on, count, completed_at')
     .eq('user_id', userId)
     .in('logged_on', days)
   fail(error)
@@ -650,6 +668,7 @@ export async function loadHabitDayCounts(userId: string, day: string): Promise<H
     habit_id: row.habit_id as string,
     logged_on: row.logged_on as string,
     count: row.count as number,
+    completed_at: (row.completed_at as string | null) ?? null,
   }))
 }
 
@@ -719,6 +738,41 @@ async function replaceHabitAudiences(
   fail(error)
 }
 
+export type HabitReminderInput = {
+  remindEnabled: boolean
+  /** `HH:MM` when enabled; ignored when disabled. */
+  remindFirstTime: string | null
+  /** Minutes between follow-ups; null = first only. */
+  remindEveryMinutes: number | null
+}
+
+function normalizeReminderFields(input: HabitReminderInput): {
+  remind_enabled: boolean
+  remind_first_time: string | null
+  remind_every_minutes: number | null
+} {
+  if (!input.remindEnabled) {
+    return {
+      remind_enabled: false,
+      remind_first_time: null,
+      remind_every_minutes: null,
+    }
+  }
+  const first = parseReminderTime(input.remindFirstTime)
+  if (!first) {
+    throw new Error('First reminder time must look like 08:00')
+  }
+  const every = input.remindEveryMinutes
+  if (every != null && (!Number.isInteger(every) || every < 5)) {
+    throw new Error('Repeat interval must be blank or at least 5 minutes')
+  }
+  return {
+    remind_enabled: true,
+    remind_first_time: `${String(first.hour).padStart(2, '0')}:${String(first.minute).padStart(2, '0')}`,
+    remind_every_minutes: every,
+  }
+}
+
 export async function createHabit(input: {
   name: string
   recurrence: HabitRecurrence
@@ -729,6 +783,9 @@ export async function createHabit(input: {
   foodAmount?: number | null
   /** null/undefined → all groups; otherwise only these group ids */
   shareGroupIds?: string[] | null
+  remindEnabled?: boolean
+  remindFirstTime?: string | null
+  remindEveryMinutes?: number | null
 }): Promise<Habit> {
   const { data: userData, error: userError } = await db().auth.getUser()
   fail(userError)
@@ -752,6 +809,11 @@ export async function createHabit(input: {
     }
   }
   const sectionId = await resolveHabitSectionId(userId, input.sectionId)
+  const reminders = normalizeReminderFields({
+    remindEnabled: Boolean(input.remindEnabled),
+    remindFirstTime: input.remindFirstTime ?? null,
+    remindEveryMinutes: input.remindEveryMinutes ?? null,
+  })
 
   const { data, error } = await db()
     .from('habits')
@@ -766,6 +828,9 @@ export async function createHabit(input: {
       section_id: sectionId,
       food_id: foodLink.food_id,
       food_amount: foodLink.food_amount,
+      remind_enabled: reminders.remind_enabled,
+      remind_first_time: reminders.remind_first_time,
+      remind_every_minutes: reminders.remind_every_minutes,
     })
     .select(HABIT_SELECT)
     .single()
@@ -786,6 +851,9 @@ export async function updateHabit(input: {
   foodAmount?: number | null
   /** null → all groups; array → only these; omit to leave audiences unchanged */
   shareGroupIds?: string[] | null
+  remindEnabled?: boolean
+  remindFirstTime?: string | null
+  remindEveryMinutes?: number | null
 }): Promise<void> {
   const weekdays =
     input.recurrence === 'per_week' ? ([0, 1, 2, 3, 4, 5, 6] as Weekday[]) : input.weekdays
@@ -814,6 +882,16 @@ export async function updateHabit(input: {
   if (input.sectionId !== undefined) {
     patch.section_id = await resolveHabitSectionId(userId, input.sectionId)
   }
+  if (input.remindEnabled !== undefined) {
+    const reminders = normalizeReminderFields({
+      remindEnabled: input.remindEnabled,
+      remindFirstTime: input.remindFirstTime ?? null,
+      remindEveryMinutes: input.remindEveryMinutes ?? null,
+    })
+    patch.remind_enabled = reminders.remind_enabled
+    patch.remind_first_time = reminders.remind_first_time
+    patch.remind_every_minutes = reminders.remind_every_minutes
+  }
   const { error } = await db().from('habits').update(patch).eq('id', input.id)
   fail(error)
   if (input.shareGroupIds !== undefined) {
@@ -835,11 +913,42 @@ export async function reorderHabits(orderedIds: string[]): Promise<void> {
   )
 }
 
-/** Set absolute day count for a Habit (clamped at 0). Used by swipe ±1. */
+async function readHabitDayCountRow(
+  habitId: string,
+  day: string,
+): Promise<{ count: number; completed_at: string | null }> {
+  const { data, error } = await db()
+    .from('habit_day_counts')
+    .select('count, completed_at')
+    .eq('habit_id', habitId)
+    .eq('logged_on', day)
+    .maybeSingle()
+  fail(error)
+  return {
+    count: (data?.count as number | undefined) ?? 0,
+    completed_at: (data?.completed_at as string | null | undefined) ?? null,
+  }
+}
+
+async function clearWeekCompletedAt(habitId: string, day: string): Promise<void> {
+  const days = weekDates(day)
+  const { error } = await db()
+    .from('habit_day_counts')
+    .update({ completed_at: null })
+    .eq('habit_id', habitId)
+    .in('logged_on', days)
+  fail(error)
+}
+
+/**
+ * Set absolute day count for a Habit (clamped at 0). Used by swipe ±1.
+ * Stamps / clears `completed_at` when progress crosses the Habit target.
+ */
 export async function setHabitDayCount(input: {
   habitId: string
   day: string
   count: number
+  habit?: Habit
 }): Promise<number> {
   const { data: userData, error: userError } = await db().auth.getUser()
   fail(userError)
@@ -847,6 +956,14 @@ export async function setHabitDayCount(input: {
   if (!userId) throw new Error('Not signed in')
 
   const next = Math.max(0, Math.floor(input.count))
+  const habit =
+    input.habit ??
+    (await loadHabits(userId, { includeArchived: true })).find((row) => row.id === input.habitId)
+  if (!habit) throw new Error('Habit not found')
+
+  const existing = await readHabitDayCountRow(input.habitId, input.day)
+  const nowIso = new Date().toISOString()
+
   if (next === 0) {
     const { error } = await db()
       .from('habit_day_counts')
@@ -854,7 +971,32 @@ export async function setHabitDayCount(input: {
       .eq('habit_id', input.habitId)
       .eq('logged_on', input.day)
     fail(error)
+    if (habit.recurrence === 'per_week') {
+      const weekCounts = await loadHabitDayCounts(userId, input.day)
+      if (!habitComplete(habit, habitDoneOnDay(habit, weekCounts, input.day))) {
+        await clearWeekCompletedAt(input.habitId, input.day)
+      }
+    }
     return 0
+  }
+
+  // Provisional row so week sums include the new count when deciding completion.
+  const provisionalCounts = await loadHabitDayCounts(userId, input.day)
+  const withoutDay = provisionalCounts.filter(
+    (row) => !(row.habit_id === input.habitId && row.logged_on === input.day),
+  )
+  withoutDay.push({
+    habit_id: input.habitId,
+    logged_on: input.day,
+    count: next,
+    completed_at: existing.completed_at,
+  })
+  const willComplete = habitComplete(habit, habitDoneOnDay(habit, withoutDay, input.day))
+  let completedAt: string | null = null
+  if (willComplete) {
+    completedAt = existing.completed_at ?? nowIso
+  } else if (habit.recurrence === 'per_week') {
+    await clearWeekCompletedAt(input.habitId, input.day)
   }
 
   const { error } = await db().from('habit_day_counts').upsert(
@@ -863,7 +1005,8 @@ export async function setHabitDayCount(input: {
       user_id: userId,
       logged_on: input.day,
       count: next,
-      updated_at: new Date().toISOString(),
+      updated_at: nowIso,
+      completed_at: completedAt,
     },
     { onConflict: 'habit_id,logged_on' },
   )
@@ -880,14 +1023,7 @@ export type BumpHabitResult = {
 }
 
 async function readHabitDayCount(habitId: string, day: string): Promise<number> {
-  const { data, error } = await db()
-    .from('habit_day_counts')
-    .select('count')
-    .eq('habit_id', habitId)
-    .eq('logged_on', day)
-    .maybeSingle()
-  fail(error)
-  return (data?.count as number | undefined) ?? 0
+  return (await readHabitDayCountRow(habitId, day)).count
 }
 
 /** Increment the selected day's count by delta (may be negative). Syncs linked Diet Intakes. */
@@ -931,6 +1067,7 @@ export async function bumpHabitDayCount(input: {
       habitId: input.habitId,
       day: input.day,
       count: current + input.delta,
+      habit,
     })
     return { count: next }
   }
@@ -939,6 +1076,7 @@ export async function bumpHabitDayCount(input: {
     habitId: input.habitId,
     day: input.day,
     count: current + input.delta,
+    habit,
   })
 
   if (input.delta < 0 || !hasFoodLink || !habit?.food_id || habit.food_amount == null) {

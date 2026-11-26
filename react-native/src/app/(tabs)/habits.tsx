@@ -29,6 +29,8 @@ import {
   type HabitSection,
 } from '../../lib/gym'
 import { habitSectionProgress } from '../../lib/habitProgress'
+import { syncHabitReminderNotifications } from '../../lib/habitReminderNotifications'
+import { formatHabitCompletedAt } from '../../lib/habitReminders'
 import { habitSectionCardsForDay } from '../../lib/habitSchedule'
 import { localDate } from '../../lib/localDate'
 import { useScreenStyles, useTheme } from '../../theme/ThemeProvider'
@@ -67,6 +69,7 @@ export default function HabitsScreen() {
       setSections(nextSections)
       setCounts(nextCounts)
       setError(null)
+      void syncHabitReminderNotifications({ habits: nextHabits, counts: nextCounts })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load habits')
     } finally {
@@ -258,6 +261,7 @@ export default function HabitsScreen() {
                   done={row.done}
                   target={row.target}
                   complete={row.complete}
+                  completedLabel={formatHabitCompletedAt(row.completed_at)}
                   onIncrement={() => void bump(row.habit.id, 1)}
                   onDecrement={() => void bump(row.habit.id, -1)}
                 />

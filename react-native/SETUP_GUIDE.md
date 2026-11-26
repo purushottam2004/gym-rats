@@ -74,7 +74,7 @@ pnpm web
 
 JS and asset changes can ship to an already-installed iOS/Android binary without a store reinstall. Native module, permission, or Expo SDK changes still need a new binary.
 
-When a production (or preview) build downloads an OTA update, the app shows a **local** notification (“Gym Rats update ready” / “Gym Rats updated”) and reloads into the new JS. That uses `expo-notifications` with remote/APNs push disabled (`enableRemoteNotifications: false`). Allow notifications when iOS prompts. Because this is a native module, phones on an older binary will not get these notifications until you install a new build that includes `expo-notifications` (fingerprint runtime will not match the old install for native-changing publishes either).
+When a production (or preview) build downloads an OTA update, the app shows a **local** notification (“Gym Rats update ready” / “Gym Rats updated”) and reloads into the new JS. That uses `expo-notifications` with remote/APNs push disabled (`enableRemoteNotifications: false`). The same module powers **Habit reminders** (first time + optional repeats while incomplete). Allow notifications when the OS prompts. Because this is a native module, phones on an older binary will not get these notifications until you install a new build that includes `expo-notifications` (fingerprint runtime will not match the old install for native-changing publishes either).
 
 Repo config is in place (`expo-updates`, `eas.json` `preview` / `production` channels, `runtimeVersion.policy: fingerprint`, `updates.url`, `extra.eas.projectId`, Expo `owner`). The project is linked on Expo as `@purushottamdafures-team/blankslate-react-native`. Re-run `eas init` / `update:configure` only if you recreate the Expo project or move ownership.
 

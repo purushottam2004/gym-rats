@@ -26,6 +26,9 @@ const daily: Habit = {
   food_id: null,
   food_amount: null,
   food: null,
+  remind_enabled: false,
+  remind_first_time: null,
+  remind_every_minutes: null,
 }
 
 const weekly: Habit = {
@@ -40,6 +43,9 @@ const weekly: Habit = {
   food_id: null,
   food_amount: null,
   food: null,
+  remind_enabled: false,
+  remind_first_time: null,
+  remind_every_minutes: null,
 }
 
 const hygiene: HabitSection = { id: 'sec-hygiene', name: 'Hygiene', sort_order: 0 }
@@ -76,9 +82,9 @@ describe('isHabitDueOnDay', () => {
 
 describe('habitDoneOnDay', () => {
   const counts: HabitDayCount[] = [
-    { habit_id: 'h1', logged_on: '2026-11-25', count: 1 },
-    { habit_id: 'h2', logged_on: '2026-11-24', count: 1 },
-    { habit_id: 'h2', logged_on: '2026-11-25', count: 2 },
+    { habit_id: 'h1', logged_on: '2026-11-25', count: 1, completed_at: '2026-11-25T08:00:00.000Z' },
+    { habit_id: 'h2', logged_on: '2026-11-24', count: 1, completed_at: null },
+    { habit_id: 'h2', logged_on: '2026-11-25', count: 2, completed_at: '2026-11-25T09:00:00.000Z' },
   ]
 
   it('uses the day count for per_day', () => {

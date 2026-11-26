@@ -8,13 +8,17 @@ import { Toast, type ToastKind } from '../components/Toast'
 import { TrashButton } from '../components/TrashButton'
 import {
   archiveHabit,
+  loadHabitDayCounts,
   loadHabitSections,
   loadHabits,
   reorderHabits,
   type Habit,
   type HabitSection,
 } from '../lib/gym'
+import { syncHabitReminderNotifications } from '../lib/habitReminderNotifications'
+import { formatReminderTime } from '../lib/habitReminders'
 import { habitManageGroups } from '../lib/habitSchedule'
+import { localDate } from '../lib/localDate'
 import { useScreenStyles } from '../theme/ThemeProvider'
 
 function scheduleLabel(habit: Habit): string {
@@ -26,10 +30,17 @@ function scheduleLabel(habit: Habit): string {
             ? 'every day'
             : `${habit.weekdays.length} weekday${habit.weekdays.length === 1 ? '' : 's'}`
         }`
+  const parts = [base]
   if (habit.food?.name && habit.food_amount != null) {
-    return `${base} · logs ${habit.food.name}`
+    parts.push(`logs ${habit.food.name}`)
   }
-  return base
+  if (habit.remind_enabled && habit.remind_first_time) {
+    const first = formatReminderTime(habit.remind_first_time)
+    const every =
+      habit.remind_every_minutes != null ? ` then every ${habit.remind_every_minutes}m` : ''
+    parts.push(`remind ${first}${every}`)
+  }
+  return parts.join(' · ')
 }
 
 export default function ManageHabitsScreen() {
@@ -74,6 +85,17 @@ export default function ManageHabitsScreen() {
     try {
       await archiveHabit(habit.id)
       await load()
+      if (userId) {
+        try {
+          const [nextHabits, nextCounts] = await Promise.all([
+            loadHabits(userId),
+            loadHabitDayCounts(userId, localDate()),
+          ])
+          await syncHabitReminderNotifications({ habits: nextHabits, counts: nextCounts })
+        } catch {
+          // Archive succeeded; reminder cancel is best-effort.
+        }
+      }
       setToast({ kind: 'success', message: 'Archived' })
     } catch (err) {
       setToast({

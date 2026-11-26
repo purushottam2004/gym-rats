@@ -46,6 +46,9 @@ def seed_habits():
             "sort_order": habit["sort_order"],
             "active": habit["active"],
             "section_id": habit["section_id"],
+            "remind_enabled": habit.get("remind_enabled", False),
+            "remind_first_time": habit.get("remind_first_time"),
+            "remind_every_minutes": habit.get("remind_every_minutes"),
         }
         if existing.data:
             supabase.table("habits").update(payload).eq("id", habit["id"]).execute()

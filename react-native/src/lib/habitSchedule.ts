@@ -30,12 +30,20 @@ export type Habit = {
   food_id: string | null
   food_amount: number | null
   food: HabitFoodLink | null
+  /** Owner-device local reminders. */
+  remind_enabled: boolean
+  /** First reminder hour/minute (local); null when reminders off. */
+  remind_first_time: { hour: number; minute: number } | null
+  /** Follow-up interval in minutes while incomplete; null = first only. */
+  remind_every_minutes: number | null
 }
 
 export type HabitDayCount = {
   habit_id: string
   logged_on: string
   count: number
+  /** When this Habit first hit its target for the window including logged_on. */
+  completed_at: string | null
 }
 
 function localDateFromParts(year: number, monthIndex: number, day: number): string {
@@ -110,6 +118,8 @@ export type HabitDayRow = {
   done: number
   target: number
   complete: boolean
+  /** ISO timestamp when the Habit reached its target for this Day's window. */
+  completed_at: string | null
 }
 
 /** Active habits due on `day`, in user sort order, with progress for that day. */
@@ -128,13 +138,40 @@ export function habitRowsForDay(
     .map((habit) => {
       const done = habitDoneOnDay(habit, counts, day)
       const target = habitTarget(habit)
+      const complete = habitComplete(habit, done)
       return {
         habit,
         done,
         target,
-        complete: habitComplete(habit, done),
+        complete,
+        completed_at: habitCompletedAtStamp(habit, counts, day, complete),
       }
     })
+}
+
+function habitCompletedAtStamp(
+  habit: Pick<Habit, 'id' | 'recurrence'>,
+  counts: HabitDayCount[],
+  day: string,
+  complete: boolean,
+): string | null {
+  if (!complete) return null
+  if (habit.recurrence === 'per_day') {
+    return counts.find((row) => row.habit_id === habit.id && row.logged_on === day)?.completed_at ?? null
+  }
+  const days = new Set(weekDates(day))
+  let latest: string | null = null
+  let latestMs = -1
+  for (const row of counts) {
+    if (row.habit_id !== habit.id || !days.has(row.logged_on) || !row.completed_at) continue
+    const ms = new Date(row.completed_at).getTime()
+    if (Number.isNaN(ms)) continue
+    if (ms >= latestMs) {
+      latestMs = ms
+      latest = row.completed_at
+    }
+  }
+  return latest
 }
 
 export const OTHER_HABITS_SECTION_ID = '__other_habits__'
