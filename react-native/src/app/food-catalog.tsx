@@ -52,7 +52,7 @@ export default function FoodCatalogScreen() {
     const lines = foodTypeNutrition(food)
     setInfoModal({
       title: food.name,
-      subtitle: foodBasisLabel(food.measure, food.basis),
+      subtitle: foodBasisLabel(food.measure, food.basis, { isOther: food.is_other }),
       rows: lines.map((line) => ({
         key: line.id,
         label: line.name,

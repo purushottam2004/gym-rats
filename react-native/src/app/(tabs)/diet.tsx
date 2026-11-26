@@ -101,7 +101,9 @@ export default function DietScreen() {
     const lines = foodTypeNutrition(row.food)
     setInfoModal({
       title: row.food.name,
-      subtitle: foodBasisLabel(row.food.measure, row.food.basis),
+      subtitle: foodBasisLabel(row.food.measure, row.food.basis, {
+        isOther: row.food.is_other,
+      }),
       rows: lines.map((line) => ({
         key: line.id,
         label: line.name,
@@ -239,9 +241,13 @@ export default function DietScreen() {
                   <Text style={screen.rowTitle}>{row.food.name}</Text>
                 </View>
                 <View style={screen.choiceTrail}>
-                  <Text style={screen.rowMeta}>
-                    {row.amount} {measureLabel(row.food.measure)}
-                  </Text>
+                  {row.food.is_other ? (
+                    <Text style={screen.rowMeta}>Other</Text>
+                  ) : (
+                    <Text style={screen.rowMeta}>
+                      {row.amount} {measureLabel(row.food.measure)}
+                    </Text>
+                  )}
                   <DeleteConfirmButton
                     title="Delete food?"
                     message={

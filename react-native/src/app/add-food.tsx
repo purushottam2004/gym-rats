@@ -97,6 +97,13 @@ export default function AddFoodScreen() {
       >
         <Text style={screen.addText}>New food</Text>
       </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => router.replace({ pathname: '/log-other', params: { day } })}
+        style={({ pressed }) => [screen.addCard, pressed && screen.rowPressed]}
+      >
+        <Text style={screen.addText}>Other (custom nutrients)</Text>
+      </Pressable>
       <Text style={screen.label}>Amount{selected ? ` (${measureLabel(selected.measure)})` : ''}</Text>
       <AppTextInput keyboardType="decimal-pad" onChangeText={setAmount} style={screen.input} value={amount} />
     </Screen>

@@ -237,7 +237,12 @@ export function foodTypeNutrition(food: NutritionFood): NutritionLine[] {
     .sort((a, b) => a.name.localeCompare(b.name))
 }
 
-export function foodBasisLabel(measure: Measure, basis: Basis): string {
+export function foodBasisLabel(
+  measure: Measure,
+  basis: Basis,
+  opts?: { isOther?: boolean },
+): string {
+  if (opts?.isOther) return 'This entry'
   if (measure === 'unit') return 'Per Unit'
   if (basis === 'per_kg') return 'Per kilogram'
   if (measure === 'ml') return 'Per 100 ml'

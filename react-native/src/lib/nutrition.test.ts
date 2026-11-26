@@ -124,6 +124,7 @@ describe('foodBasisLabel', () => {
     assert.equal(foodBasisLabel('ml', 'per_100'), 'Per 100 ml')
     assert.equal(foodBasisLabel('g', 'per_100'), 'Per 100 g')
     assert.equal(foodBasisLabel('g', 'per_kg'), 'Per kilogram')
+    assert.equal(foodBasisLabel('unit', 'per_100', { isOther: true }), 'This entry')
   })
 })
 

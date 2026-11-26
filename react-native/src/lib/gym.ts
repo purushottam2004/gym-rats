@@ -59,6 +59,8 @@ export type Food = {
   name: string
   measure: Measure
   basis: Basis
+  /** One-off log entry; hidden from the food catalog. */
+  is_other: boolean
   nutrients: FoodNutrient[]
 }
 
@@ -216,9 +218,10 @@ export async function loadFoods(forUserId?: string): Promise<Food[]> {
   const { data, error } = await db()
     .from('foods')
     .select(
-      'id, name, measure, basis, food_nutrients(amount, nutrient:nutrients(id, name, unit))',
+      'id, name, measure, basis, is_other, food_nutrients(amount, nutrient:nutrients(id, name, unit))',
     )
     .eq('user_id', userId)
+    .eq('is_other', false)
     .order('name')
   fail(error)
   return (data ?? []).map((row) => {
@@ -231,6 +234,7 @@ export async function loadFoods(forUserId?: string): Promise<Food[]> {
       name: row.name as string,
       measure: row.measure as Measure,
       basis: row.basis as Basis,
+      is_other: Boolean(row.is_other),
       nutrients: nutrients.map((item) => ({
         amount: Number(item.amount),
         nutrient: item.nutrient,
@@ -262,11 +266,27 @@ export async function createFood(input: {
   return data as string
 }
 
+/** One-off nutrient log: not added to the food catalog. */
+export async function logOtherIntake(input: {
+  name: string
+  day: string
+  nutrients: { nutrient_id: string; amount: number }[]
+}): Promise<string> {
+  const { data, error } = await db().rpc('log_other_intake', {
+    p_name: input.name,
+    p_logged_on: input.day,
+    p_nutrients: input.nutrients,
+  })
+  fail(error)
+  if (!data) throw new Error('Could not save other intake')
+  return data as string
+}
+
 export async function loadIntakes(userId: string, day: string): Promise<Intake[]> {
   const { data, error } = await db()
     .from('intakes')
     .select(
-      'id, amount, logged_on, source_habit_id, food:foods!intakes_food_id_fkey(id, name, measure, basis, food_nutrients(amount, nutrient:nutrients(id, name, unit))), source_habit:habits!intakes_source_habit_id_fkey(id, name)',
+      'id, amount, logged_on, source_habit_id, food:foods!intakes_food_id_fkey(id, name, measure, basis, is_other, food_nutrients(amount, nutrient:nutrients(id, name, unit))), source_habit:habits!intakes_source_habit_id_fkey(id, name)',
     )
     .eq('user_id', userId)
     .eq('logged_on', day)
@@ -278,6 +298,7 @@ export async function loadIntakes(userId: string, day: string): Promise<Intake[]
       name: string
       measure: Measure
       basis: Basis
+      is_other?: boolean
       food_nutrients?: { amount: number; nutrient: Nutrient }[]
     }
     const sourceHabit = row.source_habit as unknown as { id: string; name: string } | null
@@ -292,6 +313,7 @@ export async function loadIntakes(userId: string, day: string): Promise<Intake[]
         name: food.name,
         measure: food.measure,
         basis: food.basis,
+        is_other: Boolean(food.is_other),
         nutrients: (food.food_nutrients ?? []).map((item) => ({
           amount: Number(item.amount),
           nutrient: item.nutrient,

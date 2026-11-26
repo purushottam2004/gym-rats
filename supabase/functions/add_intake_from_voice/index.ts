@@ -257,6 +257,7 @@ export default {
       .from("foods")
       .select("id, name, measure")
       .eq("user_id", userId)
+      .eq("is_other", false)
       .order("name");
     if (foodsError) {
       return jsonErr(foodsError.message);
