@@ -152,9 +152,6 @@ export function HabitSwipeRow({
         ) : null}
         <View style={[screen.rowMain, styles.content]}>
           <Text style={screen.rowTitle}>{name}</Text>
-          {!readOnly ? (
-            <Text style={screen.muted}>Swipe right to add · left to undo</Text>
-          ) : null}
         </View>
         <Text
           style={[
