@@ -1,0 +1,7 @@
+{
+  "_comment": "Runtime versions embedded in installed Release binaries. Agents MUST publish production OTAs against these hashes (see scripts/publish-production-ota.sh). Update this file when you install a new Release binary (install-ios-release.sh / eas build) — copy the fingerprint printed at build time. Do not invent hashes from a Cloud Agent fingerprint:generate.",
+  "ios": "9369173527e10de9f8950d1e73589a4b7009f6f3",
+  "android": "b3a6340c7896c1ef4bb6fcdbcc14a532f3fab29e",
+  "updatedAt": "2026-11-26",
+  "updatedBy": "republish after first similar-day OTA used a mismatched Cloud Agent fingerprint"
+}

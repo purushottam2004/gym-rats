@@ -95,6 +95,20 @@ When a production (or preview) build downloads an OTA update, the app shows a **
 
 Repo config is in place (`expo-updates`, `eas.json` `preview` / `production` channels, `runtimeVersion.policy: fingerprint`, `updates.url`, `extra.eas.projectId`, Expo `owner`). The project is linked on Expo as `@purushottamdafures-team/blankslate-react-native`. Re-run `eas init` / `update:configure` only if you recreate the Expo project or move ownership.
 
+### Production OTA — match the phone’s runtime (mandatory)
+
+`runtimeVersion.policy: fingerprint` means a phone only downloads an update whose runtime hash equals the hash baked into that binary. `eas update` computes the hash on **the machine that runs the command**. A Cloud Agent, CI runner, or another laptop often gets a **different** hash than the Mac that ran `./scripts/install-ios-release.sh`, even when only JS changed. Publishing that new hash looks successful on the Expo dashboard and **never reaches the phone**.
+
+**Always** publish production OTAs with:
+
+```bash
+pnpm update:production -- --message "describe the change"
+```
+
+That script reads [`ota-target-runtimes.json`](./ota-target-runtimes.json) and pins the publish to those iOS/Android hashes. After you install a new Release binary, update that file to the new fingerprints (printed / shown for the build) before the next OTA.
+
+Web (`v2logs` / Vercel) does **not** use Expo Update — ship web via the Vercel production deploy from `main`.
+
 ### First preview binary + publish
 
 1. Build a binary that includes the update URL (simulator preview is enough to try OTA; no Apple Developer Program required for the `preview` profile's iOS simulator builds):
@@ -125,7 +139,9 @@ That refreshes `extra.eas.projectId` and `updates.url` in `app.json`. Commit tho
 
 ### So a Cloud Agent can finish linking / publishing
 
-There is no Expo MCP connector in this environment. Add an Expo access token as a Cursor Cloud Agent **environment secret** named `EXPO_TOKEN` ([create a token](https://expo.dev/accounts/[account]/settings/access-tokens)). With that secret present, an agent can run `eas init`, `eas update:configure`, `eas update`, and non-interactive builds without `eas login`. Do not paste the token into chat.
+Add an Expo access token as a Cursor Cloud Agent **environment secret** named `EXPO_TOKEN` ([create a token](https://expo.dev/accounts/[account]/settings/access-tokens)). With that secret present, an agent can run `eas init`, `eas update:configure`, and production OTAs via `pnpm update:production` without `eas login`. Do not paste the token into chat.
+
+Agents must **not** run raw `npx eas-cli update --channel production` unless `ota-target-runtimes.json` already matches this machine or they pass `--current-fingerprint` after a new binary install. Prefer `pnpm update:production -- --message "…"`.
 
 ## Verify: login → Hello
 

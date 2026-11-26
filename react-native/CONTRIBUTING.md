@@ -20,9 +20,13 @@ Use Expo Update for JS/asset-only fixes. After the one-time link in [SETUP_GUIDE
 
 ```bash
 pnpm update:preview -- --message "short description"
-# or
+# or (production — required path for agents and humans)
 pnpm update:production -- --message "short description"
 ```
+
+`pnpm update:production` runs [`scripts/publish-production-ota.sh`](./scripts/publish-production-ota.sh). It **pins** the publish to the iOS/Android hashes in [`ota-target-runtimes.json`](./ota-target-runtimes.json) (what installed Release phones already have). Do **not** call bare `eas update --channel production` from a Cloud Agent / CI box — that machine’s fingerprint is usually different, so Expo accepts the update and phones silently ignore it.
+
+When you install a **new** Release binary, update `ota-target-runtimes.json` to that binary’s fingerprints, then either publish with matching hashes or `pnpm update:production -- --message "…" --current-fingerprint` from the same tree that built it.
 
 If you change native deps, plugins, permissions, or the Expo SDK, bump/build a new binary instead — `runtimeVersion.policy: fingerprint` will not match the old install.
 

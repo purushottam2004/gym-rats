@@ -34,8 +34,17 @@ Run lint and typecheck before declaring any task done.
 
 ## Building with EAS
 
-Use EAS to build, sign, and submit the app in the cloud (`eas build`, `eas submit`) and to ship over-the-air updates (`eas update`) — no local Xcode or Android Studio required. Run EAS CLI as `bunx eas-cli <command>` in Bun projects, or `npx eas-cli@latest <command>` otherwise; substitute that for bare `eas` in docs examples.
+Use EAS to build, sign, and submit the app in the cloud (`eas build`, `eas submit`) and to ship over-the-air updates — no local Xcode or Android Studio required. Run EAS CLI as `bunx eas-cli <command>` in Bun projects, or `npx eas-cli@latest <command>` otherwise; substitute that for bare `eas` in docs examples.
 Docs: https://docs.expo.dev/eas/index.md
+
+### Production OTA (do not skip)
+
+This app uses `runtimeVersion.policy: fingerprint`. Publishing `eas update` from a Cloud Agent often creates a **new** fingerprint that installed phones do not have, so the OTA never applies.
+
+1. For production JS OTAs run **only** `pnpm update:production -- --message "…"` (wraps `scripts/publish-production-ota.sh`).
+2. That script pins to [`ota-target-runtimes.json`](./ota-target-runtimes.json). Keep that file aligned with the Release binary on the phone.
+3. Never treat a green Expo “Published!” as success until the publish used those target runtimes (or you intentionally rebuilt the binary and updated the JSON).
+4. Web / Vercel is not Expo OTA — do not expect `eas update` to change `v2logs` or other web hosts.
 
 ## Rules
 
