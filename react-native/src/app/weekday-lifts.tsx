@@ -1,5 +1,5 @@
 import { useFocusEffect, useLocalSearchParams } from 'expo-router'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { useAuth } from '../auth/AuthProvider'
 import { Screen } from '../components/Screen'
@@ -9,10 +9,13 @@ import { useScreenStyles } from '../theme/ThemeProvider'
 import {
   addWeekdayLift,
   loadLifts,
+  loadMuscles,
   loadWeekdayLifts,
   removeWeekdayLift,
   type Lift,
+  type Muscle,
 } from '../lib/gym'
+import { liftCatalogGroupsWithLifts } from '../lib/liftCatalog'
 import { localDate } from '../lib/localDate'
 import {
   defaultSimilarDayLinks,
@@ -40,6 +43,7 @@ export default function WeekdayLiftsScreen() {
   const [weekday, setWeekday] = useState<Weekday>(initial)
   const [planned, setPlanned] = useState<Lift[]>([])
   const [catalog, setCatalog] = useState<Lift[]>([])
+  const [muscles, setMuscles] = useState<Muscle[]>([])
   const [similarLinks, setSimilarLinks] = useState<SimilarDayLinks>(defaultSimilarDayLinks)
   const [error, setError] = useState<string | null>(null)
   const [toast, setToast] = useState<{ kind: ToastKind; message: string } | null>(null)
@@ -48,12 +52,14 @@ export default function WeekdayLiftsScreen() {
   const load = useCallback(async () => {
     if (!userId) return
     try {
-      const [planRows, catalogRows] = await Promise.all([
+      const [planRows, catalogRows, muscleRows] = await Promise.all([
         loadWeekdayLifts(userId, weekday),
         loadLifts(),
+        loadMuscles(),
       ])
       setPlanned(planRows)
       setCatalog(catalogRows)
+      setMuscles(muscleRows)
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load week plan')
@@ -75,8 +81,15 @@ export default function WeekdayLiftsScreen() {
     })
   }
 
-  const plannedIds = new Set(planned.map((lift) => lift.id))
-  const available = catalog.filter((lift) => !plannedIds.has(lift.id))
+  const plannedIds = useMemo(() => new Set(planned.map((lift) => lift.id)), [planned])
+  const available = useMemo(
+    () => catalog.filter((lift) => !plannedIds.has(lift.id)),
+    [catalog, plannedIds],
+  )
+  const availableGroups = useMemo(
+    () => liftCatalogGroupsWithLifts(available, muscles),
+    [available, muscles],
+  )
 
   async function addLift(lift: Lift) {
     if (!userId || busyId) return
@@ -227,26 +240,32 @@ export default function WeekdayLiftsScreen() {
           })}
         </View>
         <Text style={screen.label}>Add from catalog</Text>
-        <View style={screen.card}>
-          {available.length > 0 ? (
-            available.map((lift, index) => (
-              <Pressable
-                accessibilityRole="button"
-                disabled={busyId !== null}
-                key={lift.id}
-                onPress={() => void addLift(lift)}
-                style={({ pressed }) => [
-                  screen.row,
-                  index === 0 && screen.rowFirst,
-                  pressed && screen.rowPressed,
-                  busyId === lift.id && screen.buttonDisabled,
-                ]}
-              >
-                <Text style={screen.rowTitle}>{lift.name}</Text>
-                <Text style={screen.addText}>Add</Text>
-              </Pressable>
-            ))
-          ) : (
+        {availableGroups.length > 0 ? (
+          availableGroups.map((group) => (
+            <View key={group.key} style={screen.card}>
+              <View style={[screen.row, screen.rowFirst]}>
+                <Text style={screen.muted}>{group.title}</Text>
+              </View>
+              {group.lifts.map((lift) => (
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={busyId !== null}
+                  key={lift.id}
+                  onPress={() => void addLift(lift as Lift)}
+                  style={({ pressed }) => [
+                    screen.row,
+                    pressed && screen.rowPressed,
+                    busyId === lift.id && screen.buttonDisabled,
+                  ]}
+                >
+                  <Text style={screen.rowTitle}>{lift.name}</Text>
+                  <Text style={screen.addText}>Add</Text>
+                </Pressable>
+              ))}
+            </View>
+          ))
+        ) : (
+          <View style={screen.card}>
             <View style={[screen.row, screen.rowFirst]}>
               <Text style={screen.muted}>
                 {catalog.length === 0
@@ -254,8 +273,8 @@ export default function WeekdayLiftsScreen() {
                   : 'Every catalog lift is already on this day.'}
               </Text>
             </View>
-          )}
-        </View>
+          </View>
+        )}
       </Screen>
       <Toast
         visible={toast !== null}
