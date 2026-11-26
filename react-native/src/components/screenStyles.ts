@@ -509,8 +509,9 @@ export function createScreenStyles(c: ThemeColors) {
       fontSize: 14,
       fontWeight: '600',
       color: c.text,
-      minWidth: 56,
+      minWidth: 48,
       textAlign: 'center',
+      flexShrink: 1,
     },
     dayCalendarButton: {
       width: 36,

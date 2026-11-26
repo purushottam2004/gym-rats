@@ -14,6 +14,13 @@ import {
   type Lift,
 } from '../lib/gym'
 import { localDate } from '../lib/localDate'
+import {
+  defaultSimilarDayLinks,
+  loadSimilarDayLinks,
+  saveSimilarDayLinks,
+  withSimilarDayLink,
+  type SimilarDayLinks,
+} from '../lib/similarDayJump'
 import { weekdayFromDay, WEEKDAY_LABELS, type Weekday } from '../lib/weekday'
 
 function parseWeekday(raw: string | undefined): Weekday {
@@ -33,6 +40,7 @@ export default function WeekdayLiftsScreen() {
   const [weekday, setWeekday] = useState<Weekday>(initial)
   const [planned, setPlanned] = useState<Lift[]>([])
   const [catalog, setCatalog] = useState<Lift[]>([])
+  const [similarLinks, setSimilarLinks] = useState<SimilarDayLinks>(defaultSimilarDayLinks)
   const [error, setError] = useState<string | null>(null)
   const [toast, setToast] = useState<{ kind: ToastKind; message: string } | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -54,9 +62,18 @@ export default function WeekdayLiftsScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      setSimilarLinks(loadSimilarDayLinks())
       void load()
     }, [load]),
   )
+
+  function updateSimilarLink(patch: Partial<{ prev: Weekday; next: Weekday }>) {
+    setSimilarLinks((current) => {
+      const next = withSimilarDayLink(current, weekday, patch)
+      saveSimilarDayLinks(next)
+      return next
+    })
+  }
 
   const plannedIds = new Set(planned.map((lift) => lift.id))
   const available = catalog.filter((lift) => !plannedIds.has(lift.id))
@@ -145,6 +162,69 @@ export default function WeekdayLiftsScreen() {
               <Text style={screen.muted}>No lifts planned for this day.</Text>
             </View>
           )}
+        </View>
+        <Text style={screen.sectionTitle}>Similar day jumps</Text>
+        <Text style={screen.muted}>
+          Lifts {'<<'} and {'>>'} jump to these weekdays for quick comparison. Same weekday means last /
+          next week.
+        </Text>
+        <Text style={screen.label}>Previous ({'<<'})</Text>
+        <View style={[screen.setNumberRow, { flexWrap: 'wrap' }]}>
+          {WEEKDAY_LABELS.map((day) => {
+            const selected = similarLinks[weekday].prev === day.value
+            return (
+              <Pressable
+                accessibilityRole="radio"
+                accessibilityState={{ selected }}
+                key={`prev-${day.value}`}
+                onPress={() => updateSimilarLink({ prev: day.value })}
+                style={({ pressed }) => [
+                  screen.setNumberCircle,
+                  selected && screen.setNumberCircleSelected,
+                  pressed && !selected && screen.setNumberCirclePressed,
+                ]}
+              >
+                <Text
+                  style={[
+                    screen.setNumberCircleText,
+                    selected && screen.setNumberCircleTextSelected,
+                    { fontSize: 12 },
+                  ]}
+                >
+                  {day.short}
+                </Text>
+              </Pressable>
+            )
+          })}
+        </View>
+        <Text style={screen.label}>Next ({'>>'})</Text>
+        <View style={[screen.setNumberRow, { flexWrap: 'wrap' }]}>
+          {WEEKDAY_LABELS.map((day) => {
+            const selected = similarLinks[weekday].next === day.value
+            return (
+              <Pressable
+                accessibilityRole="radio"
+                accessibilityState={{ selected }}
+                key={`next-${day.value}`}
+                onPress={() => updateSimilarLink({ next: day.value })}
+                style={({ pressed }) => [
+                  screen.setNumberCircle,
+                  selected && screen.setNumberCircleSelected,
+                  pressed && !selected && screen.setNumberCirclePressed,
+                ]}
+              >
+                <Text
+                  style={[
+                    screen.setNumberCircleText,
+                    selected && screen.setNumberCircleTextSelected,
+                    { fontSize: 12 },
+                  ]}
+                >
+                  {day.short}
+                </Text>
+              </Pressable>
+            )
+          })}
         </View>
         <Text style={screen.label}>Add from catalog</Text>
         <View style={screen.card}>

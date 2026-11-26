@@ -57,8 +57,12 @@ One log line for a Lift on a Day: an attempt (an integer from 1 to 5), reps (an 
 _Avoid_: workout, set number, weight entry
 
 **Week plan**:
-The Lifts a User chooses for each weekday (Sunday through Saturday). On a Day that falls on that weekday, those Lifts appear on Lifts even when the User has logged no Set for them yet, so they can add a Set from the card. Another User who shares a Group can see the plan.
+The Lifts a User chooses for each weekday (Sunday through Saturday). On a Day that falls on that weekday, those Lifts appear on Lifts even when the User has logged no Set for them yet, so they can add a Set from the card. Another User who shares a Group can see the plan. The same screen also stores, on the device, which weekday << and >> on Lifts jump to for that weekday (Similar day jumps), so the User can compare related Days quickly.
 _Avoid_: workout template, routine, schedule
+
+**Similar day jump**:
+A per-weekday pairing the User sets on the Week plan: which weekday << opens (strictly before the current Day) and which weekday >> opens (strictly after). Default is the same weekday last / next week. Stored on the device only.
+_Avoid_: last workout, compare day, schedule jump
 
 **Habit**:
 A personal recurring completable a User defines for themselves: a name, a recurrence, and a frequency (count target). Recurrence is either per day (due on chosen weekdays, frequency is the target for each due Day) or per week (frequency is the target for the Monday–Sunday week; the Habit appears every Day that week and any Day's counts add toward the week). A Habit may optionally link one of the User's Foods and an amount in that Food's measure; each time the Habit count on a Day goes up by one, one Intake of that Food and amount is logged on that Day and marked as coming from the Habit; undoing a count removes only an Intake that Habit created, never a manually logged Intake. Deleting such an Intake (for example from Diet) also lowers that Habit's count for that Day by one. Clearing the Food link stops future auto-logs; past Intakes stay. If the Food is gone, the count still changes and the User is told the food log failed. Habits are not shared definitions. By default any User who shares a Group with the owner can see that Habit and its Day progress read-only; the owner may instead limit a Habit to specific Groups so only Members of those Groups (while the owner is also a Member) can see it. Archiving hides a Habit going forward without erasing past Day counts. The owner may enable Habit reminders on a Habit.

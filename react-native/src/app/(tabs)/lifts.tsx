@@ -31,6 +31,11 @@ import { liftCardsForDay } from '../../lib/liftCards'
 import { localDate } from '../../lib/localDate'
 import { nextSetAttempt, type SetAttempt } from '../../lib/nextSetAttempt'
 import { ordinalSuffix } from '../../lib/ordinal'
+import {
+  defaultSimilarDayLinks,
+  loadSimilarDayLinks,
+  type SimilarDayLinks,
+} from '../../lib/similarDayJump'
 import { weekdayFromDay } from '../../lib/weekday'
 
 type AddTarget = {
@@ -55,6 +60,7 @@ export default function LiftsScreen() {
   const [day, setDay] = useState(localDate)
   const [rows, setRows] = useState<SetLog[]>([])
   const [planned, setPlanned] = useState<Lift[]>([])
+  const [similarLinks, setSimilarLinks] = useState<SimilarDayLinks>(defaultSimilarDayLinks)
   const [hydrated, setHydrated] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [voiceBusy, setVoiceBusy] = useState(false)
@@ -80,6 +86,7 @@ export default function LiftsScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      setSimilarLinks(loadSimilarDayLinks())
       void load()
     }, [load]),
   )
@@ -143,7 +150,9 @@ export default function LiftsScreen() {
             <TabChrome
               icon={Dumbbell}
               title="Lifts"
-              trailing={<DayControls day={day} onChange={setDay} />}
+              trailing={
+                <DayControls day={day} onChange={setDay} similarLinks={similarLinks} />
+              }
             />
             <View style={screen.card}>
               <View style={screen.iconActionRow}>

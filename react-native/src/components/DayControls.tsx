@@ -1,15 +1,22 @@
-import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react-native'
+import { Calendar, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react-native'
 import { createElement, useId } from 'react'
 import { Platform, Pressable, Text, View } from 'react-native'
 import { formatDay, shiftDate } from '../lib/localDate'
+import {
+  similarDayNext,
+  similarDayPrev,
+  type SimilarDayLinks,
+} from '../lib/similarDayJump'
 import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
 
 type Props = {
   day: string
   onChange: (day: string) => void
+  /** When set, show << >> jumps using these weekday links (Lifts). */
+  similarLinks?: SimilarDayLinks
 }
 
-export function DayControls({ day, onChange }: Props) {
+export function DayControls({ day, onChange, similarLinks }: Props) {
   const screen = useScreenStyles()
   const { colors } = useTheme()
   const accent = colors.accent
@@ -26,6 +33,16 @@ export function DayControls({ day, onChange }: Props) {
   return (
     <View style={screen.dayControls}>
       <View style={screen.dayPill}>
+        {similarLinks ? (
+          <Pressable
+            accessibilityLabel="Previous similar day"
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={() => onChange(similarDayPrev(day, similarLinks))}
+          >
+            <ChevronsLeft color={accent} size={18} strokeWidth={2.25} />
+          </Pressable>
+        ) : null}
         <Pressable
           accessibilityLabel="Previous day"
           accessibilityRole="button"
@@ -43,6 +60,16 @@ export function DayControls({ day, onChange }: Props) {
         >
           <ChevronRight color={accent} size={18} strokeWidth={2.25} />
         </Pressable>
+        {similarLinks ? (
+          <Pressable
+            accessibilityLabel="Next similar day"
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={() => onChange(similarDayNext(day, similarLinks))}
+          >
+            <ChevronsRight color={accent} size={18} strokeWidth={2.25} />
+          </Pressable>
+        ) : null}
       </View>
       <Pressable
         accessibilityLabel="Pick a date"
