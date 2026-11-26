@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Animated, PanResponder, StyleSheet, Text, View } from 'react-native'
 import { habitProgressRatio } from '../lib/habitProgress'
 import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
+import { RatioProgressFill } from './RatioProgressFill'
 
 const SWIPE_THRESHOLD = 56
 const SWIPE_MAX = 88
@@ -153,18 +154,7 @@ export function HabitSwipeRow({
           },
         ]}
       >
-        {progress > 0 ? (
-          <View
-            pointerEvents="none"
-            style={[
-              styles.progressFill,
-              {
-                width: `${progress * 100}%`,
-                backgroundColor: colors.habitCompleteBg,
-              },
-            ]}
-          />
-        ) : null}
+        <RatioProgressFill ratio={progress} color={colors.habitCompleteBg} />
         <View style={[screen.rowMain, styles.content]}>
           <Text style={screen.rowTitle}>{name}</Text>
           {complete && completedLabel ? (
@@ -220,13 +210,6 @@ const styles = StyleSheet.create({
   foreground: {
     borderTopWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
-  },
-  // Match HabitProgressFill / nutrientFill — full row height on iOS.
-  progressFill: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
   },
   content: {
     zIndex: 1,

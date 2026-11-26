@@ -179,13 +179,6 @@ export function createScreenStyles(c: ThemeColors) {
       overflow: 'hidden',
       position: 'relative',
     },
-    nutrientFill: {
-      position: 'absolute',
-      left: 0,
-      top: 0,
-      bottom: 0,
-      backgroundColor: c.nutrientFill,
-    },
     goalHeaderRow: {
       marginBottom: 8,
     },

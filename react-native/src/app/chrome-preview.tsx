@@ -20,6 +20,7 @@ import { Pressable, Text, View } from 'react-native'
 import { Avatar } from '../components/Avatar'
 import { DayControls } from '../components/DayControls'
 import { InfoButton } from '../components/InfoButton'
+import { RatioProgressFill } from '../components/RatioProgressFill'
 import { Screen } from '../components/Screen'
 import { TabChrome } from '../components/TabChrome'
 import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
@@ -199,18 +200,7 @@ export default function ChromePreviewScreen() {
                 },
               ]}
             >
-              {progress > 0 ? (
-                <View
-                  style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: `${progress * 100}%`,
-                    backgroundColor: colors.habitCompleteBg,
-                  }}
-                />
-              ) : null}
+              <RatioProgressFill ratio={progress} color={colors.habitCompleteBg} />
               <Text style={[screen.rowTitle, screen.rowMain, { zIndex: 1 }]}>{row.name}</Text>
               <Text
                 style={[

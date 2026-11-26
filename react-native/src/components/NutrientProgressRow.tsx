@@ -4,6 +4,7 @@ import {
   type NutritionProgressLine,
 } from '../lib/nutrition'
 import { InfoButton } from './InfoButton'
+import { RatioProgressFill } from './RatioProgressFill'
 import { useScreenStyles } from '../theme/ThemeProvider'
 
 type Props = {
@@ -21,13 +22,7 @@ export function NutrientProgressRow({ line, first, onInfo }: Props) {
   return (
     <View style={[screen.row, first && screen.rowFirst]}>
       {hasBand && line.fillColor ? (
-        <View
-          pointerEvents="none"
-          style={[
-            screen.nutrientFill,
-            { width: `${fill * 100}%`, backgroundColor: line.fillColor },
-          ]}
-        />
+        <RatioProgressFill ratio={fill} color={line.fillColor} />
       ) : null}
       <Text style={[screen.rowTitle, screen.rowMain]}>{line.name}</Text>
       <View style={screen.choiceTrail}>
