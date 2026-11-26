@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { Text, View } from 'react-native'
 import { AuthProvider, useAuth } from '../auth/AuthProvider'
 import { BrandLoader } from '../components/BrandLoader'
+import { OtaUpdateNotifier } from '../components/OtaUpdateNotifier'
 import { ThemeProvider, useScreenStyles } from '../theme/ThemeProvider'
 
 function Navigation() {
@@ -69,6 +70,7 @@ export default function RootLayout() {
   return (
     <ThemeProvider>
       <AuthProvider>
+        <OtaUpdateNotifier />
         <Navigation />
       </AuthProvider>
     </ThemeProvider>

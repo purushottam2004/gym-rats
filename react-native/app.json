@@ -33,6 +33,12 @@
           "enableBackgroundRecording": false
         }
       ],
+      [
+        "expo-notifications",
+        {
+          "enableRemoteNotifications": false
+        }
+      ],
       "expo-image"
     ],
     "experiments": {
