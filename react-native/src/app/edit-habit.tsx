@@ -246,7 +246,6 @@ export default function EditHabitScreen() {
         />
 
         <Text style={screen.label}>Section</Text>
-        <Text style={screen.muted}>Optional. Unassigned habits show under Other habits.</Text>
         <View style={screen.card}>
           <Pressable
             accessibilityRole="radio"
