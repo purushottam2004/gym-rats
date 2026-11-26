@@ -294,6 +294,16 @@ export default function ChromePreviewScreen() {
             <View style={[screen.reactionChip, screen.reactionChipMine]}>
               <Text style={screen.reactionChipText}>❤️ 2</Text>
             </View>
+            <View style={screen.reactionAvatarChip}>
+              <View style={screen.reactionAvatarStack}>
+                <View style={[screen.reactionAvatarItem, { zIndex: 2 }]}>
+                  <Avatar name="Hemraj" path={null} size={22} />
+                </View>
+                <View style={[screen.reactionAvatarItem, { marginLeft: -8, zIndex: 1 }]}>
+                  <Avatar name="Purushottam" path={null} size={22} />
+                </View>
+              </View>
+            </View>
           </View>
           <View style={screen.postActionRow}>
             <View style={screen.postActionButton}>

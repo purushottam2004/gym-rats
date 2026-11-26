@@ -17,8 +17,10 @@ import {
   deletePost,
   loadGroups,
   loadPosts,
+  loadProfile,
   setPostReaction,
   type Post,
+  type Profile,
 } from '../../lib/gym'
 import { localDate } from '../../lib/localDate'
 import { applyReactionChoice, type ReactionRow } from '../../lib/postSocial'
@@ -32,6 +34,7 @@ export default function PostsScreen() {
   const [day, setDay] = useState(localDate)
   const [posts, setPosts] = useState<Post[]>([])
   const [names, setNames] = useState<Record<string, string>>({})
+  const [myProfile, setMyProfile] = useState<Profile | null>(null)
   const [hydrated, setHydrated] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Post | null>(null)
@@ -40,16 +43,21 @@ export default function PostsScreen() {
 
   const load = useCallback(async () => {
     try {
-      const [nextPosts, groups] = await Promise.all([loadPosts(day), loadGroups()])
+      const [nextPosts, groups, profile] = await Promise.all([
+        loadPosts(day),
+        loadGroups(),
+        myUserId ? loadProfile(myUserId) : Promise.resolve(null),
+      ])
       setPosts(nextPosts)
       setNames(Object.fromEntries(groups.map((group) => [group.id, group.name])))
+      setMyProfile(profile)
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load posts')
     } finally {
       setHydrated(true)
     }
-  }, [day])
+  }, [day, myUserId])
 
   useFocusEffect(
     useCallback(() => {
@@ -131,6 +139,7 @@ export default function PostsScreen() {
                 post={post}
                 audienceLabel={audienceLabel(post)}
                 myUserId={myUserId}
+                myProfile={myProfile}
                 onDelete={
                   post.user_id === myUserId ? () => setPendingDelete(post) : undefined
                 }
@@ -162,7 +171,7 @@ export default function PostsScreen() {
           setReactPostId(null)
           if (!postId || !myUserId) return
           const current = posts.find((post) => post.id === postId)?.reactions ?? []
-          const next = applyReactionChoice(current, myUserId, emoji)
+          const next = applyReactionChoice(current, myUserId, emoji, myProfile)
           void commitReaction(postId, next)
         }}
       />

@@ -1334,7 +1334,7 @@ export async function loadPosts(day: string): Promise<Post[]> {
   const { data, error } = await db()
     .from('posts')
     .select(
-      'id, user_id, body, image_path, created_at, author:users!posts_user_id_fkey(id, display_name, avatar_path), audiences:post_audiences(id, kind, group_id), reactions:post_reactions(emoji, user_id), comments:post_comments(count)',
+      'id, user_id, body, image_path, created_at, author:users!posts_user_id_fkey(id, display_name, avatar_path), audiences:post_audiences(id, kind, group_id), reactions:post_reactions(emoji, user_id, reactor:users!post_reactions_user_id_fkey(id, display_name, avatar_path)), comments:post_comments(count)',
     )
     .gte('created_at', start)
     .lt('created_at', end)
@@ -1350,10 +1350,23 @@ export async function loadPosts(day: string): Promise<Post[]> {
       created_at: row.created_at as string,
       author: row.author as unknown as Profile,
       audiences: (row.audiences ?? []) as Audience[],
-      reactions: ((row.reactions ?? []) as ReactionRow[]).map((reaction) => ({
-        emoji: reaction.emoji,
-        user_id: reaction.user_id,
-      })),
+      reactions: (
+        (row.reactions ?? []) as unknown as {
+          emoji: string
+          user_id: string
+          reactor: Profile | Profile[] | null
+        }[]
+      ).map((reaction) => {
+        const reactor = Array.isArray(reaction.reactor)
+          ? (reaction.reactor[0] ?? null)
+          : reaction.reactor
+        return {
+          emoji: reaction.emoji,
+          user_id: reaction.user_id,
+          display_name: reactor?.display_name ?? null,
+          avatar_path: reactor?.avatar_path ?? null,
+        }
+      }),
       comment_count: commentRows[0]?.count ?? 0,
     }
   })

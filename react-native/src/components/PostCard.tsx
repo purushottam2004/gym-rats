@@ -9,13 +9,17 @@ import {
   applyReactionChoice,
   DEFAULT_POST_REACTION,
   ensureReaction,
+  reactionActors,
+  REACTION_AVATAR_CHIP_LIMIT,
   summarizeReactions,
+  type ReactionActor,
   type ReactionRow,
 } from '../lib/postSocial'
 import { formatRelativeTime } from '../lib/relativeTime'
 import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
 
 const DOUBLE_TAP_MS = 280
+const REACTOR_AVATAR_SIZE = 22
 
 function blockBrowserImageMenu(event: { preventDefault?: () => void }) {
   event.preventDefault?.()
@@ -25,6 +29,7 @@ type Props = {
   post: Post
   audienceLabel: string
   myUserId: string | null | undefined
+  myProfile?: ReactionActor | null
   onDelete?: () => void
   onReact: (postId: string, next: ReactionRow[]) => void
   onOpenReactions: () => void
@@ -35,6 +40,7 @@ export function PostCard({
   post,
   audienceLabel,
   myUserId,
+  myProfile = null,
   onDelete,
   onReact,
   onOpenReactions,
@@ -48,6 +54,9 @@ export function PostCard({
     .filter(Boolean)
     .join(' · ')
   const summaries = summarizeReactions(post.reactions, myUserId)
+  const reactors = reactionActors(post.reactions)
+  const shownReactors = reactors.slice(0, REACTION_AVATAR_CHIP_LIMIT)
+  const extraReactors = reactors.length - shownReactors.length
   const mine = post.reactions.find((row) => row.user_id === myUserId)?.emoji ?? null
   const lastTap = useRef(0)
   const [heart] = useState(() => new Animated.Value(0))
@@ -63,7 +72,7 @@ export function PostCard({
 
   function chooseEmoji(emoji: string) {
     if (!myUserId) return
-    const next = applyReactionChoice(post.reactions, myUserId, emoji)
+    const next = applyReactionChoice(post.reactions, myUserId, emoji, myProfile)
     onReact(post.id, next)
   }
 
@@ -73,7 +82,10 @@ export function PostCard({
       lastTap.current = 0
       pulseHeart()
       if (!myUserId) return
-      onReact(post.id, ensureReaction(post.reactions, myUserId, DEFAULT_POST_REACTION))
+      onReact(
+        post.id,
+        ensureReaction(post.reactions, myUserId, DEFAULT_POST_REACTION, myProfile),
+      )
       return
     }
     lastTap.current = now
@@ -163,6 +175,38 @@ export function PostCard({
                 </Text>
               </Pressable>
             ))}
+            {shownReactors.length > 0 ? (
+              <View
+                accessibilityLabel={
+                  reactors.length === 1
+                    ? `${reactors[0]?.display_name ?? 'Someone'} reacted`
+                    : `${reactors.length} people reacted`
+                }
+                style={screen.reactionAvatarChip}
+              >
+                <View style={screen.reactionAvatarStack}>
+                  {shownReactors.map((reactor, index) => (
+                    <View
+                      key={reactor.user_id}
+                      style={[
+                        screen.reactionAvatarItem,
+                        index > 0 ? { marginLeft: -8 } : null,
+                        { zIndex: shownReactors.length - index },
+                      ]}
+                    >
+                      <Avatar
+                        name={reactor.display_name}
+                        path={reactor.avatar_path}
+                        size={REACTOR_AVATAR_SIZE}
+                      />
+                    </View>
+                  ))}
+                </View>
+                {extraReactors > 0 ? (
+                  <Text style={screen.reactionAvatarMore}>+{extraReactors}</Text>
+                ) : null}
+              </View>
+            ) : null}
           </View>
         ) : null}
         <View style={screen.postActionRow}>

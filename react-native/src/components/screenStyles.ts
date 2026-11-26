@@ -260,6 +260,32 @@ export function createScreenStyles(c: ThemeColors) {
       color: c.text,
       fontWeight: '600',
     },
+    reactionAvatarChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: c.border,
+      backgroundColor: c.surfaceAlt,
+      paddingHorizontal: 6,
+      paddingVertical: 4,
+      gap: 4,
+    },
+    reactionAvatarStack: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    reactionAvatarItem: {
+      borderWidth: 1.5,
+      borderColor: c.surface,
+      borderRadius: 999,
+    },
+    reactionAvatarMore: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: c.textMuted,
+      paddingRight: 2,
+    },
     postActionRow: {
       flexDirection: 'row',
       alignItems: 'center',
