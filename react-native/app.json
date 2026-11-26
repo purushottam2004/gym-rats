@@ -44,7 +44,55 @@
         }
       ],
       "expo-image",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-sharing",
+      "expo-localization",
+      "expo-secure-store",
+      "expo-web-browser",
+      "expo-mail-composer",
+      "expo-video",
+      "expo-asset",
+      "expo-document-picker",
+      [
+        "expo-screen-orientation",
+        {
+          "initialOrientation": "PORTRAIT"
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Gym Rats uses the camera so you can photograph food and profile photos.",
+          "microphonePermission": "Gym Rats uses the microphone when recording video.",
+          "recordAudioAndroid": true
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Gym Rats can use your location for gym check-ins and nearby features."
+        }
+      ],
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Gym Rats can add habit reminders to your calendar."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Gym Rats can save and read photos you choose for posts and food logs.",
+          "savePhotosPermission": "Gym Rats can save images to your photo library.",
+          "isAccessMediaLocationEnabled": false
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Gym Rats can use Face ID to protect your account on this device."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
