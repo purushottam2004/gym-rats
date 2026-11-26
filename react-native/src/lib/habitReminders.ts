@@ -31,6 +31,29 @@ export function formatReminderTime(time: ReminderTime): string {
   return `${String(time.hour).padStart(2, '0')}:${String(time.minute).padStart(2, '0')}`
 }
 
+/** Local Date for native time pickers (date part is ignored). */
+export function reminderTimeToDate(time: ReminderTime, base = new Date()): Date {
+  const next = new Date(base)
+  next.setHours(time.hour, time.minute, 0, 0)
+  return next
+}
+
+/** Pull hour/minute from a picker Date. */
+export function dateToReminderTime(date: Date): ReminderTime {
+  return { hour: date.getHours(), minute: date.getMinutes() }
+}
+
+/**
+ * Human label for the reminder field (e.g. "10:00 AM").
+ * Uses the device locale so 12h regions get AM/PM without changing the stored HH:MM.
+ */
+export function formatReminderTimeDisplay(time: ReminderTime, locale?: string): string {
+  return reminderTimeToDate(time).toLocaleTimeString(locale, {
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
 export function parseReminderEveryMinutes(raw: string): number | null {
   const trimmed = raw.trim()
   if (!trimmed) return null

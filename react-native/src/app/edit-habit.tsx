@@ -6,6 +6,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { AppTextInput } from '../components/AppTextInput'
 import { BrandLoader, LoadingBlock } from '../components/BrandLoader'
 import { Screen } from '../components/Screen'
+import { TimePickerField } from '../components/TimePickerField'
 import { Toast, type ToastKind } from '../components/Toast'
 import {
   createHabit,
@@ -551,15 +552,7 @@ export default function EditHabitScreen() {
         {remindEnabled ? (
           <>
             <Text style={screen.label}>First notification</Text>
-            <AppTextInput
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="numbers-and-punctuation"
-              onChangeText={setRemindFirstTime}
-              placeholder="08:00"
-              style={screen.input}
-              value={remindFirstTime}
-            />
+            <TimePickerField onChange={setRemindFirstTime} value={remindFirstTime} />
             <Text style={screen.label}>Then every (minutes)</Text>
             <Text style={screen.muted}>Leave blank for a single reminder. Minimum 5 minutes.</Text>
             <AppTextInput

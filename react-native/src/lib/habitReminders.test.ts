@@ -1,11 +1,14 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
+  dateToReminderTime,
   formatReminderTime,
+  formatReminderTimeDisplay,
   habitCompletedAtForDay,
   normalizeHabitReminderInput,
   parseReminderTime,
   planHabitReminderFires,
+  reminderTimeToDate,
 } from './habitReminders.ts'
 
 describe('parseReminderTime / formatReminderTime', () => {
@@ -18,6 +21,18 @@ describe('parseReminderTime / formatReminderTime', () => {
 
   it('round-trips', () => {
     assert.equal(formatReminderTime({ hour: 7, minute: 30 }), '07:30')
+  })
+
+  it('converts to/from Date for the system time picker', () => {
+    const date = reminderTimeToDate({ hour: 22, minute: 5 })
+    assert.equal(date.getHours(), 22)
+    assert.equal(date.getMinutes(), 5)
+    assert.deepEqual(dateToReminderTime(date), { hour: 22, minute: 5 })
+  })
+
+  it('formats a 12h locale label with AM/PM', () => {
+    assert.match(formatReminderTimeDisplay({ hour: 10, minute: 0 }, 'en-US'), /10:00\s*AM/i)
+    assert.match(formatReminderTimeDisplay({ hour: 22, minute: 5 }, 'en-US'), /10:05\s*PM/i)
   })
 })
 
