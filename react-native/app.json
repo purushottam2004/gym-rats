@@ -13,7 +13,10 @@
     "updates": {
       "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 0,
-      "url": "https://u.expo.dev/d57a00cc-ae38-427d-a75f-1f5bb37162c4"
+      "url": "https://u.expo.dev/d57a00cc-ae38-427d-a75f-1f5bb37162c4",
+      "requestHeaders": {
+        "expo-channel-name": "production"
+      }
     },
     "plugins": [
       "expo-router",

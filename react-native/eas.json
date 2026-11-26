@@ -13,6 +13,10 @@
     },
     "production": {
       "channel": "production"
+    },
+    "production-device": {
+      "channel": "production",
+      "distribution": "internal"
     }
   },
   "submit": {

@@ -70,6 +70,23 @@ pnpm web
 
 `pnpm start` opens Metro. From that terminal, press `i` for the iOS simulator, `a` for the Android emulator, or `w` for the browser. Expo web listens on port **8081**. Vite stays on `5173`. FastAPI stays on `8080`.
 
+### Install Release build on a physical iPhone
+
+Builds a production-mode (`Release`) binary with JS embedded (no Metro) and installs it on the connected phone. The binary is wired to the Expo Update **`production`** channel (`app.json` → `updates.requestHeaders.expo-channel-name`), so later `pnpm update:production` OTAs can apply when the runtime fingerprint matches. Needs Xcode signing, Developer Mode on the phone, and `react-native/.env` pointed at hosted Supabase (not `127.0.0.1`).
+
+```bash
+# from repo root
+./react-native/scripts/install-ios-release.sh
+
+# optional: fast-forward main first
+./react-native/scripts/install-ios-release.sh --pull
+
+# or from react-native/
+pnpm ios:release-device
+```
+
+If several phones are paired, pass one UDID: `--device <UDID>` or `DEVICE_UDID=<UDID>`. Keep the phone unlocked during install/launch.
+
 ## Over-the-air updates (EAS Update)
 
 JS and asset changes can ship to an already-installed iOS/Android binary without a store reinstall. Native module, permission, or Expo SDK changes still need a new binary.
