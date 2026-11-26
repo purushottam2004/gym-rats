@@ -4,16 +4,20 @@ import { useCallback, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { useAuth } from '../auth/AuthProvider'
 import { AppTextInput } from '../components/AppTextInput'
+import { BrandLoader, LoadingBlock } from '../components/BrandLoader'
 import { Screen } from '../components/Screen'
 import { Toast, type ToastKind } from '../components/Toast'
 import {
   createHabit,
   loadFoods,
+  loadGroups,
+  loadHabitAudienceGroupIds,
   loadHabitSections,
   loadHabits,
   measureLabel,
   updateHabit,
   type Food,
+  type Group,
   type HabitRecurrence,
   type HabitSection,
 } from '../lib/gym'
@@ -37,6 +41,9 @@ export default function EditHabitScreen() {
   const [weekdays, setWeekdays] = useState<Weekday[]>(ALL_DAYS)
   const [sectionId, setSectionId] = useState<string | null>(null)
   const [sections, setSections] = useState<HabitSection[]>([])
+  const [groups, setGroups] = useState<Group[]>([])
+  const [shareAll, setShareAll] = useState(true)
+  const [sharedGroups, setSharedGroups] = useState<Record<string, boolean>>({})
   const [logFood, setLogFood] = useState(false)
   const [foods, setFoods] = useState<Food[]>([])
   const [foodId, setFoodId] = useState<string | null>(null)
@@ -44,7 +51,7 @@ export default function EditHabitScreen() {
   const [error, setError] = useState<string | null>(null)
   const [toast, setToast] = useState<{ kind: ToastKind; message: string } | null>(null)
   const [busy, setBusy] = useState(false)
-  const [loaded, setLoaded] = useState(!editing)
+  const [loaded, setLoaded] = useState(false)
 
   const load = useCallback(async () => {
     if (!userId) {
@@ -52,20 +59,27 @@ export default function EditHabitScreen() {
       return
     }
     try {
-      const [catalog, nextSections] = await Promise.all([
+      const [catalog, nextSections, nextGroups] = await Promise.all([
         loadFoods(userId),
         loadHabitSections(userId),
+        loadGroups(),
       ])
       setFoods(catalog)
       setSections(nextSections)
+      setGroups(nextGroups)
 
       if (!editing || !id) {
         setFoodId((current) => current ?? catalog[0]?.id ?? null)
+        setShareAll(true)
+        setSharedGroups({})
         setLoaded(true)
         return
       }
 
-      const habits = await loadHabits(userId, { includeArchived: true })
+      const [habits, audienceIds] = await Promise.all([
+        loadHabits(userId, { includeArchived: true }),
+        loadHabitAudienceGroupIds(id),
+      ])
       const habit = habits.find((row) => row.id === id)
       if (!habit || !habit.active) {
         setError('Habit not found')
@@ -77,6 +91,13 @@ export default function EditHabitScreen() {
       setFrequency(String(habit.frequency))
       setWeekdays(habit.weekdays.slice() as Weekday[])
       setSectionId(habit.section_id)
+      if (audienceIds.length === 0) {
+        setShareAll(true)
+        setSharedGroups({})
+      } else {
+        setShareAll(false)
+        setSharedGroups(Object.fromEntries(audienceIds.map((groupId) => [groupId, true])))
+      }
       if (habit.food_id && habit.food_amount != null) {
         setLogFood(true)
         setFoodId(habit.food_id)
@@ -140,6 +161,15 @@ export default function EditHabitScreen() {
       linkAmount = amount
     }
 
+    let shareGroupIds: string[] | null = null
+    if (!shareAll) {
+      shareGroupIds = groups.filter((group) => sharedGroups[group.id]).map((group) => group.id)
+      if (shareGroupIds.length === 0) {
+        setToast({ kind: 'error', message: 'Pick at least one group, or share with all groups' })
+        return
+      }
+    }
+
     setBusy(true)
     try {
       if (editing && id) {
@@ -152,6 +182,7 @@ export default function EditHabitScreen() {
           sectionId,
           foodId: linkFoodId,
           foodAmount: linkAmount,
+          shareGroupIds,
         })
       } else {
         await createHabit({
@@ -162,6 +193,7 @@ export default function EditHabitScreen() {
           sectionId,
           foodId: linkFoodId,
           foodAmount: linkAmount,
+          shareGroupIds,
         })
       }
       router.back()
@@ -178,7 +210,7 @@ export default function EditHabitScreen() {
   if (!loaded) {
     return (
       <Screen>
-        <Text style={screen.muted}>Loading…</Text>
+        <LoadingBlock label="Loading habit" />
       </Screen>
     )
   }
@@ -193,7 +225,11 @@ export default function EditHabitScreen() {
             onPress={() => void save()}
             style={[screen.save, busy && screen.buttonDisabled]}
           >
-            <Text style={screen.buttonText}>{editing ? 'Save' : 'Create'}</Text>
+            {busy ? (
+              <BrandLoader size="sm" />
+            ) : (
+              <Text style={screen.buttonText}>{editing ? 'Save' : 'Create'}</Text>
+            )}
           </Pressable>
         }
       >
@@ -347,6 +383,101 @@ export default function EditHabitScreen() {
             Shows every day. Completions any day count toward this week (Mon–Sun).
           </Text>
         )}
+
+        <Text style={screen.label}>Shared with</Text>
+        <Text style={screen.body}>
+          By default every Group you share can see this Habit. Turn that off to pick specific
+          Groups.
+        </Text>
+        <View style={screen.card}>
+          <Pressable
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: shareAll }}
+            onPress={() => {
+              setShareAll(true)
+              setSharedGroups({})
+            }}
+            style={({ pressed }) => [
+              screen.row,
+              screen.rowFirst,
+              shareAll && screen.rowSelected,
+              pressed && (shareAll ? screen.rowSelectedPressed : screen.rowPressed),
+            ]}
+          >
+            <Text style={[screen.rowTitle, shareAll && screen.rowTitleSelected]}>All groups</Text>
+            {shareAll ? (
+              <CircleCheck color={colors.accent} size={20} strokeWidth={2.25} />
+            ) : (
+              <Circle color={colors.border} size={20} strokeWidth={1.75} />
+            )}
+          </Pressable>
+          <Pressable
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: !shareAll }}
+            onPress={() => {
+              setShareAll(false)
+              if (groups.length > 0) {
+                setSharedGroups((current) => {
+                  if (Object.values(current).some(Boolean)) return current
+                  return Object.fromEntries(groups.map((group) => [group.id, true]))
+                })
+              }
+            }}
+            style={({ pressed }) => [
+              screen.row,
+              !shareAll && screen.rowSelected,
+              pressed && (!shareAll ? screen.rowSelectedPressed : screen.rowPressed),
+            ]}
+          >
+            <Text style={[screen.rowTitle, !shareAll && screen.rowTitleSelected]}>
+              Specific groups
+            </Text>
+            {!shareAll ? (
+              <CircleCheck color={colors.accent} size={20} strokeWidth={2.25} />
+            ) : (
+              <Circle color={colors.border} size={20} strokeWidth={1.75} />
+            )}
+          </Pressable>
+        </View>
+        {!shareAll ? (
+          groups.length > 0 ? (
+            <View style={screen.card}>
+              {groups.map((group, index) => {
+                const checked = Boolean(sharedGroups[group.id])
+                return (
+                  <Pressable
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked }}
+                    key={group.id}
+                    onPress={() =>
+                      setSharedGroups((current) => ({
+                        ...current,
+                        [group.id]: !current[group.id],
+                      }))
+                    }
+                    style={({ pressed }) => [
+                      screen.row,
+                      index === 0 && screen.rowFirst,
+                      checked && screen.rowSelected,
+                      pressed && (checked ? screen.rowSelectedPressed : screen.rowPressed),
+                    ]}
+                  >
+                    <Text style={[screen.rowTitle, checked && screen.rowTitleSelected]}>
+                      {group.name}
+                    </Text>
+                    {checked ? (
+                      <CircleCheck color={colors.accent} size={20} strokeWidth={2.25} />
+                    ) : (
+                      <Circle color={colors.border} size={20} strokeWidth={1.75} />
+                    )}
+                  </Pressable>
+                )
+              })}
+            </View>
+          ) : (
+            <Text style={screen.muted}>Join or create a group before limiting who can see this.</Text>
+          )
+        ) : null}
 
         <Text style={screen.label}>Log food when completed</Text>
         <Text style={screen.muted}>

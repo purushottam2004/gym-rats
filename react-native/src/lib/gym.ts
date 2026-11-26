@@ -661,6 +661,42 @@ async function resolveHabitSectionId(
   return sectionId
 }
 
+/**
+ * Group ids this Habit is limited to. Empty array → share with every Group
+ * (default). Non-empty → only those Groups.
+ */
+export async function loadHabitAudienceGroupIds(habitId: string): Promise<string[]> {
+  const { data, error } = await db()
+    .from('habit_audiences')
+    .select('group_id')
+    .eq('habit_id', habitId)
+  fail(error)
+  return (data ?? []).map((row) => row.group_id as string)
+}
+
+async function replaceHabitAudiences(
+  habitId: string,
+  shareGroupIds: string[] | null | undefined,
+): Promise<void> {
+  const { error: clearError } = await db().from('habit_audiences').delete().eq('habit_id', habitId)
+  fail(clearError)
+  if (shareGroupIds == null) return
+  if (shareGroupIds.length === 0) {
+    throw new Error('Pick at least one group, or share with all groups')
+  }
+  const memberships = await loadGroups()
+  const allowed = new Set(memberships.map((group) => group.id))
+  for (const groupId of shareGroupIds) {
+    if (!allowed.has(groupId)) {
+      throw new Error('Choose groups you belong to')
+    }
+  }
+  const { error } = await db()
+    .from('habit_audiences')
+    .insert(shareGroupIds.map((groupId) => ({ habit_id: habitId, group_id: groupId })))
+  fail(error)
+}
+
 export async function createHabit(input: {
   name: string
   recurrence: HabitRecurrence
@@ -669,6 +705,8 @@ export async function createHabit(input: {
   sectionId?: string | null
   foodId?: string | null
   foodAmount?: number | null
+  /** null/undefined → all groups; otherwise only these group ids */
+  shareGroupIds?: string[] | null
 }): Promise<Habit> {
   const { data: userData, error: userError } = await db().auth.getUser()
   fail(userError)
@@ -710,7 +748,9 @@ export async function createHabit(input: {
     .select(HABIT_SELECT)
     .single()
   fail(error)
-  return mapHabitRow(data as Record<string, unknown>)
+  const habit = mapHabitRow(data as Record<string, unknown>)
+  await replaceHabitAudiences(habit.id, input.shareGroupIds)
+  return habit
 }
 
 export async function updateHabit(input: {
@@ -722,6 +762,8 @@ export async function updateHabit(input: {
   sectionId?: string | null
   foodId?: string | null
   foodAmount?: number | null
+  /** null → all groups; array → only these; omit to leave audiences unchanged */
+  shareGroupIds?: string[] | null
 }): Promise<void> {
   const weekdays =
     input.recurrence === 'per_week' ? ([0, 1, 2, 3, 4, 5, 6] as Weekday[]) : input.weekdays
@@ -752,6 +794,9 @@ export async function updateHabit(input: {
   }
   const { error } = await db().from('habits').update(patch).eq('id', input.id)
   fail(error)
+  if (input.shareGroupIds !== undefined) {
+    await replaceHabitAudiences(input.id, input.shareGroupIds)
+  }
 }
 
 export async function archiveHabit(id: string): Promise<void> {
