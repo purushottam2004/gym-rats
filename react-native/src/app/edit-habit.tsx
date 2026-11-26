@@ -26,6 +26,12 @@ import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
 
 const ALL_DAYS: Weekday[] = [0, 1, 2, 3, 4, 5, 6]
 
+/** Mon–Fri on the first row, Sat–Sun on the second (centered). */
+const WEEKDAY_PICKER_ROWS: readonly Weekday[][] = [
+  [1, 2, 3, 4, 5],
+  [6, 0],
+]
+
 export default function EditHabitScreen() {
   const screen = useScreenStyles()
   const { colors } = useTheme()
@@ -348,33 +354,41 @@ export default function EditHabitScreen() {
         {recurrence === 'per_day' ? (
           <>
             <Text style={screen.label}>Weekdays</Text>
-            <View style={[screen.setNumberRow, { flexWrap: 'wrap' }]}>
-              {WEEKDAY_LABELS.map((day) => {
-                const selected = weekdays.includes(day.value)
-                return (
-                  <Pressable
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: selected }}
-                    key={day.value}
-                    onPress={() => toggleWeekday(day.value)}
-                    style={({ pressed }) => [
-                      screen.setNumberCircle,
-                      selected && screen.setNumberCircleSelected,
-                      pressed && !selected && screen.setNumberCirclePressed,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        screen.setNumberCircleText,
-                        selected && screen.setNumberCircleTextSelected,
-                        { fontSize: 12 },
-                      ]}
-                    >
-                      {day.short}
-                    </Text>
-                  </Pressable>
-                )
-              })}
+            <View style={{ gap: 10 }}>
+              {WEEKDAY_PICKER_ROWS.map((row) => (
+                <View
+                  key={row.join('-')}
+                  style={[screen.setNumberRow, { justifyContent: 'center', flexWrap: 'nowrap' }]}
+                >
+                  {row.map((value) => {
+                    const day = WEEKDAY_LABELS[value]
+                    const selected = weekdays.includes(value)
+                    return (
+                      <Pressable
+                        accessibilityRole="checkbox"
+                        accessibilityState={{ checked: selected }}
+                        key={value}
+                        onPress={() => toggleWeekday(value)}
+                        style={({ pressed }) => [
+                          screen.setNumberCircle,
+                          selected && screen.setNumberCircleSelected,
+                          pressed && !selected && screen.setNumberCirclePressed,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            screen.setNumberCircleText,
+                            selected && screen.setNumberCircleTextSelected,
+                            { fontSize: 12 },
+                          ]}
+                        >
+                          {day.short}
+                        </Text>
+                      </Pressable>
+                    )
+                  })}
+                </View>
+              ))}
             </View>
           </>
         ) : (
