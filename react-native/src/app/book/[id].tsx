@@ -1,5 +1,5 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
-import { Circle, CircleCheck, Pencil } from 'lucide-react-native'
+import { Check, Circle, CircleCheck, Pencil } from 'lucide-react-native'
 import { useCallback, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
@@ -103,35 +103,91 @@ export default function BookDetailScreen() {
     [chapters],
   )
 
+  function remindEveryMinutes(): number | null {
+    const every = remindEvery.trim() ? Number(remindEvery.trim()) : null
+    return remindEnabled && every != null && Number.isInteger(every) && every >= 5 ? every : null
+  }
+
+  function audienceGroupIds(): string[] {
+    return groups.filter((group) => selected[group.id]).map((group) => group.id)
+  }
+
+  async function persistBook(next: { title: string; author: string }): Promise<Book> {
+    if (!book) throw new Error('Book not loaded')
+    await updateBook({
+      bookId: book.id,
+      title: next.title,
+      author: next.author,
+      remindEnabled,
+      remindEveryMinutes: remindEveryMinutes(),
+      profile,
+      groupIds: audienceGroupIds(),
+    })
+    const refreshed = await loadBook(book.id)
+    setBook(refreshed)
+    if (userId) {
+      const ownerBooks = await loadBooks(userId)
+      const ownerChapters = await loadBookChapters(ownerBooks.map((row) => row.id))
+      void syncBookReminderNotifications({ books: ownerBooks, chapters: ownerChapters })
+    }
+    return refreshed
+  }
+
+  /** Save reminders / sharing only — never commits an in-progress title/author edit. */
   async function saveMeta() {
     if (!book || saving) return
     setSaving(true)
     setError(null)
     try {
-      const every = remindEvery.trim() ? Number(remindEvery.trim()) : null
-      await updateBook({
-        bookId: book.id,
-        title,
-        author,
-        remindEnabled,
-        remindEveryMinutes:
-          remindEnabled && every != null && Number.isInteger(every) && every >= 5 ? every : null,
-        profile,
-        groupIds: groups.filter((group) => selected[group.id]).map((group) => group.id),
+      const refreshed = await persistBook({
+        title: book.title,
+        author: book.author ?? '',
       })
-      const refreshed = await loadBook(book.id)
-      setBook(refreshed)
-      setTitle(refreshed.title)
-      setAuthor(refreshed.author ?? '')
-      setEditingTitle(false)
-      setEditingAuthor(false)
-      if (userId) {
-        const ownerBooks = await loadBooks(userId)
-        const ownerChapters = await loadBookChapters(ownerBooks.map((row) => row.id))
-        void syncBookReminderNotifications({ books: ownerBooks, chapters: ownerChapters })
-      }
+      if (!editingTitle) setTitle(refreshed.title)
+      if (!editingAuthor) setAuthor(refreshed.author ?? '')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function saveTitleEdit() {
+    if (!book || saving) return
+    const nextTitle = title.trim()
+    if (!nextTitle) {
+      setError('Title is required')
+      return
+    }
+    setSaving(true)
+    setError(null)
+    try {
+      const refreshed = await persistBook({
+        title: nextTitle,
+        author: book.author ?? '',
+      })
+      setTitle(refreshed.title)
+      setEditingTitle(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save title')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function saveAuthorEdit() {
+    if (!book || saving) return
+    setSaving(true)
+    setError(null)
+    try {
+      const refreshed = await persistBook({
+        title: book.title,
+        author,
+      })
+      setAuthor(refreshed.author ?? '')
+      setEditingAuthor(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save author')
     } finally {
       setSaving(false)
     }
@@ -215,18 +271,33 @@ export default function BookDetailScreen() {
               ) : (
                 <View style={screen.rowMain}>
                   <Text style={screen.muted}>Title</Text>
-                  <Text style={screen.rowTitle}>{title.trim() ? title : '—'}</Text>
+                  <Text style={screen.rowTitle}>{book.title.trim() ? book.title : '—'}</Text>
                 </View>
               )}
-              <Pressable
-                accessibilityLabel={editingTitle ? 'Lock title' : 'Edit title'}
-                accessibilityRole="button"
-                disabled={saving}
-                hitSlop={8}
-                onPress={() => setEditingTitle((current) => !current)}
-              >
-                <Pencil color={colors.accent} size={18} strokeWidth={2.25} />
-              </Pressable>
+              {editingTitle ? (
+                <Pressable
+                  accessibilityLabel="Save title"
+                  accessibilityRole="button"
+                  disabled={saving}
+                  hitSlop={8}
+                  onPress={() => void saveTitleEdit()}
+                >
+                  <Check color={colors.accent} size={22} strokeWidth={2.5} />
+                </Pressable>
+              ) : (
+                <Pressable
+                  accessibilityLabel="Edit title"
+                  accessibilityRole="button"
+                  disabled={saving}
+                  hitSlop={8}
+                  onPress={() => {
+                    setTitle(book.title)
+                    setEditingTitle(true)
+                  }}
+                >
+                  <Pencil color={colors.accent} size={18} strokeWidth={2.25} />
+                </Pressable>
+              )}
             </View>
             <View style={screen.row}>
               {editingAuthor ? (
@@ -240,18 +311,35 @@ export default function BookDetailScreen() {
               ) : (
                 <View style={screen.rowMain}>
                   <Text style={screen.muted}>Author</Text>
-                  <Text style={screen.rowTitle}>{author.trim() ? author : '—'}</Text>
+                  <Text style={screen.rowTitle}>
+                    {(book.author ?? '').trim() ? book.author : '—'}
+                  </Text>
                 </View>
               )}
-              <Pressable
-                accessibilityLabel={editingAuthor ? 'Lock author' : 'Edit author'}
-                accessibilityRole="button"
-                disabled={saving}
-                hitSlop={8}
-                onPress={() => setEditingAuthor((current) => !current)}
-              >
-                <Pencil color={colors.accent} size={18} strokeWidth={2.25} />
-              </Pressable>
+              {editingAuthor ? (
+                <Pressable
+                  accessibilityLabel="Save author"
+                  accessibilityRole="button"
+                  disabled={saving}
+                  hitSlop={8}
+                  onPress={() => void saveAuthorEdit()}
+                >
+                  <Check color={colors.accent} size={22} strokeWidth={2.5} />
+                </Pressable>
+              ) : (
+                <Pressable
+                  accessibilityLabel="Edit author"
+                  accessibilityRole="button"
+                  disabled={saving}
+                  hitSlop={8}
+                  onPress={() => {
+                    setAuthor(book.author ?? '')
+                    setEditingAuthor(true)
+                  }}
+                >
+                  <Pencil color={colors.accent} size={18} strokeWidth={2.25} />
+                </Pressable>
+              )}
             </View>
           </View>
 
