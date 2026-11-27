@@ -167,7 +167,7 @@ export default function NewBookScreen() {
                     (pressed || saving) && screen.buttonDisabled,
                   ]}
                 >
-                  <Trash2 color={colors.tabInactive} size={18} strokeWidth={1.75} />
+                  <Trash2 color={colors.danger} size={18} strokeWidth={1.75} />
                 </Pressable>
               </View>
               <View style={{ flexDirection: 'row', gap: 8 }}>
