@@ -37,13 +37,14 @@ alter table public.intakes
 -- Repair day counts so they match linked intake rows (food-linked Habits).
 with linked as (
   select
-    source_habit_id as habit_id,
-    logged_on,
+    i.source_habit_id as habit_id,
+    i.logged_on,
     count(*)::int as intake_count,
-    max(user_id) as user_id
-  from public.intakes
-  where source_habit_id is not null
-  group by source_habit_id, logged_on
+    h.user_id
+  from public.intakes i
+  join public.habits h on h.id = i.source_habit_id
+  where i.source_habit_id is not null
+  group by i.source_habit_id, i.logged_on, h.user_id
 )
 insert into public.habit_day_counts (habit_id, user_id, logged_on, count, updated_at)
 select linked.habit_id, linked.user_id, linked.logged_on, linked.intake_count, now()
