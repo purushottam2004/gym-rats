@@ -8,16 +8,25 @@ type Props = {
   onRetake: () => void
   onContinue: () => void
   onCancel: () => void
+  /** Defaults to the Diet food-estimate copy. */
+  body?: string
 }
 
-export function PhotoConfirmModal({ visible, imageUri, onRetake, onContinue, onCancel }: Props) {
+export function PhotoConfirmModal({
+  visible,
+  imageUri,
+  onRetake,
+  onContinue,
+  onCancel,
+  body = 'We will estimate nutrients and open Other so you can edit before saving.',
+}: Props) {
   const screen = useScreenStyles()
   return (
     <Modal animationType="fade" transparent visible={visible} onRequestClose={onCancel}>
       <View style={screen.modalBackdrop}>
         <View style={screen.confirmCard}>
           <Text style={screen.sectionTitle}>Use this photo?</Text>
-          <Text style={screen.body}>We will estimate nutrients and open Other so you can edit before saving.</Text>
+          <Text style={screen.body}>{body}</Text>
           {imageUri ? (
             <Image
               accessibilityLabel="Captured food photo"

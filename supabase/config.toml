@@ -470,3 +470,9 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/estimate_food_from_photo/deno.json"
 entrypoint = "./functions/estimate_food_from_photo/index.ts"
+
+[functions.estimate_book_from_photos]
+enabled = true
+verify_jwt = true
+import_map = "./functions/estimate_book_from_photos/deno.json"
+entrypoint = "./functions/estimate_book_from_photos/index.ts"

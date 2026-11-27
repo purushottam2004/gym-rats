@@ -17,13 +17,16 @@ import { parseReminderTime } from './habitReminders'
 import { isFeatureTab, type FeatureRow } from './featureUpdates'
 import type { NutrientGoalMilestone } from './nutrientTargetReminders'
 import type { ReactionRow } from './postSocial'
+import type { Book, BookChapter } from './bookSchedule'
 import {
   bytesToBase64,
+  parseBookPhotoEstimateResponse,
   parseFoodPhotoEstimateResponse,
   parseVoiceHabitResponse,
   parseVoiceIntakeResponse,
   parseVoiceSetResponse,
   resultFromFunctionsInvoke,
+  type BookPhotoEstimateResult,
   type FoodPhotoEstimateResult,
   type VoiceHabitResult,
   type VoiceIntakeResult,
@@ -31,12 +34,14 @@ import {
 } from './voiceSet'
 
 export type {
+  BookPhotoEstimateResult,
   FoodPhotoEstimateResult,
   VoiceHabitResult,
   VoiceIntakeResult,
   VoiceSetResult,
 } from './voiceSet'
 export type { Habit, HabitDayCount, HabitRecurrence, HabitSection } from './habitSchedule'
+export type { Book, BookChapter } from './bookSchedule'
 
 export type { Basis, Measure } from './measure'
 export { basisForMeasure, measureLabel } from './measure'
@@ -1570,6 +1575,285 @@ export async function uploadImage(
   })
   fail(error)
   return path
+}
+
+const BOOK_SELECT =
+  'id, title, author, remind_enabled, remind_every_minutes, active, sort_order'
+
+const CHAPTER_SELECT =
+  'id, book_id, title, sort_order, page_start, page_end, scheduled_on, due_time, completed_at'
+
+function mapBookRow(row: Record<string, unknown>): Book {
+  return {
+    id: row.id as string,
+    title: String(row.title ?? ''),
+    author: (row.author as string | null) ?? null,
+    remind_enabled: Boolean(row.remind_enabled),
+    remind_every_minutes:
+      row.remind_every_minutes == null ? null : Number(row.remind_every_minutes),
+    active: row.active !== false,
+    sort_order: Number(row.sort_order ?? 0),
+  }
+}
+
+function mapChapterRow(row: Record<string, unknown>): BookChapter {
+  const dueRaw = row.due_time as string | null | undefined
+  return {
+    id: row.id as string,
+    book_id: row.book_id as string,
+    title: String(row.title ?? ''),
+    sort_order: Number(row.sort_order ?? 0),
+    page_start: row.page_start == null ? null : Number(row.page_start),
+    page_end: row.page_end == null ? null : Number(row.page_end),
+    scheduled_on: (row.scheduled_on as string | null) ?? null,
+    due_time: dueRaw ? String(dueRaw).slice(0, 5) : null,
+    completed_at: (row.completed_at as string | null) ?? null,
+  }
+}
+
+export async function loadBooks(userId: string): Promise<Book[]> {
+  const { data, error } = await db()
+    .from('books')
+    .select(BOOK_SELECT)
+    .eq('user_id', userId)
+    .eq('active', true)
+    .order('sort_order')
+    .order('created_at')
+  fail(error)
+  return (data ?? []).map((row) => mapBookRow(row as Record<string, unknown>))
+}
+
+export async function loadBook(bookId: string): Promise<Book> {
+  const { data, error } = await db().from('books').select(BOOK_SELECT).eq('id', bookId).single()
+  fail(error)
+  return mapBookRow(data as Record<string, unknown>)
+}
+
+export async function loadBookChapters(bookIds: string[]): Promise<BookChapter[]> {
+  if (bookIds.length === 0) return []
+  const { data, error } = await db()
+    .from('book_chapters')
+    .select(CHAPTER_SELECT)
+    .in('book_id', bookIds)
+    .order('sort_order')
+    .order('created_at')
+  fail(error)
+  return (data ?? []).map((row) => mapChapterRow(row as Record<string, unknown>))
+}
+
+export async function loadBookAudiences(bookId: string): Promise<Audience[]> {
+  const { data, error } = await db()
+    .from('book_audiences')
+    .select('id, kind, group_id')
+    .eq('book_id', bookId)
+  fail(error)
+  return (data ?? []).map((row) => ({
+    id: row.id as string,
+    kind: row.kind as 'profile' | 'group',
+    group_id: (row.group_id as string | null) ?? null,
+  }))
+}
+
+export type BookChapterInput = {
+  title: string
+  page_start?: number | null
+  page_end?: number | null
+}
+
+export async function createBook(input: {
+  userId: string
+  title: string
+  author?: string | null
+  chapters: BookChapterInput[]
+  remindEnabled?: boolean
+  remindEveryMinutes?: number | null
+  profile?: boolean
+  groupIds?: string[]
+}): Promise<Book> {
+  const title = input.title.trim()
+  if (!title) throw new Error('Title is required')
+  const { data, error } = await db()
+    .from('books')
+    .insert({
+      user_id: input.userId,
+      title,
+      author: input.author?.trim() || null,
+      remind_enabled: Boolean(input.remindEnabled),
+      remind_every_minutes: input.remindEnabled
+        ? input.remindEveryMinutes ?? null
+        : null,
+    })
+    .select(BOOK_SELECT)
+    .single()
+  fail(error)
+  const book = mapBookRow(data as Record<string, unknown>)
+
+  const chapterRows = input.chapters
+    .map((chapter, index) => {
+      const chapterTitle = chapter.title.trim()
+      if (!chapterTitle) return null
+      return {
+        book_id: book.id,
+        title: chapterTitle,
+        sort_order: index,
+        page_start: chapter.page_start ?? null,
+        page_end: chapter.page_end ?? null,
+      }
+    })
+    .filter((row): row is NonNullable<typeof row> => row != null)
+
+  if (chapterRows.length > 0) {
+    const { error: chapterError } = await db().from('book_chapters').insert(chapterRows)
+    fail(chapterError)
+  }
+
+  await replaceBookAudiences(book.id, {
+    profile: Boolean(input.profile),
+    groupIds: input.groupIds ?? [],
+  })
+
+  return book
+}
+
+export async function updateBook(input: {
+  bookId: string
+  title: string
+  author?: string | null
+  remindEnabled: boolean
+  remindEveryMinutes: number | null
+  profile: boolean
+  groupIds: string[]
+}): Promise<void> {
+  const title = input.title.trim()
+  if (!title) throw new Error('Title is required')
+  const { error } = await db()
+    .from('books')
+    .update({
+      title,
+      author: input.author?.trim() || null,
+      remind_enabled: input.remindEnabled,
+      remind_every_minutes: input.remindEnabled ? input.remindEveryMinutes : null,
+    })
+    .eq('id', input.bookId)
+  fail(error)
+  await replaceBookAudiences(input.bookId, {
+    profile: input.profile,
+    groupIds: input.groupIds,
+  })
+}
+
+async function replaceBookAudiences(
+  bookId: string,
+  input: { profile: boolean; groupIds: string[] },
+): Promise<void> {
+  const { error: clearError } = await db().from('book_audiences').delete().eq('book_id', bookId)
+  fail(clearError)
+  const rows: { book_id: string; kind: 'profile' | 'group'; group_id: string | null }[] = []
+  if (input.profile) {
+    rows.push({ book_id: bookId, kind: 'profile', group_id: null })
+  }
+  for (const groupId of input.groupIds) {
+    rows.push({ book_id: bookId, kind: 'group', group_id: groupId })
+  }
+  if (rows.length === 0) return
+  const { error } = await db().from('book_audiences').insert(rows)
+  fail(error)
+}
+
+export async function scheduleBookChapter(input: {
+  chapterId: string
+  scheduledOn: string
+  dueTime: string
+}): Promise<void> {
+  const { error } = await db()
+    .from('book_chapters')
+    .update({
+      scheduled_on: input.scheduledOn,
+      due_time: input.dueTime,
+    })
+    .eq('id', input.chapterId)
+  fail(error)
+}
+
+export async function clearBookChapterSchedule(chapterId: string): Promise<void> {
+  const { error } = await db()
+    .from('book_chapters')
+    .update({ scheduled_on: null, due_time: null })
+    .eq('id', chapterId)
+  fail(error)
+}
+
+export async function setBookChapterCompleted(
+  chapterId: string,
+  completed: boolean,
+): Promise<string | null> {
+  const completedAt = completed ? new Date().toISOString() : null
+  const { error } = await db()
+    .from('book_chapters')
+    .update({ completed_at: completedAt })
+    .eq('id', chapterId)
+  fail(error)
+  return completedAt
+}
+
+export async function addBookChapter(input: {
+  bookId: string
+  title: string
+  sortOrder: number
+  pageStart?: number | null
+  pageEnd?: number | null
+}): Promise<BookChapter> {
+  const title = input.title.trim()
+  if (!title) throw new Error('Chapter title is required')
+  const { data, error } = await db()
+    .from('book_chapters')
+    .insert({
+      book_id: input.bookId,
+      title,
+      sort_order: input.sortOrder,
+      page_start: input.pageStart ?? null,
+      page_end: input.pageEnd ?? null,
+    })
+    .select(CHAPTER_SELECT)
+    .single()
+  fail(error)
+  return mapChapterRow(data as Record<string, unknown>)
+}
+
+export async function deleteBook(bookId: string): Promise<void> {
+  const { error } = await db().from('books').delete().eq('id', bookId)
+  fail(error)
+}
+
+/** Multi-photo → title/author/TOC suggestions. Does not write to the database. */
+export async function estimateBookFromPhotos(input: {
+  images: { uri: string; mimeType?: string }[]
+}): Promise<BookPhotoEstimateResult> {
+  if (input.images.length === 0) {
+    return { ok: false, error: 'Add at least one photo' }
+  }
+  const images: { image_base64: string; mime_type: string }[] = []
+  for (const image of input.images) {
+    const response = await fetch(image.uri)
+    if (!response.ok) {
+      return { ok: false, error: 'Could not read a photo' }
+    }
+    const bytes = new Uint8Array(await response.arrayBuffer())
+    if (bytes.byteLength === 0) {
+      return { ok: false, error: 'A photo was empty' }
+    }
+    const headerMime = response.headers.get('content-type')?.split(';')[0]?.trim()
+    const mime =
+      image.mimeType?.trim() ||
+      (headerMime && headerMime.startsWith('image/') ? headerMime : 'image/jpeg')
+    images.push({ image_base64: bytesToBase64(bytes), mime_type: mime })
+  }
+
+  const { data, error } = await db().functions.invoke('estimate_book_from_photos', {
+    body: { images },
+  })
+
+  return resultFromFunctionsInvoke(data, error, parseBookPhotoEstimateResponse)
 }
 
 export type { FeatureRow, FeatureTab } from './featureUpdates'

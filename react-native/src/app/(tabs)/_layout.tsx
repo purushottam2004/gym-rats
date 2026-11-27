@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router'
-import { Dumbbell, Image as ImageIcon, Repeat, UserRound, Users, Utensils } from 'lucide-react-native'
+import { BookOpen, Dumbbell, Image as ImageIcon, Repeat, Users, Utensils } from 'lucide-react-native'
 import type { LucideIcon } from 'lucide-react-native'
 import { useTheme } from '../../theme/ThemeProvider'
 
@@ -75,6 +75,20 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="books"
+        options={{
+          title: 'Books',
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon
+              icon={BookOpen}
+              color={typeof color === 'string' ? color : colors.accent}
+              size={size}
+              focused={focused}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="groups"
         options={{
           title: 'Groups',
@@ -105,15 +119,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
+          href: null,
           title: 'Profile',
-          tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon
-              icon={UserRound}
-              color={typeof color === 'string' ? color : colors.accent}
-              size={size}
-              focused={focused}
-            />
-          ),
         }}
       />
     </Tabs>

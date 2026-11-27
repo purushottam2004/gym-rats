@@ -4,6 +4,7 @@ export const FEATURE_TABS = [
   'diet',
   'lifts',
   'habits',
+  'books',
   'groups',
   'posts',
   'profile',
@@ -64,8 +65,8 @@ export function featureUpdateNotification(unread: FeatureRow[]): {
     return {
       title: 'New in Gym Rats',
       body: unread[0]?.title
-        ? `${unread[0].title} — open the info icon on that tab to read more.`
-        : 'A new feature is ready. Open the info icon on a tab to read more.',
+        ? `${unread[0].title} — tap that tab’s title icon to read more.`
+        : 'A new feature is ready. Tap a tab’s title icon to read more.',
     }
   }
   const sample = unread
@@ -76,8 +77,8 @@ export function featureUpdateNotification(unread: FeatureRow[]): {
   return {
     title: 'New in Gym Rats',
     body: sample
-      ? `${count} new features (${sample}${count > 2 ? ', …' : ''}). Open a tab’s info icon to explore.`
-      : `${count} new features. Open a tab’s info icon to explore.`,
+      ? `${count} new features (${sample}${count > 2 ? ', …' : ''}). Tap a tab’s title icon to explore.`
+      : `${count} new features. Tap a tab’s title icon to explore.`,
   }
 }
 

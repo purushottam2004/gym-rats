@@ -12,7 +12,7 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
 import { BusyOverlay, LoadingBlock } from '../../components/BrandLoader'
 import { DayControls } from '../../components/DayControls'
-import { TabFeaturesButton } from '../../components/TabFeaturesButton'
+import { ProfileAvatarButton } from '../../components/ProfileAvatarButton'
 import { HabitProgressFill } from '../../components/HabitProgressFill'
 import { HabitSectionHeader } from '../../components/HabitSectionHeader'
 import { HabitSwipeRow } from '../../components/HabitSwipeRow'
@@ -201,10 +201,12 @@ export default function HabitsScreen() {
             <TabChrome
               icon={Repeat}
               title="Habits"
+              featuresTab="habits"
+              featuresTitle="Habits features"
               trailing={
                 <>
                   <DayControls day={day} onChange={setDay} />
-                  <TabFeaturesButton tab="habits" title="Habits features" />
+                  <ProfileAvatarButton />
                 </>
               }
             />

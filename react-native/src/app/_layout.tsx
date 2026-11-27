@@ -64,6 +64,8 @@ function Navigation() {
       <Stack.Screen name="edit-habit-section" />
       <Stack.Screen name="new-group" />
       <Stack.Screen name="new-post" />
+      <Stack.Screen name="new-book" />
+      <Stack.Screen name="book/[id]" />
       <Stack.Screen name="edit-name" />
       <Stack.Screen name="edit-photo" />
       <Stack.Screen name="group/[id]" />

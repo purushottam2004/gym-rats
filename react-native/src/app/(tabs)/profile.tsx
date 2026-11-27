@@ -9,7 +9,6 @@ import { Avatar } from '../../components/Avatar'
 import { BusyOverlay, LoadingBlock } from '../../components/BrandLoader'
 import { Screen } from '../../components/Screen'
 import { TabChrome } from '../../components/TabChrome'
-import { TabFeaturesButton } from '../../components/TabFeaturesButton'
 import type { AppearancePreference } from '../../theme/appearancePreference'
 import { useScreenStyles, useTheme } from '../../theme/ThemeProvider'
 import { loadProfile, saveAvatarPath, saveDisplayName, uploadImage, type Profile } from '../../lib/gym'
@@ -94,7 +93,8 @@ export default function ProfileScreen() {
         <TabChrome
           icon={UserRound}
           title="Profile"
-          trailing={<TabFeaturesButton tab="profile" title="Profile features" />}
+          featuresTab="profile"
+          featuresTitle="Profile features"
         />
       }
     >

@@ -11,7 +11,16 @@ import { Screen } from '../../components/Screen'
 import { useScreenStyles } from '../../theme/ThemeProvider'
 import { HabitSectionHeader } from '../../components/HabitSectionHeader'
 import { HabitSwipeRow } from '../../components/HabitSwipeRow'
+import { formatChapterDueLabel } from '../../lib/bookReminders'
 import {
+  chaptersForDay,
+  chapterIsComplete,
+  type Book,
+  type BookChapter,
+} from '../../lib/bookSchedule'
+import {
+  loadBookChapters,
+  loadBooks,
   loadFoods,
   loadHabitDayCounts,
   loadHabitSections,
@@ -60,6 +69,8 @@ export default function MemberScreen() {
   const [habits, setHabits] = useState<Habit[]>([])
   const [habitSections, setHabitSections] = useState<HabitSection[]>([])
   const [habitCounts, setHabitCounts] = useState<HabitDayCount[]>([])
+  const [books, setBooks] = useState<Book[]>([])
+  const [bookChapters, setBookChapters] = useState<BookChapter[]>([])
   const [goals, setGoals] = useState<NutrientGoal[]>([])
   const [hydrated, setHydrated] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -76,6 +87,7 @@ export default function MemberScreen() {
         nextHabits,
         nextHabitSections,
         nextHabitCounts,
+        nextBooks,
       ] = await Promise.all([
         loadProfile(id),
         loadIntakes(id, day),
@@ -84,7 +96,9 @@ export default function MemberScreen() {
         loadHabits(id),
         loadHabitSections(id),
         loadHabitDayCounts(id, day),
+        loadBooks(id),
       ])
+      const nextChapters = await loadBookChapters(nextBooks.map((book) => book.id))
       setProfile(nextProfile)
       setIntakes(nextIntakes)
       setSets(nextSets)
@@ -92,6 +106,8 @@ export default function MemberScreen() {
       setHabits(nextHabits)
       setHabitSections(nextHabitSections)
       setHabitCounts(nextHabitCounts)
+      setBooks(nextBooks)
+      setBookChapters(nextChapters)
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not open this person')
@@ -117,6 +133,15 @@ export default function MemberScreen() {
   )
   // Read-only day view: group logged sets by lift (no weekday plan / empty planned cards).
   const liftCards = useMemo(() => liftCardsForDay(sets, []), [sets])
+  const bookDayRows = useMemo(() => {
+    const booksById = new Map(books.map((book) => [book.id, book]))
+    return chaptersForDay({
+      chapters: bookChapters,
+      booksById,
+      day,
+      today: localDate(),
+    })
+  }, [books, bookChapters, day])
 
   function showNutrientInfo(nutrientId: string, nutrientName: string, unit: string) {
     const contributions = nutrientContributions(intakes, nutrientId)
@@ -311,6 +336,41 @@ export default function MemberScreen() {
                 </View>
               </View>
             )}
+            <View style={screen.card}>
+              <View style={[screen.row, screen.rowFirst]}>
+                <Text style={[screen.muted, screen.rowMain]}>Books</Text>
+              </View>
+              {bookDayRows.length > 0 ? (
+                bookDayRows.map((row) => {
+                  const complete = chapterIsComplete(row)
+                  const dueLabel = formatChapterDueLabel(row.due_time)
+                  const name = `${row.title} · ${row.book_title}${
+                    row.overdue ? ' (overdue)' : dueLabel ? ` · ${dueLabel}` : ''
+                  }`
+                  return (
+                    <HabitSwipeRow
+                      key={row.id}
+                      name={name}
+                      done={complete ? 1 : 0}
+                      target={1}
+                      complete={complete}
+                      completedLabel={formatHabitCompletedAt(row.completed_at)}
+                      readOnly
+                      onIncrement={() => undefined}
+                      onDecrement={() => undefined}
+                    />
+                  )
+                })
+              ) : (
+                <View style={screen.row}>
+                  <Text style={screen.muted}>
+                    {books.length === 0
+                      ? 'No shared books.'
+                      : 'No chapters scheduled for this day.'}
+                  </Text>
+                </View>
+              )}
+            </View>
           </>
         )}
       </Screen>

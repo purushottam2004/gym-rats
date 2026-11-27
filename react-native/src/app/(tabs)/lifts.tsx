@@ -13,7 +13,7 @@ import { useAuth } from '../../auth/AuthProvider'
 import { AddSetModal } from '../../components/AddSetModal'
 import { BusyOverlay, LoadingBlock } from '../../components/BrandLoader'
 import { DayControls } from '../../components/DayControls'
-import { TabFeaturesButton } from '../../components/TabFeaturesButton'
+import { ProfileAvatarButton } from '../../components/ProfileAvatarButton'
 import { DeleteConfirmButton } from '../../components/DeleteConfirmButton'
 import { OrdinalNumber } from '../../components/OrdinalNumber'
 import { Screen } from '../../components/Screen'
@@ -151,10 +151,12 @@ export default function LiftsScreen() {
             <TabChrome
               icon={Dumbbell}
               title="Lifts"
+              featuresTab="lifts"
+              featuresTitle="Lifts features"
               trailing={
                 <>
                   <DayControls day={day} onChange={setDay} similarLinks={similarLinks} />
-                  <TabFeaturesButton tab="lifts" title="Lifts features" />
+                  <ProfileAvatarButton />
                 </>
               }
             />

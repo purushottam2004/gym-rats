@@ -51,10 +51,24 @@ export type FoodPhotoEstimateOk = {
   }
 }
 
+export type BookPhotoEstimateOk = {
+  ok: true
+  book: {
+    title: string
+    author: string | null
+    chapters: {
+      title: string
+      page_start: number | null
+      page_end: number | null
+    }[]
+  }
+}
+
 export type VoiceSetResult = VoiceSetOk | VoiceActionErr
 export type VoiceIntakeResult = VoiceIntakeOk | VoiceActionErr
 export type VoiceHabitResult = VoiceHabitOk | VoiceActionErr
 export type FoodPhotoEstimateResult = FoodPhotoEstimateOk | VoiceActionErr
+export type BookPhotoEstimateResult = BookPhotoEstimateOk | VoiceActionErr
 
 function firstNonEmptyString(...values: unknown[]): string | null {
   for (const value of values) {
@@ -172,6 +186,33 @@ export function parseFoodPhotoEstimateResponse(
     return { ok: false, error: 'Empty response from food photo estimate' }
   }
   return { ok: false, error: 'Could not estimate food from photo' }
+}
+
+export function parseBookPhotoEstimateResponse(
+  data: unknown,
+  fallbackMessage?: string | null,
+): BookPhotoEstimateResult {
+  if (data && typeof data === 'object') {
+    const body = data as Record<string, unknown>
+    if (body.ok === true && body.book && typeof body.book === 'object') {
+      const book = body.book as Record<string, unknown>
+      if (typeof book.title === 'string' && Array.isArray(book.chapters)) {
+        return data as BookPhotoEstimateOk
+      }
+    }
+    const fromBody = messageFromFunctionBody(data)
+    if (fromBody) {
+      return { ok: false, error: fromBody }
+    }
+  }
+
+  if (fallbackMessage?.trim()) {
+    return { ok: false, error: fallbackMessage.trim() }
+  }
+  if (!data || typeof data !== 'object') {
+    return { ok: false, error: 'Empty response from book photo estimate' }
+  }
+  return { ok: false, error: 'Could not estimate book from photos' }
 }
 
 type VoiceParseFn<T extends { ok: true } | VoiceActionErr> = (
