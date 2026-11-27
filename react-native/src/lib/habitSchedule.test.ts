@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
+  applyHabitDayCountDelta,
   habitDoneOnDay,
   habitManageGroups,
   habitRowsForDay,
@@ -150,5 +151,95 @@ describe('habitManageGroups', () => {
         { key: OTHER_HABITS_SECTION_ID, title: 'Other habits', ids: ['h2'] },
       ],
     )
+  })
+})
+
+describe('applyHabitDayCountDelta', () => {
+  const nowIso = '2026-11-25T12:00:00.000Z'
+
+  it('inserts a day row and stamps completed_at when a daily habit completes', () => {
+    const next = applyHabitDayCountDelta({
+      habit: daily,
+      counts: [],
+      day: '2026-11-25',
+      delta: 1,
+      nowIso,
+    })
+    assert.deepEqual(next, [
+      {
+        habit_id: 'h1',
+        logged_on: '2026-11-25',
+        count: 1,
+        completed_at: nowIso,
+      },
+    ])
+  })
+
+  it('removes the day row and clears completion when decrementing a daily habit to zero', () => {
+    const next = applyHabitDayCountDelta({
+      habit: daily,
+      counts: [
+        {
+          habit_id: 'h1',
+          logged_on: '2026-11-25',
+          count: 1,
+          completed_at: '2026-11-25T08:00:00.000Z',
+        },
+      ],
+      day: '2026-11-25',
+      delta: -1,
+      nowIso,
+    })
+    assert.deepEqual(next, [])
+  })
+
+  it('keeps an existing completed_at when a weekly habit stays complete', () => {
+    const stamped = '2026-11-25T09:00:00.000Z'
+    const counts: HabitDayCount[] = [
+      { habit_id: 'h2', logged_on: '2026-11-24', count: 1, completed_at: null },
+      { habit_id: 'h2', logged_on: '2026-11-25', count: 2, completed_at: stamped },
+    ]
+    const next = applyHabitDayCountDelta({
+      habit: weekly,
+      counts,
+      day: '2026-11-25',
+      delta: 1,
+      nowIso,
+    })
+    const dayRow = next.find((row) => row.habit_id === 'h2' && row.logged_on === '2026-11-25')
+    assert.equal(dayRow?.count, 3)
+    assert.equal(dayRow?.completed_at, stamped)
+  })
+
+  it('clears week completed_at when a weekly habit drops below target', () => {
+    const counts: HabitDayCount[] = [
+      { habit_id: 'h2', logged_on: '2026-11-24', count: 1, completed_at: null },
+      {
+        habit_id: 'h2',
+        logged_on: '2026-11-25',
+        count: 2,
+        completed_at: '2026-11-25T09:00:00.000Z',
+      },
+    ]
+    const next = applyHabitDayCountDelta({
+      habit: weekly,
+      counts,
+      day: '2026-11-25',
+      delta: -1,
+      nowIso,
+    })
+    assert.equal(habitDoneOnDay(weekly, next, '2026-11-25'), 2)
+    assert.ok(next.every((row) => row.habit_id !== 'h2' || row.completed_at == null))
+  })
+
+  it('clamps below zero to an empty day row removal', () => {
+    const next = applyHabitDayCountDelta({
+      habit: daily,
+      counts: [],
+      day: '2026-11-25',
+      delta: -1,
+      nowIso,
+    })
+    assert.deepEqual(next, [])
   })
 })

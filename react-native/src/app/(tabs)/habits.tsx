@@ -7,7 +7,7 @@ import {
 } from 'expo-audio'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { Mic, Pencil, Repeat } from 'lucide-react-native'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
 import { BusyOverlay, LoadingBlock } from '../../components/BrandLoader'
@@ -31,7 +31,7 @@ import {
 import { habitSectionProgress } from '../../lib/habitProgress'
 import { syncHabitReminderNotifications } from '../../lib/habitReminderNotifications'
 import { formatHabitCompletedAt } from '../../lib/habitReminders'
-import { habitSectionCardsForDay } from '../../lib/habitSchedule'
+import { applyHabitDayCountDelta, habitSectionCardsForDay } from '../../lib/habitSchedule'
 import { localDate } from '../../lib/localDate'
 import { useScreenStyles, useTheme } from '../../theme/ThemeProvider'
 
@@ -52,6 +52,11 @@ export default function HabitsScreen() {
   const [habits, setHabits] = useState<Habit[]>([])
   const [sections, setSections] = useState<HabitSection[]>([])
   const [counts, setCounts] = useState<HabitDayCount[]>([])
+  const countsRef = useRef<HabitDayCount[]>([])
+  const replaceCounts = useCallback((next: HabitDayCount[]) => {
+    countsRef.current = next
+    setCounts(next)
+  }, [])
   const [hydrated, setHydrated] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [voiceBusy, setVoiceBusy] = useState(false)
@@ -67,7 +72,7 @@ export default function HabitsScreen() {
       ])
       setHabits(nextHabits)
       setSections(nextSections)
-      setCounts(nextCounts)
+      replaceCounts(nextCounts)
       setError(null)
       void syncHabitReminderNotifications({ habits: nextHabits, counts: nextCounts })
     } catch (err) {
@@ -75,7 +80,7 @@ export default function HabitsScreen() {
     } finally {
       setHydrated(true)
     }
-  }, [userId, day])
+  }, [userId, day, replaceCounts])
 
   useFocusEffect(
     useCallback(() => {
@@ -136,9 +141,22 @@ export default function HabitsScreen() {
   }
 
   async function bump(habitId: string, delta: number) {
+    const habit = habits.find((row) => row.id === habitId)
+    if (!habit) return
+
+    // Optimistic UI first (posts reactions pattern): patch counts, then DB, revert on failure.
+    const previous = countsRef.current
+    const optimistic = applyHabitDayCountDelta({
+      habit,
+      counts: previous,
+      day,
+      delta,
+    })
+    replaceCounts(optimistic)
+    void syncHabitReminderNotifications({ habits, counts: optimistic })
+
     try {
       const result = await bumpHabitDayCount({ habitId, day, delta })
-      await load()
       if (result.foodLogError) {
         setToast({
           kind: 'error',
@@ -146,6 +164,13 @@ export default function HabitsScreen() {
         })
       }
     } catch (err) {
+      if (countsRef.current === optimistic) {
+        replaceCounts(previous)
+        void syncHabitReminderNotifications({ habits, counts: previous })
+      } else {
+        // A later swipe already moved state; resync from the server.
+        await load()
+      }
       setToast({
         kind: 'error',
         message: err instanceof Error ? err.message : 'Could not update habit',

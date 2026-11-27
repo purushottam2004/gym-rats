@@ -174,6 +174,100 @@ function habitCompletedAtStamp(
   return latest
 }
 
+function clearWeekCompletedAtLocal(
+  counts: HabitDayCount[],
+  habitId: string,
+  day: string,
+): HabitDayCount[] {
+  const days = new Set(weekDates(day))
+  return counts.map((row) =>
+    row.habit_id === habitId && days.has(row.logged_on) ? { ...row, completed_at: null } : row,
+  )
+}
+
+/**
+ * Pure local patch for an absolute day count (clamped at 0).
+ * Mirrors `setHabitDayCount` completion / `completed_at` rules for optimistic UI.
+ */
+export function applyHabitDayCountAbsolute(input: {
+  habit: Pick<Habit, 'id' | 'recurrence' | 'frequency'>
+  counts: HabitDayCount[]
+  day: string
+  count: number
+  /** ISO stamp when first crossing complete; defaults to `Date.now()`. */
+  nowIso?: string
+}): HabitDayCount[] {
+  const next = Math.max(0, Math.floor(input.count))
+  const existing = input.counts.find(
+    (row) => row.habit_id === input.habit.id && row.logged_on === input.day,
+  )
+  const nowIso = input.nowIso ?? new Date().toISOString()
+
+  let withoutDay = input.counts.filter(
+    (row) => !(row.habit_id === input.habit.id && row.logged_on === input.day),
+  )
+
+  if (next === 0) {
+    if (input.habit.recurrence === 'per_week') {
+      if (!habitComplete(input.habit, habitDoneOnDay(input.habit, withoutDay, input.day))) {
+        withoutDay = clearWeekCompletedAtLocal(withoutDay, input.habit.id, input.day)
+      }
+    }
+    return withoutDay
+  }
+
+  const provisional: HabitDayCount[] = [
+    ...withoutDay,
+    {
+      habit_id: input.habit.id,
+      logged_on: input.day,
+      count: next,
+      completed_at: existing?.completed_at ?? null,
+    },
+  ]
+  const willComplete = habitComplete(
+    input.habit,
+    habitDoneOnDay(input.habit, provisional, input.day),
+  )
+
+  let completedAt: string | null = null
+  if (willComplete) {
+    completedAt = existing?.completed_at ?? nowIso
+  } else if (input.habit.recurrence === 'per_week') {
+    withoutDay = clearWeekCompletedAtLocal(withoutDay, input.habit.id, input.day)
+  }
+
+  return [
+    ...withoutDay,
+    {
+      habit_id: input.habit.id,
+      logged_on: input.day,
+      count: next,
+      completed_at: completedAt,
+    },
+  ]
+}
+
+/** Pure local ±delta on one habit's day count for optimistic swipe UI. */
+export function applyHabitDayCountDelta(input: {
+  habit: Pick<Habit, 'id' | 'recurrence' | 'frequency'>
+  counts: HabitDayCount[]
+  day: string
+  delta: number
+  nowIso?: string
+}): HabitDayCount[] {
+  const current =
+    input.counts.find((row) => row.habit_id === input.habit.id && row.logged_on === input.day)
+      ?.count ?? 0
+  return applyHabitDayCountAbsolute({
+    habit: input.habit,
+    counts: input.counts,
+    day: input.day,
+    count: current + input.delta,
+    nowIso: input.nowIso,
+  })
+}
+
 export const OTHER_HABITS_SECTION_ID = '__other_habits__'
 
 export type HabitSectionCard = {
