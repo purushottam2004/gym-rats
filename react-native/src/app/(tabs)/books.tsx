@@ -79,6 +79,7 @@ export default function BooksScreen() {
     () => chaptersForDay({ chapters, booksById, day, today }),
     [chapters, booksById, day, today],
   )
+  const dueTitle = day === today ? 'Due today' : `Scheduled ${day}`
 
   async function capturePhoto() {
     if (photoBusy) return
@@ -154,27 +155,21 @@ export default function BooksScreen() {
     <View style={{ flex: 1 }}>
       <Screen
         header={
-          <TabChrome
-            icon={BookOpen}
-            title="Books"
-            featuresTab="books"
-            featuresTitle="Books features"
-            trailing={
-              <>
-                <DayControls day={day} onChange={setDay} />
-                <ProfileAvatarButton />
-              </>
-            }
-          />
-        }
-      >
-        {error ? <Text style={screen.error}>{error}</Text> : null}
-        {!hydrated ? (
-          <LoadingBlock label="Loading books" />
-        ) : (
           <>
+            <TabChrome
+              icon={BookOpen}
+              title="Books"
+              featuresTab="books"
+              featuresTitle="Books features"
+              trailing={
+                <>
+                  <DayControls day={day} onChange={setDay} />
+                  <ProfileAvatarButton />
+                </>
+              }
+            />
             <View style={screen.card}>
-              <View style={screen.iconActionRow}>
+              <View style={[screen.iconActionRow, styles.actionRow]}>
                 <Pressable
                   accessibilityLabel="Add a book"
                   accessibilityRole="button"
@@ -197,59 +192,78 @@ export default function BooksScreen() {
                 </Pressable>
               </View>
             </View>
-
-            {books.length > 0 ? (
+          </>
+        }
+      >
+        {error ? <Text style={screen.error}>{error}</Text> : null}
+        {!hydrated ? (
+          <LoadingBlock label="Loading books" />
+        ) : (
+          <>
+            <View style={screen.section}>
+              <Text style={screen.sectionTitle}>Your books</Text>
               <View style={screen.card}>
-                <Text style={screen.muted}>Your books</Text>
-                {books.map((book, index) => (
-                  <Pressable
-                    key={book.id}
-                    onPress={() => router.push({ pathname: '/book/[id]', params: { id: book.id } })}
-                    style={({ pressed }) => [
-                      screen.row,
-                      index === 0 && screen.rowFirst,
-                      pressed && screen.rowPressed,
-                    ]}
-                  >
-                    <View style={{ flex: 1, gap: 2 }}>
-                      <Text style={screen.rowTitle}>{book.title}</Text>
-                      {book.author ? <Text style={screen.muted}>{book.author}</Text> : null}
-                    </View>
-                  </Pressable>
-                ))}
+                {books.length === 0 ? (
+                  <View style={[screen.row, screen.rowFirst]}>
+                    <Text style={screen.muted}>
+                      No books yet. Tap + to add one, or the camera to scan a TOC.
+                    </Text>
+                  </View>
+                ) : (
+                  books.map((book, index) => (
+                    <Pressable
+                      key={book.id}
+                      onPress={() =>
+                        router.push({ pathname: '/book/[id]', params: { id: book.id } })
+                      }
+                      style={({ pressed }) => [
+                        screen.row,
+                        index === 0 && screen.rowFirst,
+                        pressed && screen.rowPressed,
+                      ]}
+                    >
+                      <View style={[screen.rowMain, { gap: 2 }]}>
+                        <Text style={screen.rowTitle}>{book.title}</Text>
+                        {book.author ? <Text style={screen.muted}>{book.author}</Text> : null}
+                      </View>
+                    </Pressable>
+                  ))
+                )}
               </View>
-            ) : null}
+            </View>
 
-            <View style={screen.card}>
-              <Text style={screen.muted}>
-                {day === today ? 'Due today' : `Scheduled ${day}`}
-              </Text>
-              {dayRows.length === 0 ? (
-                <Text style={[screen.body, { paddingVertical: 12 }]}>
-                  No chapters scheduled{day === today ? ' (or overdue)' : ''} for this day.
-                </Text>
-              ) : (
-                dayRows.map((row, index) => {
-                  const complete = chapterIsComplete(row)
-                  const dueLabel = formatChapterDueLabel(row.due_time)
-                  const name = `${row.title} · ${row.book_title}${
-                    row.overdue ? ' (overdue)' : dueLabel ? ` · ${dueLabel}` : ''
-                  }`
-                  return (
-                    <HabitSwipeRow
-                      key={row.id}
-                      name={name}
-                      done={complete ? 1 : 0}
-                      target={1}
-                      complete={complete}
-                      completedLabel={formatHabitCompletedAt(row.completed_at)}
-                      first={index === 0}
-                      onIncrement={() => void toggleChapter(row.id, true)}
-                      onDecrement={() => void toggleChapter(row.id, false)}
-                    />
-                  )
-                })
-              )}
+            <View style={screen.section}>
+              <Text style={screen.sectionTitle}>{dueTitle}</Text>
+              <View style={screen.card}>
+                {dayRows.length === 0 ? (
+                  <View style={[screen.row, screen.rowFirst]}>
+                    <Text style={screen.muted}>
+                      No chapters scheduled{day === today ? ' or overdue' : ''} for this day.
+                    </Text>
+                  </View>
+                ) : (
+                  dayRows.map((row, index) => {
+                    const complete = chapterIsComplete(row)
+                    const dueLabel = formatChapterDueLabel(row.due_time)
+                    const name = `${row.title} · ${row.book_title}${
+                      row.overdue ? ' (overdue)' : dueLabel ? ` · ${dueLabel}` : ''
+                    }`
+                    return (
+                      <HabitSwipeRow
+                        key={row.id}
+                        name={name}
+                        done={complete ? 1 : 0}
+                        target={1}
+                        complete={complete}
+                        completedLabel={formatHabitCompletedAt(row.completed_at)}
+                        first={index === 0}
+                        onIncrement={() => void toggleChapter(row.id, true)}
+                        onDecrement={() => void toggleChapter(row.id, false)}
+                      />
+                    )
+                  })
+                )}
+              </View>
             </View>
           </>
         )}
@@ -298,6 +312,9 @@ export default function BooksScreen() {
 }
 
 const styles = StyleSheet.create({
+  actionRow: {
+    justifyContent: 'flex-start',
+  },
   strip: {
     position: 'absolute',
     left: 16,
