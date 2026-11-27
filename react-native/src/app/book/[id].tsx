@@ -1,5 +1,5 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
-import { Circle, CircleCheck } from 'lucide-react-native'
+import { Circle, CircleCheck, Pencil } from 'lucide-react-native'
 import { useCallback, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
@@ -48,6 +48,8 @@ export default function BookDetailScreen() {
   const [selected, setSelected] = useState<Record<string, boolean>>({})
   const [title, setTitle] = useState('')
   const [author, setAuthor] = useState('')
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [editingAuthor, setEditingAuthor] = useState(false)
   const [remindEnabled, setRemindEnabled] = useState(false)
   const [remindEvery, setRemindEvery] = useState('30')
   const [scheduleChapterId, setScheduleChapterId] = useState<string | null>(null)
@@ -119,6 +121,10 @@ export default function BookDetailScreen() {
       })
       const refreshed = await loadBook(book.id)
       setBook(refreshed)
+      setTitle(refreshed.title)
+      setAuthor(refreshed.author ?? '')
+      setEditingTitle(false)
+      setEditingAuthor(false)
       if (userId) {
         const ownerBooks = await loadBooks(userId)
         const ownerChapters = await loadBookChapters(ownerBooks.map((row) => row.id))
@@ -196,10 +202,58 @@ export default function BookDetailScreen() {
         <LoadingBlock label="Loading book" />
       ) : (
         <>
-          <Text style={screen.label}>Title</Text>
-          <AppTextInput onChangeText={setTitle} style={screen.input} value={title} />
-          <Text style={screen.label}>Author</Text>
-          <AppTextInput onChangeText={setAuthor} style={screen.input} value={author} />
+          <View style={screen.card}>
+            <View style={[screen.row, screen.rowFirst]}>
+              {editingTitle ? (
+                <AppTextInput
+                  autoFocus
+                  editable={!saving}
+                  onChangeText={setTitle}
+                  style={[screen.input, screen.rowMain]}
+                  value={title}
+                />
+              ) : (
+                <View style={screen.rowMain}>
+                  <Text style={screen.muted}>Title</Text>
+                  <Text style={screen.rowTitle}>{title.trim() ? title : '—'}</Text>
+                </View>
+              )}
+              <Pressable
+                accessibilityLabel={editingTitle ? 'Lock title' : 'Edit title'}
+                accessibilityRole="button"
+                disabled={saving}
+                hitSlop={8}
+                onPress={() => setEditingTitle((current) => !current)}
+              >
+                <Pencil color={colors.accent} size={18} strokeWidth={2.25} />
+              </Pressable>
+            </View>
+            <View style={screen.row}>
+              {editingAuthor ? (
+                <AppTextInput
+                  autoFocus
+                  editable={!saving}
+                  onChangeText={setAuthor}
+                  style={[screen.input, screen.rowMain]}
+                  value={author}
+                />
+              ) : (
+                <View style={screen.rowMain}>
+                  <Text style={screen.muted}>Author</Text>
+                  <Text style={screen.rowTitle}>{author.trim() ? author : '—'}</Text>
+                </View>
+              )}
+              <Pressable
+                accessibilityLabel={editingAuthor ? 'Lock author' : 'Edit author'}
+                accessibilityRole="button"
+                disabled={saving}
+                hitSlop={8}
+                onPress={() => setEditingAuthor((current) => !current)}
+              >
+                <Pencil color={colors.accent} size={18} strokeWidth={2.25} />
+              </Pressable>
+            </View>
+          </View>
 
           <Text style={screen.label}>Reminders</Text>
           <Pressable
