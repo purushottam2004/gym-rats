@@ -2,6 +2,7 @@
 -- Habit-linked intakes track which frequency slot (1..n) they fill.
 -- Additions always take the next index. Deletes remapping remaining rows so
 -- indices stay contiguous 1..n and match habit_day_counts.count.
+-- (Redeploy trigger: prior production push failed on a transient Supabase API 502.)
 
 alter table public.intakes
   add column if not exists source_habit_frequency_index int;
