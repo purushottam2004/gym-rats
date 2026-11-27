@@ -87,6 +87,17 @@ pnpm ios:release-device
 
 If several phones are paired, pass one UDID: `--device <UDID>` or `DEVICE_UDID=<UDID>`. Keep the phone unlocked during install/launch.
 
+**After every Release install (mandatory):** update [`ota-target-runtimes.json`](./ota-target-runtimes.json) with this binary’s runtime fingerprints, then commit that file. Production OTA publishes pin to those hashes; if the JSON still has the previous install’s hashes, new `pnpm update:production` OTAs never reach the phone you just installed.
+
+```bash
+# from react-native/ — after a successful device install
+npx eas-cli@latest fingerprint:generate --platform ios --environment production --json --non-interactive
+# copy the "hash" into ota-target-runtimes.json → "ios"
+# (same for android after an Android Release install → "android")
+```
+
+`./scripts/install-ios-release.sh` refreshes the iOS hash in that JSON automatically when the install finishes; still commit the change so agents and CI pin to the phone that is actually in use.
+
 ## Over-the-air updates (EAS Update)
 
 JS and asset changes can ship to an already-installed iOS/Android binary without a store reinstall. Native module, permission, or Expo SDK changes still need a new binary.
@@ -107,7 +118,7 @@ Repo config is in place (`expo-updates`, `eas.json` `preview` / `production` cha
 pnpm update:production -- --message "describe the change"
 ```
 
-That script reads [`ota-target-runtimes.json`](./ota-target-runtimes.json) and pins the publish to those iOS/Android hashes. After you install a new Release binary, update that file to the new fingerprints (printed / shown for the build) before the next OTA.
+That script reads [`ota-target-runtimes.json`](./ota-target-runtimes.json) and pins the publish to those iOS/Android hashes. **Whenever you install a new Release binary**, update that JSON to the new fingerprints (see [Install Release build](#install-release-build-on-a-physical-iphone)) and commit it **before** the next production OTA.
 
 Web (`v2logs` / Vercel) does **not** use Expo Update — ship web via the Vercel production deploy from `main`.
 

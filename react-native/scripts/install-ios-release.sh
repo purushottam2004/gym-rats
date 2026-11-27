@@ -213,12 +213,50 @@ if [[ -n "${PLIST:-}" && -f "$PLIST" ]]; then
   fi
 fi
 
+echo "==> Updating ota-target-runtimes.json (mandatory after every Release install)"
+TARGETS_FILE="$RN_DIR/ota-target-runtimes.json"
+IOS_HASH="$(
+  cd "$RN_DIR"
+  npx --yes eas-cli@latest fingerprint:generate --platform ios --environment production --json --non-interactive 2>/dev/null \
+    | python3 -c 'import json,sys; r=sys.stdin.read(); i=r.find("{"); print(json.loads(r[i:]).get("hash",""))' \
+    || true
+)"
+if [[ -z "$IOS_HASH" || "$IOS_HASH" == "null" ]]; then
+  echo "warning: could not generate iOS fingerprint — update $TARGETS_FILE by hand before the next OTA" >&2
+else
+  UPDATED_BY="install-ios-release.sh on $(hostname -s 2>/dev/null || hostname) $(date -u +%Y-%m-%d)"
+  python3 - "$TARGETS_FILE" "$IOS_HASH" "$UPDATED_BY" <<'PY'
+import json, sys
+from pathlib import Path
+path = Path(sys.argv[1])
+ios_hash = sys.argv[2]
+updated_by = sys.argv[3]
+data = {}
+if path.is_file():
+    data = json.loads(path.read_text())
+comment = data.get("_comment") or (
+    "Runtime versions embedded in installed Release binaries. Agents MUST publish "
+    "production OTAs against these hashes (see scripts/publish-production-ota.sh). "
+    "Update this file when you install a new Release binary (install-ios-release.sh / eas build). "
+    "Do not invent hashes from a Cloud Agent fingerprint:generate."
+)
+out = {
+    "_comment": comment,
+    "ios": ios_hash,
+    "android": data.get("android") or "",
+    "updatedAt": __import__("datetime").date.today().isoformat(),
+    "updatedBy": updated_by,
+}
+path.write_text(json.dumps(out, indent=2) + "\n")
+print(f"    wrote ios={ios_hash}")
+print(f"    commit {path.name} so production OTAs pin to this phone")
+PY
+fi
+
 echo
 echo "Done. Unlock the phone and open Gym Rats."
 echo "OTA: this binary listens on Expo channel 'production'."
 echo "Publish JS updates with: cd react-native && pnpm update:production -- --message '...'"
 echo "Fingerprint must match (runtimeVersion policy: fingerprint) or the update is skipped."
-echo "After this install, update react-native/ota-target-runtimes.json with this binary's"
-echo "iOS fingerprint (eas fingerprint:generate --platform ios --environment production)"
-echo "so Cloud Agent OTAs pin to the phone you just installed — not a new agent hash."
+echo "Commit react-native/ota-target-runtimes.json after this install (script refreshed the iOS hash)."
 echo "If iOS blocks launch: Settings → General → VPN & Device Management → trust your Apple Development cert."

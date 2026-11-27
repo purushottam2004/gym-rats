@@ -26,7 +26,9 @@ pnpm update:production -- --message "short description"
 
 `pnpm update:production` runs [`scripts/publish-production-ota.sh`](./scripts/publish-production-ota.sh). It **pins** the publish to the iOS/Android hashes in [`ota-target-runtimes.json`](./ota-target-runtimes.json) (what installed Release phones already have). Do **not** call bare `eas update --channel production` from a Cloud Agent / CI box — that machine’s fingerprint is usually different, so Expo accepts the update and phones silently ignore it.
 
-When you install a **new** Release binary, update `ota-target-runtimes.json` to that binary’s fingerprints, then either publish with matching hashes or `pnpm update:production -- --message "…" --current-fingerprint` from the same tree that built it.
+**Whenever you install a Release binary** (local `install-ios-release.sh` / `pnpm ios:release-device`, or an EAS device build you put on a phone), update [`ota-target-runtimes.json`](./ota-target-runtimes.json) to that binary’s fingerprints and **commit it**. The install script updates the iOS hash for you; confirm the file changed and include it in the same PR or follow-up commit. Do not leave the JSON pointing at an old install — later OTAs will publish “successfully” and phones will ignore them.
+
+Then either publish with those pinned hashes (`pnpm update:production -- --message "…"`) or, only from the same tree that built the binary, `pnpm update:production -- --message "…" --current-fingerprint`.
 
 If you change native deps, plugins, permissions, or the Expo SDK, bump/build a new binary instead — `runtimeVersion.policy: fingerprint` will not match the old install.
 
