@@ -8,7 +8,7 @@ import { InfoListModal, type InfoListRow } from '../../components/InfoListModal'
 import { NutrientProgressRow } from '../../components/NutrientProgressRow'
 import { OrdinalNumber } from '../../components/OrdinalNumber'
 import { Screen } from '../../components/Screen'
-import { useScreenStyles } from '../../theme/ThemeProvider'
+import { useScreenStyles, useTheme } from '../../theme/ThemeProvider'
 import { HabitSectionHeader } from '../../components/HabitSectionHeader'
 import { HabitSwipeRow } from '../../components/HabitSwipeRow'
 import { formatChapterDueLabel } from '../../lib/bookReminders'
@@ -123,9 +123,10 @@ export default function MemberScreen() {
   )
 
   const today = localDate()
+  const { colors } = useTheme()
   const progress = useMemo(
-    () => nutritionProgressLines(summarizeNutrition(intakes), goals),
-    [intakes, goals],
+    () => nutritionProgressLines(summarizeNutrition(intakes), goals, colors.habitCompleteBg),
+    [intakes, goals, colors.habitCompleteBg],
   )
   const habitCards = useMemo(
     () => habitSectionCardsForDay(habits, habitSections, habitCounts, day),

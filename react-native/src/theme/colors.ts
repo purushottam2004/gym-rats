@@ -76,7 +76,7 @@ export const lightColors: ThemeColors = {
   codeText: '#fafaf9',
   avatarFallback: '#e7e5e4',
   avatarInitial: '#57534e',
-  nutrientFill: '#86efac',
+  nutrientFill: '#bbf7d0',
   modalBackdrop: 'rgba(28, 25, 23, 0.45)',
   setSelectedBg: '#2563eb',
   setBorder: '#d1d5db',

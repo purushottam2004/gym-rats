@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
+  contrastTextForFill,
   foodBasisLabel,
   foodTypeNutrition,
   formatNutrientGoalMeta,
@@ -194,6 +195,7 @@ describe('nutrientBandFill', () => {
     assert.notEqual(low.fillColor, met?.fillColor)
     assert.ok(met)
     assert.equal(met.progress, 1)
+    assert.equal(met.fillColor, '#bbf7d0')
     assert.ok(midBand)
     // Min–max band: width is vs min (full once min is met); color warms past min.
     assert.equal(midBand.progress, 1)
@@ -211,10 +213,25 @@ describe('nutrientBandFill', () => {
     assert.equal(below.progress, 0.5)
     assert.ok(atMin)
     assert.equal(atMin.progress, 1)
+    assert.equal(atMin.fillColor, '#bbf7d0')
     assert.ok(pastMin)
     assert.equal(pastMin.progress, 1)
     assert.notEqual(pastMin.fillColor, atMin.fillColor)
     assert.notEqual(pastMin.fillColor, below.fillColor)
+  })
+
+  it('uses theme habitCompleteBg as the completion green', () => {
+    const met = nutrientBandFill(100, 100, null, '#166534')
+    assert.ok(met)
+    assert.equal(met.fillColor, '#166534')
+  })
+})
+
+describe('contrastTextForFill', () => {
+  it('picks light text on dark habit green and dark text on pastel fills', () => {
+    assert.equal(contrastTextForFill('#166534'), '#bbf7d0')
+    assert.equal(contrastTextForFill('#bbf7d0'), '#14532d')
+    assert.equal(contrastTextForFill('#fde68a'), '#14532d')
   })
 })
 

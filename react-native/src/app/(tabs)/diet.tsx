@@ -80,8 +80,8 @@ export default function DietScreen() {
   const [toast, setToast] = useState<{ kind: ToastKind; message: string } | null>(null)
   const today = localDate()
   const progress = useMemo(
-    () => nutritionProgressLines(summarizeNutrition(rows), goals),
-    [rows, goals],
+    () => nutritionProgressLines(summarizeNutrition(rows), goals, colors.habitCompleteBg),
+    [rows, goals, colors.habitCompleteBg],
   )
 
   const load = useCallback(async () => {

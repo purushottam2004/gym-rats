@@ -104,19 +104,28 @@ export type NutritionProgressLine = NutritionLine & {
 }
 
 const FILL_YELLOW = { r: 253, g: 230, b: 138 } // #fde68a
-const FILL_GREEN = { r: 134, g: 239, b: 172 } // #86efac
+/** Default complete green — light habitCompleteBg; UI passes theme habitCompleteBg. */
+const FILL_GREEN_DEFAULT = { r: 187, g: 247, b: 208 } // #bbf7d0
 const FILL_ORANGE = { r: 253, g: 186, b: 116 } // #fdba74
 const FILL_RED = { r: 252, g: 165, b: 165 } // #fca5a5
+
+type Rgb = { r: number; g: number; b: number }
 
 function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value))
 }
 
-function mixRgb(
-  from: { r: number; g: number; b: number },
-  to: { r: number; g: number; b: number },
-  t: number,
-): string {
+export function parseHexRgb(hex: string): Rgb | null {
+  const raw = hex.trim().replace(/^#/, '')
+  if (!/^[0-9a-fA-F]{6}$/.test(raw)) return null
+  return {
+    r: Number.parseInt(raw.slice(0, 2), 16),
+    g: Number.parseInt(raw.slice(2, 4), 16),
+    b: Number.parseInt(raw.slice(4, 6), 16),
+  }
+}
+
+function mixRgb(from: Rgb, to: Rgb, t: number): string {
   const p = clamp01(t)
   const r = Math.round(from.r + (to.r - from.r) * p)
   const g = Math.round(from.g + (to.g - from.g) * p)
@@ -124,22 +133,45 @@ function mixRgb(
   return `#${[r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('')}`
 }
 
+/** WCAG relative luminance for choosing text that sits on a fill. */
+export function relativeLuminance(hex: string): number {
+  const rgb = parseHexRgb(hex)
+  if (!rgb) return 0.5
+  const channel = (c: number) => {
+    const s = c / 255
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
+  }
+  return 0.2126 * channel(rgb.r) + 0.7152 * channel(rgb.g) + 0.0722 * channel(rgb.b)
+}
+
+/**
+ * Readable text color for glyphs drawn on top of a nutrient fill.
+ * Dark habit greens get light mint; yellow/orange/red pastels get deep green.
+ */
+export function contrastTextForFill(fillHex: string): string {
+  return relativeLuminance(fillHex) < 0.45 ? '#bbf7d0' : '#14532d'
+}
+
 /** After min, warm green→orange→red through the remaining band (not only at max). */
-function colorPastMin(t: number): string {
-  if (t <= 0.5) return mixRgb(FILL_GREEN, FILL_ORANGE, t / 0.5)
+function colorPastMin(t: number, green: Rgb): string {
+  if (t <= 0.5) return mixRgb(green, FILL_ORANGE, t / 0.5)
   return mixRgb(FILL_ORANGE, FILL_RED, (t - 0.5) / 0.5)
 }
 
 /**
  * Yellow→green toward min (bar width = total/min). Once min is met the bar stays
  * full and only the color changes (green→orange→red toward max). Over max = red.
+ *
+ * Pass `completeGreen` (theme habitCompleteBg) so completion matches Habits.
  */
 export function nutrientBandFill(
   total: number,
   min: number | null,
   max: number | null,
+  completeGreen?: string,
 ): { progress: number; fillColor: string } | null {
   if (min == null && max == null) return null
+  const green = parseHexRgb(completeGreen ?? '') ?? FILL_GREEN_DEFAULT
 
   if (max != null && total > max) {
     return { progress: 1, fillColor: mixRgb(FILL_RED, FILL_RED, 1) }
@@ -149,26 +181,26 @@ export function nutrientBandFill(
     // Width is always vs min so the bar is full at the lower bound.
     const width = clamp01(total / min)
     if (total < min) {
-      return { progress: width, fillColor: mixRgb(FILL_YELLOW, FILL_GREEN, total / min) }
+      return { progress: width, fillColor: mixRgb(FILL_YELLOW, green, total / min) }
     }
     // Past min: bar stays full; color alone tracks position toward max.
     const span = max - min
     const past = span > 0 ? (total - min) / span : 1
-    return { progress: 1, fillColor: colorPastMin(past) }
+    return { progress: 1, fillColor: colorPastMin(past, green) }
   }
 
   if (min != null) {
     const t = clamp01(total / min)
-    return { progress: Math.max(t, total > min ? 1 : t), fillColor: mixRgb(FILL_YELLOW, FILL_GREEN, t) }
+    return { progress: Math.max(t, total > min ? 1 : t), fillColor: mixRgb(FILL_YELLOW, green, t) }
   }
 
   // max only: yellow→green early, then warm toward red before max
   const ceiling = max as number
   const width = clamp01(total / ceiling)
   if (width < 0.5) {
-    return { progress: width, fillColor: mixRgb(FILL_YELLOW, FILL_GREEN, width / 0.5) }
+    return { progress: width, fillColor: mixRgb(FILL_YELLOW, green, width / 0.5) }
   }
-  return { progress: width, fillColor: colorPastMin((width - 0.5) / 0.5) }
+  return { progress: width, fillColor: colorPastMin((width - 0.5) / 0.5, green) }
 }
 
 export function formatNutrientGoalMeta(
@@ -194,6 +226,8 @@ export function formatNutrientGoalMeta(
 export function nutritionProgressLines(
   summary: NutritionLine[],
   goals: NutrientGoalBounds[],
+  /** Theme habitCompleteBg so full bars match Habits completion green. */
+  completeGreen?: string,
 ): NutritionProgressLine[] {
   const byId = new Map(summary.map((line) => [line.id, line]))
   const seen = new Set<string>()
@@ -206,7 +240,7 @@ export function nutritionProgressLines(
     const total = current?.total ?? 0
     const min = goal.min_amount
     const max = goal.max_amount
-    const band = nutrientBandFill(total, min, max)
+    const band = nutrientBandFill(total, min, max, completeGreen)
     lines.push({
       id: goal.nutrient_id,
       name: current?.name ?? goal.name,
