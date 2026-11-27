@@ -48,20 +48,30 @@ export default function AddFoodScreen() {
     <Screen
       footer={
         <View style={{ gap: 10 }}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push('/new-food')}
-            style={({ pressed }) => [screen.addCard, pressed && screen.rowPressed]}
-          >
-            <Text style={screen.addText}>New food</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.replace({ pathname: '/log-other', params: { day } })}
-            style={({ pressed }) => [screen.addCard, pressed && screen.rowPressed]}
-          >
-            <Text style={screen.addText}>Other (custom nutrients)</Text>
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/new-food')}
+              style={({ pressed }) => [
+                screen.addCard,
+                { flex: 1, alignItems: 'center' },
+                pressed && screen.rowPressed,
+              ]}
+            >
+              <Text style={screen.addText}>New Catalogue</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.replace({ pathname: '/log-other', params: { day } })}
+              style={({ pressed }) => [
+                screen.addCard,
+                { flex: 1, alignItems: 'center' },
+                pressed && screen.rowPressed,
+              ]}
+            >
+              <Text style={screen.addText}>Other Food</Text>
+            </Pressable>
+          </View>
           <Text style={screen.label}>
             Amount{selected ? ` (${measureLabel(selected.measure)})` : ''}
           </Text>
