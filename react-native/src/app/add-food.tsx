@@ -72,15 +72,17 @@ export default function AddFoodScreen() {
               <Text style={screen.addText}>Other Food</Text>
             </Pressable>
           </View>
-          <Text style={screen.label}>
-            Amount{selected ? ` (${measureLabel(selected.measure)})` : ''}
-          </Text>
-          <AppTextInput
-            keyboardType="decimal-pad"
-            onChangeText={setAmount}
-            style={screen.input}
-            value={amount}
-          />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <Text style={[screen.label, { flexShrink: 0 }]}>
+              Amount{selected ? ` (${measureLabel(selected.measure)})` : ''}
+            </Text>
+            <AppTextInput
+              keyboardType="decimal-pad"
+              onChangeText={setAmount}
+              style={[screen.input, { flex: 1 }]}
+              value={amount}
+            />
+          </View>
           <Pressable accessibilityRole="button" onPress={() => void save()} style={screen.save}>
             <Text style={screen.buttonText}>Save</Text>
           </Pressable>
