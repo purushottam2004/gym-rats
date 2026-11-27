@@ -1840,6 +1840,19 @@ export async function clearBookChapterSchedule(chapterId: string): Promise<void>
   fail(error)
 }
 
+export async function updateBookChapterTitle(input: {
+  chapterId: string
+  title: string
+}): Promise<void> {
+  const title = input.title.trim()
+  if (!title) throw new Error('Chapter title is required')
+  const { error } = await db()
+    .from('book_chapters')
+    .update({ title })
+    .eq('id', input.chapterId)
+  fail(error)
+}
+
 export async function setBookChapterCompleted(
   chapterId: string,
   completed: boolean,

@@ -1,14 +1,14 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
-import { Check, Circle, CircleCheck, Pencil } from 'lucide-react-native'
+import { Check, Circle, CircleCheck, Clock, Pencil } from 'lucide-react-native'
 import { useCallback, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
 import { AppTextInput } from '../../components/AppTextInput'
 import { LoadingBlock } from '../../components/BrandLoader'
 import { HabitSwipeRow } from '../../components/HabitSwipeRow'
+import { OrdinalNumber } from '../../components/OrdinalNumber'
+import { ScheduleChapterModal } from '../../components/ScheduleChapterModal'
 import { Screen } from '../../components/Screen'
-import { TimePickerField } from '../../components/TimePickerField'
-import { formatChapterScheduleChip } from '../../lib/bookReminders'
 import { syncBookReminderNotifications } from '../../lib/bookReminderNotifications'
 import {
   applyChapterCompletion,
@@ -28,6 +28,7 @@ import {
   scheduleBookChapter,
   setBookChapterCompleted,
   updateBook,
+  updateBookChapterTitle,
   type Group,
 } from '../../lib/gym'
 import { formatHabitCompletedAt } from '../../lib/habitReminders'
@@ -55,6 +56,9 @@ export default function BookDetailScreen() {
   const [scheduleChapterId, setScheduleChapterId] = useState<string | null>(null)
   const [scheduleDay, setScheduleDay] = useState(localDate)
   const [scheduleTime, setScheduleTime] = useState('20:00')
+  const [scheduleSaving, setScheduleSaving] = useState(false)
+  const [editingChapterId, setEditingChapterId] = useState<string | null>(null)
+  const [editingChapterTitle, setEditingChapterTitle] = useState('')
   const [newChapterTitle, setNewChapterTitle] = useState('')
   const [hydrated, setHydrated] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -208,8 +212,16 @@ export default function BookDetailScreen() {
     }
   }
 
+  function openSchedule(chapter: BookChapter) {
+    setEditingChapterId(null)
+    setScheduleChapterId(chapter.id)
+    setScheduleDay(chapter.scheduled_on ?? localDate())
+    setScheduleTime(chapter.due_time ?? '20:00')
+  }
+
   async function saveSchedule() {
     if (!scheduleChapterId) return
+    setScheduleSaving(true)
     try {
       await scheduleBookChapter({
         chapterId: scheduleChapterId,
@@ -220,6 +232,42 @@ export default function BookDetailScreen() {
       await load()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not schedule chapter')
+    } finally {
+      setScheduleSaving(false)
+    }
+  }
+
+  async function clearSchedule() {
+    if (!scheduleChapterId) return
+    setScheduleSaving(true)
+    try {
+      await clearBookChapterSchedule(scheduleChapterId)
+      setScheduleChapterId(null)
+      await load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not clear schedule')
+    } finally {
+      setScheduleSaving(false)
+    }
+  }
+
+  async function saveChapterTitleEdit() {
+    if (!editingChapterId) return
+    const nextTitle = editingChapterTitle.trim()
+    if (!nextTitle) {
+      setError('Chapter title is required')
+      return
+    }
+    setSaving(true)
+    try {
+      await updateBookChapterTitle({ chapterId: editingChapterId, title: nextTitle })
+      setEditingChapterId(null)
+      setEditingChapterTitle('')
+      await load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not rename chapter')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -441,80 +489,124 @@ export default function BookDetailScreen() {
             ) : (
               sortedChapters.map((chapter, index) => {
                 const complete = chapterIsComplete(chapter)
-                const scheduleChip = formatChapterScheduleChip(
-                  chapter.scheduled_on,
-                  chapter.due_time,
-                )
-                return (
-                  <View key={chapter.id} style={{ gap: 6 }}>
-                    <HabitSwipeRow
-                      name={chapter.title}
-                      done={complete ? 1 : 0}
-                      target={1}
-                      complete={complete}
-                      completedLabel={formatHabitCompletedAt(chapter.completed_at)}
-                      first={index === 0}
-                      onIncrement={() => void toggleChapter(chapter.id, true)}
-                      onDecrement={() => void toggleChapter(chapter.id, false)}
+                const chapterNumber = index + 1
+                const scheduled = Boolean(chapter.scheduled_on)
+                const editing = editingChapterId === chapter.id
+                const clockButton = (
+                  <Pressable
+                    accessibilityLabel={
+                      scheduled ? 'Edit chapter schedule' : 'Schedule chapter'
+                    }
+                    accessibilityRole="button"
+                    hitSlop={6}
+                    onPress={() => openSchedule(chapter)}
+                    style={({ pressed }) => [
+                      {
+                        width: 36,
+                        height: 36,
+                        borderRadius: 10,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      },
+                      pressed && { opacity: 0.85 },
+                    ]}
+                  >
+                    <Clock
+                      color={scheduled ? colors.accent : colors.textMuted}
+                      size={18}
+                      strokeWidth={2}
                     />
-                    <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 4 }}>
+                  </Pressable>
+                )
+                if (editing) {
+                  return (
+                    <View
+                      key={chapter.id}
+                      style={[
+                        screen.row,
+                        index === 0 && screen.rowFirst,
+                        { gap: 8 },
+                      ]}
+                    >
+                      {clockButton}
+                      <OrdinalNumber
+                        accessibilityLabel={`chapter ${chapterNumber}`}
+                        value={chapterNumber}
+                      />
+                      <AppTextInput
+                        autoFocus
+                        editable={!saving}
+                        onChangeText={setEditingChapterTitle}
+                        style={[screen.input, screen.rowMain, { marginBottom: 0 }]}
+                        value={editingChapterTitle}
+                      />
                       <Pressable
-                        accessibilityLabel={
-                          chapter.scheduled_on ? 'Edit chapter schedule' : 'Schedule chapter'
-                        }
+                        accessibilityLabel="Save chapter title"
                         accessibilityRole="button"
-                        onPress={() => {
-                          setScheduleChapterId(chapter.id)
-                          setScheduleDay(chapter.scheduled_on ?? localDate())
-                          setScheduleTime(chapter.due_time ?? '20:00')
-                        }}
-                        style={({ pressed }) => [
-                          screen.chromeChip,
-                          pressed && { opacity: 0.85 },
-                        ]}
+                        disabled={saving}
+                        hitSlop={8}
+                        onPress={() => void saveChapterTitleEdit()}
                       >
-                        <Text style={screen.chromeChipText}>{scheduleChip}</Text>
+                        <Check color={colors.accent} size={22} strokeWidth={2.5} />
                       </Pressable>
                     </View>
-                  </View>
+                  )
+                }
+                return (
+                  <HabitSwipeRow
+                    key={chapter.id}
+                    name={chapter.title}
+                    done={complete ? 1 : 0}
+                    target={1}
+                    complete={complete}
+                    completedLabel={formatHabitCompletedAt(chapter.completed_at)}
+                    first={index === 0}
+                    leading={
+                      <>
+                        {clockButton}
+                        <OrdinalNumber
+                          accessibilityLabel={`chapter ${chapterNumber}`}
+                          value={chapterNumber}
+                        />
+                      </>
+                    }
+                    trailing={
+                      <Pressable
+                        accessibilityLabel="Edit chapter title"
+                        accessibilityRole="button"
+                        hitSlop={8}
+                        onPress={() => {
+                          setScheduleChapterId(null)
+                          setEditingChapterId(chapter.id)
+                          setEditingChapterTitle(chapter.title)
+                        }}
+                      >
+                        <Pencil color={colors.accent} size={18} strokeWidth={2.25} />
+                      </Pressable>
+                    }
+                    onIncrement={() => void toggleChapter(chapter.id, true)}
+                    onDecrement={() => void toggleChapter(chapter.id, false)}
+                  />
                 )
               })
             )}
           </View>
 
-          {scheduleChapterId ? (
-            <View style={screen.card}>
-              <Text style={screen.sectionTitle}>Schedule chapter</Text>
-              <Text style={screen.label}>Day (YYYY-MM-DD)</Text>
-              <AppTextInput onChangeText={setScheduleDay} style={screen.input} value={scheduleDay} />
-              <Text style={screen.label}>Due time</Text>
-              <TimePickerField onChange={setScheduleTime} value={scheduleTime} />
-              <Pressable onPress={() => void saveSchedule()} style={screen.save}>
-                <Text style={screen.buttonText}>Save schedule</Text>
-              </Pressable>
-              {chapters.some(
-                (chapter) => chapter.id === scheduleChapterId && chapter.scheduled_on,
-              ) ? (
-                <Pressable
-                  onPress={() =>
-                    void clearBookChapterSchedule(scheduleChapterId).then(() => {
-                      setScheduleChapterId(null)
-                      return load()
-                    })
-                  }
-                  style={screen.secondaryButton}
-                >
-                  <Text style={screen.secondaryButtonText}>Clear schedule</Text>
-                </Pressable>
-              ) : null}
-              <Pressable
-                onPress={() => setScheduleChapterId(null)}
-                style={screen.secondaryButton}
-              >
-                <Text style={screen.secondaryButtonText}>Cancel</Text>
-              </Pressable>
-            </View>
-          ) : null}
+          <ScheduleChapterModal
+            canClear={chapters.some(
+              (chapter) => chapter.id === scheduleChapterId && chapter.scheduled_on,
+            )}
+            chapterId={scheduleChapterId}
+            day={scheduleDay}
+            onCancel={() => setScheduleChapterId(null)}
+            onChangeDay={setScheduleDay}
+            onChangeTime={setScheduleTime}
+            onClear={() => void clearSchedule()}
+            onSave={() => void saveSchedule()}
+            saving={scheduleSaving}
+            time={scheduleTime}
+            visible={scheduleChapterId != null}
+          />
 
           <Text style={screen.label}>Add chapter</Text>
           <AppTextInput

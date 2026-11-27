@@ -192,7 +192,10 @@ async function estimateFromPhotos(
             "Rules:\n" +
             "- title: the book title.\n" +
             "- author: primary author name(s), or null if unknown.\n" +
-            "- chapters: ordered TOC entries with titles; include page_start/page_end when visible, else null.\n" +
+            "- chapters: an ordered list (array) of TOC entries in the exact printed order from first to last.\n" +
+            "  Treat the TOC as a numbered ordered list: index 0 = chapter 1, index 1 = chapter 2, and so on.\n" +
+            "  Do not alphabetize, regroup, or skip entries that appear between others. Preserve sequence even if photos are multi-page (stitch pages in reading order).\n" +
+            "  Each entry needs a title; include page_start/page_end when visible, else null. Do not put the chapter number in the title unless it is part of the printed heading text.\n" +
             "- Prefer chapter/part headings over every tiny subsection when the TOC is huge (cap ~80 entries).\n" +
             "- If the images are not a book or are unusable, set understood=false and explain in error.",
         },
@@ -201,7 +204,9 @@ async function estimateFromPhotos(
           content: [
             {
               type: "text",
-              text: `Extract title, author, and table of contents from these ${images.length} photo(s).`,
+              text:
+                `Extract title, author, and an ordered table-of-contents list from these ${images.length} photo(s). ` +
+                "Return chapters as an ordered array matching TOC reading order (1, 2, 3, …).",
             },
             ...imageContent,
           ],

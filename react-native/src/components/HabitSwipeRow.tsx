@@ -1,5 +1,5 @@
 import { Check, Undo2 } from 'lucide-react-native'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Animated, PanResponder, StyleSheet, Text, View } from 'react-native'
 import { habitProgressRatio } from '../lib/habitProgress'
 import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
@@ -18,6 +18,10 @@ type Props = {
   complete: boolean
   /** Local clock label when complete, e.g. "8:42 AM". */
   completedLabel?: string | null
+  /** Optional leading content (e.g. chapter ordinal badge). */
+  leading?: ReactNode
+  /** Replaces the done/target meta when set (e.g. pencil edit control). */
+  trailing?: ReactNode
   first?: boolean
   readOnly?: boolean
   onIncrement: () => void
@@ -45,6 +49,8 @@ export function HabitSwipeRow({
   target,
   complete,
   completedLabel,
+  leading,
+  trailing,
   first,
   readOnly,
   onIncrement,
@@ -162,24 +168,29 @@ export function HabitSwipeRow({
         ]}
       >
         <RatioProgressFill ratio={progress} color={colors.habitCompleteBg} />
+        {leading ? <View style={[styles.leading, styles.content]}>{leading}</View> : null}
         <View style={[screen.rowMain, styles.content]}>
           <Text style={screen.rowTitle}>{name}</Text>
           {complete && completedLabel ? (
             <Text style={[screen.muted, styles.completedAt]}>Done {completedLabel}</Text>
           ) : null}
         </View>
-        <Text
-          style={[
-            screen.rowMeta,
-            styles.content,
-            (complete || progress > 0) && {
-              color: colors.habitCompleteText,
-              fontWeight: '700',
-            },
-          ]}
-        >
-          {done}/{target}
-        </Text>
+        {trailing != null ? (
+          <View style={[styles.trailing, styles.content]}>{trailing}</View>
+        ) : (
+          <Text
+            style={[
+              screen.rowMeta,
+              styles.content,
+              (complete || progress > 0) && {
+                color: colors.habitCompleteText,
+                fontWeight: '700',
+              },
+            ]}
+          >
+            {done}/{target}
+          </Text>
+        )}
       </Animated.View>
     </View>
   )
@@ -220,6 +231,16 @@ const styles = StyleSheet.create({
   },
   content: {
     zIndex: 1,
+  },
+  leading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  trailing: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
   },
   completedAt: {
     marginTop: 2,

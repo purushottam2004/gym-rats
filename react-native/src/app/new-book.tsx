@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { AppTextInput } from '../components/AppTextInput'
 import { BusyOverlay } from '../components/BrandLoader'
+import { OrdinalNumber } from '../components/OrdinalNumber'
 import { Screen } from '../components/Screen'
 import { Toast, type ToastKind } from '../components/Toast'
 import { useAuth } from '../auth/AuthProvider'
@@ -146,6 +147,10 @@ export default function NewBookScreen() {
           {chapters.map((chapter, index) => (
             <View key={`ch-${index}`} style={{ gap: 8 }}>
               <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                <OrdinalNumber
+                  accessibilityLabel={`chapter ${index + 1}`}
+                  value={index + 1}
+                />
                 <AppTextInput
                   editable={!saving}
                   onChangeText={(value) => updateChapter(index, { title: value })}
