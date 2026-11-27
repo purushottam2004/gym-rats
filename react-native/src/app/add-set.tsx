@@ -1,11 +1,12 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { Circle, CircleCheck } from 'lucide-react-native'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { AppTextInput } from '../components/AppTextInput'
 import { Screen } from '../components/Screen'
 import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
-import { loadLifts, logSet, type Lift } from '../lib/gym'
+import { loadLifts, loadMuscles, logSet, type Lift, type Muscle } from '../lib/gym'
+import { liftCatalogGroupsWithLifts } from '../lib/liftCatalog'
 
 const SET_NUMBERS = [1, 2, 3, 4, 5] as const
 
@@ -15,6 +16,7 @@ export default function AddSetScreen() {
   const { day } = useLocalSearchParams<{ day: string }>()
   const router = useRouter()
   const [lifts, setLifts] = useState<Lift[]>([])
+  const [muscles, setMuscles] = useState<Muscle[]>([])
   const [liftId, setLiftId] = useState<string | null>(null)
   const [setNumber, setSetNumber] = useState<(typeof SET_NUMBERS)[number]>(1)
   const [reps, setReps] = useState('')
@@ -23,14 +25,17 @@ export default function AddSetScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      void loadLifts()
-        .then((rows) => {
-          setLifts(rows)
-          setLiftId((current) => current ?? rows[0]?.id ?? null)
+      void Promise.all([loadLifts(), loadMuscles()])
+        .then(([nextLifts, nextMuscles]) => {
+          setLifts(nextLifts)
+          setMuscles(nextMuscles)
+          setLiftId((current) => current ?? nextLifts[0]?.id ?? null)
         })
         .catch((err: unknown) => setError(err instanceof Error ? err.message : 'Could not load lifts'))
     }, []),
   )
+
+  const groups = useMemo(() => liftCatalogGroupsWithLifts(lifts, muscles), [lifts, muscles])
 
   async function save() {
     const repsValue = Number(reps)
@@ -60,9 +65,12 @@ export default function AddSetScreen() {
       <Text style={screen.title}>Add a set</Text>
       <Text style={screen.muted}>{day}</Text>
       {error ? <Text style={screen.error}>{error}</Text> : null}
-      {lifts.length > 0 ? (
-        <View style={screen.card}>
-          {lifts.map((lift, index) => {
+      {groups.map((group) => (
+        <View key={group.key} style={screen.card}>
+          <View style={[screen.row, screen.rowFirst]}>
+            <Text style={screen.muted}>{group.title}</Text>
+          </View>
+          {group.lifts.map((lift) => {
             const selectedLift = liftId === lift.id
             return (
               <Pressable
@@ -72,12 +80,13 @@ export default function AddSetScreen() {
                 onPress={() => setLiftId(lift.id)}
                 style={({ pressed }) => [
                   screen.row,
-                  index === 0 && screen.rowFirst,
                   selectedLift && screen.rowSelected,
                   pressed && (selectedLift ? screen.rowSelectedPressed : screen.rowPressed),
                 ]}
               >
-                <Text style={[screen.rowTitle, selectedLift && screen.rowTitleSelected]}>{lift.name}</Text>
+                <Text style={[screen.rowTitle, selectedLift && screen.rowTitleSelected]}>
+                  {lift.name}
+                </Text>
                 {selectedLift ? (
                   <CircleCheck color={colors.accent} size={20} strokeWidth={2.25} />
                 ) : (
@@ -87,7 +96,7 @@ export default function AddSetScreen() {
             )
           })}
         </View>
-      ) : null}
+      ))}
       <Pressable
         accessibilityRole="button"
         onPress={() => router.push('/new-lift')}
