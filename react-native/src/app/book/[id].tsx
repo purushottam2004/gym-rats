@@ -8,7 +8,7 @@ import { LoadingBlock } from '../../components/BrandLoader'
 import { HabitSwipeRow } from '../../components/HabitSwipeRow'
 import { Screen } from '../../components/Screen'
 import { TimePickerField } from '../../components/TimePickerField'
-import { formatChapterDueLabel } from '../../lib/bookReminders'
+import { formatChapterScheduleChip } from '../../lib/bookReminders'
 import { syncBookReminderNotifications } from '../../lib/bookReminderNotifications'
 import {
   applyChapterCompletion,
@@ -353,14 +353,14 @@ export default function BookDetailScreen() {
             ) : (
               sortedChapters.map((chapter, index) => {
                 const complete = chapterIsComplete(chapter)
-                const dueLabel = formatChapterDueLabel(chapter.due_time)
-                const scheduleBits = chapter.scheduled_on
-                  ? `${chapter.scheduled_on}${dueLabel ? ` · ${dueLabel}` : ''}`
-                  : 'Unscheduled'
+                const scheduleChip = formatChapterScheduleChip(
+                  chapter.scheduled_on,
+                  chapter.due_time,
+                )
                 return (
                   <View key={chapter.id} style={{ gap: 6 }}>
                     <HabitSwipeRow
-                      name={`${chapter.title} · ${scheduleBits}`}
+                      name={chapter.title}
                       done={complete ? 1 : 0}
                       target={1}
                       complete={complete}
@@ -371,6 +371,10 @@ export default function BookDetailScreen() {
                     />
                     <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 4 }}>
                       <Pressable
+                        accessibilityLabel={
+                          chapter.scheduled_on ? 'Edit chapter schedule' : 'Schedule chapter'
+                        }
+                        accessibilityRole="button"
                         onPress={() => {
                           setScheduleChapterId(chapter.id)
                           setScheduleDay(chapter.scheduled_on ?? localDate())
@@ -381,23 +385,8 @@ export default function BookDetailScreen() {
                           pressed && { opacity: 0.85 },
                         ]}
                       >
-                        <Text style={screen.chromeChipText}>
-                          {chapter.scheduled_on ? 'Reschedule' : 'Schedule'}
-                        </Text>
+                        <Text style={screen.chromeChipText}>{scheduleChip}</Text>
                       </Pressable>
-                      {chapter.scheduled_on ? (
-                        <Pressable
-                          onPress={() =>
-                            void clearBookChapterSchedule(chapter.id).then(() => load())
-                          }
-                          style={({ pressed }) => [
-                            screen.chromeChip,
-                            pressed && { opacity: 0.85 },
-                          ]}
-                        >
-                          <Text style={screen.chromeChipText}>Clear</Text>
-                        </Pressable>
-                      ) : null}
                     </View>
                   </View>
                 )
@@ -415,6 +404,21 @@ export default function BookDetailScreen() {
               <Pressable onPress={() => void saveSchedule()} style={screen.save}>
                 <Text style={screen.buttonText}>Save schedule</Text>
               </Pressable>
+              {chapters.some(
+                (chapter) => chapter.id === scheduleChapterId && chapter.scheduled_on,
+              ) ? (
+                <Pressable
+                  onPress={() =>
+                    void clearBookChapterSchedule(scheduleChapterId).then(() => {
+                      setScheduleChapterId(null)
+                      return load()
+                    })
+                  }
+                  style={screen.secondaryButton}
+                >
+                  <Text style={screen.secondaryButtonText}>Clear schedule</Text>
+                </Pressable>
+              ) : null}
               <Pressable
                 onPress={() => setScheduleChapterId(null)}
                 style={screen.secondaryButton}

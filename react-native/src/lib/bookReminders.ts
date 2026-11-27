@@ -122,3 +122,20 @@ export function formatChapterDueLabel(dueTime: string | null | undefined): strin
   if (!time) return null
   return formatReminderTimeDisplay(time)
 }
+
+/** Chip label: "Schedule" when unset, otherwise compact date · time. */
+export function formatChapterScheduleChip(
+  scheduledOn: string | null | undefined,
+  dueTime: string | null | undefined,
+  locale?: string,
+): string {
+  if (!scheduledOn) return 'Schedule'
+  const [year, month, day] = scheduledOn.split('-').map(Number)
+  if (!year || !month || !day) return 'Schedule'
+  const dateLabel = new Date(year, month - 1, day).toLocaleDateString(locale, {
+    month: 'short',
+    day: 'numeric',
+  })
+  const dueLabel = formatChapterDueLabel(dueTime)
+  return dueLabel ? `${dateLabel} · ${dueLabel}` : dateLabel
+}

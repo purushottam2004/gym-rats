@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { planBookChapterReminderFires } from './bookReminders.ts'
+import {
+  formatChapterScheduleChip,
+  planBookChapterReminderFires,
+} from './bookReminders.ts'
 
 describe('planBookChapterReminderFires', () => {
   it('schedules first fire at due time when still in the future', () => {
@@ -44,5 +47,19 @@ describe('planBookChapterReminderFires', () => {
     assert.equal(fires.length, 1)
     assert.equal(fires[0]?.day, '2026-11-27')
     assert.equal(fires[0]?.date.getHours(), 9)
+  })
+})
+
+describe('formatChapterScheduleChip', () => {
+  it('says Schedule when unset', () => {
+    assert.equal(formatChapterScheduleChip(null, null), 'Schedule')
+    assert.equal(formatChapterScheduleChip(undefined, '20:00'), 'Schedule')
+  })
+
+  it('shows compact date and due time when scheduled', () => {
+    const label = formatChapterScheduleChip('2026-11-28', '20:00', 'en-US')
+    assert.match(label, /Nov/)
+    assert.match(label, /28/)
+    assert.match(label, /8:00/)
   })
 })

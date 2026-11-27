@@ -41,7 +41,14 @@ function Navigation() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        // iOS 26+ defaults full-screen back swipes; keep back on the extreme left edge
+        // so chapter/habit card swipes do not pop the screen.
+        fullScreenGestureEnabled: false,
+      }}
+    >
       <Stack.Screen name="login" />
       <Stack.Screen name="scroll-smoke" />
       <Stack.Screen name="chrome-preview" />

@@ -24,7 +24,14 @@ type Props = {
   onDecrement: () => void
 }
 
-function shouldClaimHorizontal(_: unknown, gesture: { dx: number; dy: number }) {
+/** Leave the extreme left edge free for the iOS edge-back gesture. */
+const EDGE_BACK_ZONE_PX = 28
+
+function shouldClaimHorizontal(
+  event: { nativeEvent: { pageX: number } },
+  gesture: { dx: number; dy: number },
+) {
+  if (event.nativeEvent.pageX < EDGE_BACK_ZONE_PX) return false
   return Math.abs(gesture.dx) > 8 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.25
 }
 
