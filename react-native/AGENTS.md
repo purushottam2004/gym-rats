@@ -41,7 +41,7 @@ Docs: https://docs.expo.dev/eas/index.md
 
 This app uses `runtimeVersion.policy: fingerprint`. Publishing `eas update` from a Cloud Agent often creates a **new** fingerprint that installed phones do not have, so the OTA never applies.
 
-1. For production JS OTAs run **only** `pnpm update:production -- --message "…"` (wraps `scripts/publish-production-ota.sh`).
+1. For production JS OTAs run **only** `pnpm update:production --message "…"` (wraps `scripts/publish-production-ota.sh`).
 2. That script pins to [`ota-target-runtimes.json`](./ota-target-runtimes.json). **After every Release install**, update that JSON to the new binary’s fingerprints and commit it (the install script writes the iOS hash; you still commit). Do not publish OTAs against a stale JSON.
 3. Never treat a green Expo “Published!” as success until the publish used those target runtimes (or you intentionally rebuilt the binary and updated the JSON).
 4. Web / Vercel is not Expo OTA — do not expect `eas update` to change `v2logs` or other web hosts.

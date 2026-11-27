@@ -115,7 +115,7 @@ Repo config is in place (`expo-updates`, `eas.json` `preview` / `production` cha
 **Always** publish production OTAs with:
 
 ```bash
-pnpm update:production -- --message "describe the change"
+pnpm update:production --message "describe the change"
 ```
 
 That script reads [`ota-target-runtimes.json`](./ota-target-runtimes.json) and pins the publish to those iOS/Android hashes. **Whenever you install a new Release binary**, update that JSON to the new fingerprints (see [Install Release build](#install-release-build-on-a-physical-iphone)) and commit it **before** the next production OTA.
@@ -154,7 +154,7 @@ That refreshes `extra.eas.projectId` and `updates.url` in `app.json`. Commit tho
 
 Add an Expo access token as a Cursor Cloud Agent **environment secret** named `EXPO_TOKEN` ([create a token](https://expo.dev/accounts/[account]/settings/access-tokens)). With that secret present, an agent can run `eas init`, `eas update:configure`, and production OTAs via `pnpm update:production` without `eas login`. Do not paste the token into chat.
 
-Agents must **not** run raw `npx eas-cli update --channel production` unless `ota-target-runtimes.json` already matches this machine or they pass `--current-fingerprint` after a new binary install. Prefer `pnpm update:production -- --message "…"`.
+Agents must **not** run raw `npx eas-cli update --channel production` unless `ota-target-runtimes.json` already matches this machine or they pass `--current-fingerprint` after a new binary install. Prefer `pnpm update:production --message "…"`.
 
 ## Verify: login → Hello
 

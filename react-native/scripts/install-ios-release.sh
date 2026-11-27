@@ -256,7 +256,7 @@ fi
 echo
 echo "Done. Unlock the phone and open Gym Rats."
 echo "OTA: this binary listens on Expo channel 'production'."
-echo "Publish JS updates with: cd react-native && pnpm update:production -- --message '...'"
+echo "Publish JS updates with: cd react-native && pnpm update:production --message '...'"
 echo "Fingerprint must match (runtimeVersion policy: fingerprint) or the update is skipped."
 echo "Commit react-native/ota-target-runtimes.json after this install (script refreshed the iOS hash)."
 echo "If iOS blocks launch: Settings → General → VPN & Device Management → trust your Apple Development cert."

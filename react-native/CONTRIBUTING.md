@@ -28,7 +28,7 @@ pnpm update:production --message "short description"
 
 **Whenever you install a Release binary** (local `install-ios-release.sh` / `pnpm ios:release-device`, or an EAS device build you put on a phone), update [`ota-target-runtimes.json`](./ota-target-runtimes.json) to that binary’s fingerprints and **commit it**. The install script updates the iOS hash for you; confirm the file changed and include it in the same PR or follow-up commit. Do not leave the JSON pointing at an old install — later OTAs will publish “successfully” and phones will ignore them.
 
-Then either publish with those pinned hashes (`pnpm update:production -- --message "…"`) or, only from the same tree that built the binary, `pnpm update:production -- --message "…" --current-fingerprint`.
+Then either publish with those pinned hashes (`pnpm update:production --message "…"`) or, only from the same tree that built the binary, `pnpm update:production --message "…" --current-fingerprint`.
 
 If you change native deps, plugins, permissions, or the Expo SDK, bump/build a new binary instead — `runtimeVersion.policy: fingerprint` will not match the old install.
 
