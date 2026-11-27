@@ -1,8 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { useAuth } from '../auth/AuthProvider'
 import { AppTextInput } from '../components/AppTextInput'
+import { BusyOverlay } from '../components/BrandLoader'
 import { Screen } from '../components/Screen'
 import { useScreenStyles } from '../theme/ThemeProvider'
 import { loadNutrients, logOtherIntake, type Nutrient } from '../lib/gym'
@@ -23,7 +24,8 @@ export default function LogOtherScreen() {
   const [nutrients, setNutrients] = useState<Nutrient[]>([])
   const [amounts, setAmounts] = useState<Record<string, string>>(() => draft?.amounts ?? {})
   const [error, setError] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const busyRef = useRef(false)
   const fromPhoto = draft != null
 
   useEffect(() => {
@@ -35,12 +37,12 @@ export default function LogOtherScreen() {
   }, [])
 
   async function save() {
+    if (busyRef.current) return
     if (!day) {
       setError('Missing day')
       return
     }
     try {
-      setSaving(true)
       const chosen = nutrients.flatMap((nutrient) => {
         const raw = amounts[nutrient.id]?.trim()
         if (!raw) return []
@@ -53,61 +55,69 @@ export default function LogOtherScreen() {
         setError('Enter at least one nutrient amount')
         return
       }
+      busyRef.current = true
+      setBusy(true)
+      setError(null)
       await logOtherIntake({ name, day, nutrients: chosen })
       const userId = session?.user.id
       if (userId) await syncNutrientRemindersForUser(userId)
       router.back()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save')
-    } finally {
-      setSaving(false)
+      setBusy(false)
+      busyRef.current = false
     }
   }
 
   return (
-    <Screen
-      footer={
-        <Pressable
-          accessibilityRole="button"
-          disabled={saving}
-          onPress={() => void save()}
-          style={[screen.save, saving && screen.buttonDisabled]}
-        >
-          <Text style={screen.buttonText}>{saving ? 'Saving…' : 'Save'}</Text>
-        </Pressable>
-      }
-    >
-      <Text style={screen.title}>Other</Text>
-      <Text style={screen.muted}>
-        {fromPhoto
-          ? 'Review the photo estimate, edit anything that looks off, then save. Not added to your catalog.'
-          : 'One-off nutrients for this day only. Not added to your food catalog.'}
-      </Text>
-      {error ? <Text style={screen.error}>{error}</Text> : null}
-      <Text style={screen.label}>Name (optional)</Text>
-      <AppTextInput
-        onChangeText={setName}
-        placeholder="Other"
-        style={screen.input}
-        value={name}
-      />
-      <Text style={screen.muted}>Amounts are totals for this entry.</Text>
-      <View style={screen.card}>
-        {nutrients.map((nutrient, index) => (
-          <View key={nutrient.id} style={[screen.row, index === 0 && screen.rowFirst]}>
-            <Text style={screen.rowTitle}>{nutrient.name}</Text>
-            <AppTextInput
-              keyboardType="decimal-pad"
-              onChangeText={(value) =>
-                setAmounts((current) => ({ ...current, [nutrient.id]: value }))
-              }
-              placeholder={nutrient.unit}
-              style={[screen.input, { width: 90, paddingVertical: 6 }]}
-              value={amounts[nutrient.id] ?? ''}
-            />
-          </View>
-        ))}
-      </View>
-    </Screen>
+    <View style={{ flex: 1 }}>
+      <Screen
+        footer={
+          <Pressable
+            accessibilityRole="button"
+            disabled={busy}
+            onPress={() => void save()}
+            style={[screen.save, busy && screen.buttonDisabled]}
+          >
+            <Text style={screen.buttonText}>Save</Text>
+          </Pressable>
+        }
+      >
+        <Text style={screen.title}>Other</Text>
+        <Text style={screen.muted}>
+          {fromPhoto
+            ? 'Review the photo estimate, edit anything that looks off, then save. Not added to your catalog.'
+            : 'One-off nutrients for this day only. Not added to your food catalog.'}
+        </Text>
+        {error ? <Text style={screen.error}>{error}</Text> : null}
+        <Text style={screen.label}>Name (optional)</Text>
+        <AppTextInput
+          editable={!busy}
+          onChangeText={setName}
+          placeholder="Other"
+          style={screen.input}
+          value={name}
+        />
+        <Text style={screen.muted}>Amounts are totals for this entry.</Text>
+        <View style={screen.card}>
+          {nutrients.map((nutrient, index) => (
+            <View key={nutrient.id} style={[screen.row, index === 0 && screen.rowFirst]}>
+              <Text style={screen.rowTitle}>{nutrient.name}</Text>
+              <AppTextInput
+                editable={!busy}
+                keyboardType="decimal-pad"
+                onChangeText={(value) =>
+                  setAmounts((current) => ({ ...current, [nutrient.id]: value }))
+                }
+                placeholder={nutrient.unit}
+                style={[screen.input, { width: 90, paddingVertical: 6 }]}
+                value={amounts[nutrient.id] ?? ''}
+              />
+            </View>
+          ))}
+        </View>
+      </Screen>
+      <BusyOverlay visible={busy} label="Saving…" />
+    </View>
   )
 }
