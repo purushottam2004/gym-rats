@@ -10,6 +10,7 @@ import { LoadingBlock } from '../../components/BrandLoader'
 import { PhotoLightbox } from '../../components/PhotoLightbox'
 import { Screen } from '../../components/Screen'
 import { TabChrome } from '../../components/TabChrome'
+import { TabFeaturesButton } from '../../components/TabFeaturesButton'
 import { useScreenStyles } from '../../theme/ThemeProvider'
 import { joinGroup, loadGroups, type Group } from '../../lib/gym'
 
@@ -93,6 +94,7 @@ export default function GroupsScreen() {
                 >
                   <Text style={screen.chromeChipText}>New</Text>
                 </Pressable>
+                <TabFeaturesButton tab="groups" title="Groups features" />
               </>
             }
           />

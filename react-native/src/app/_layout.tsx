@@ -2,7 +2,9 @@ import { Stack, useRouter, useSegments } from 'expo-router'
 import { useEffect } from 'react'
 import { Text, View } from 'react-native'
 import { AuthProvider, useAuth } from '../auth/AuthProvider'
+import { FeatureUpdatesProvider } from '../auth/FeatureUpdatesProvider'
 import { BrandLoader } from '../components/BrandLoader'
+import { FeatureUpdateNotifier } from '../components/FeatureUpdateNotifier'
 import { OtaUpdateNotifier } from '../components/OtaUpdateNotifier'
 import { ThemeProvider, useScreenStyles } from '../theme/ThemeProvider'
 
@@ -73,8 +75,11 @@ export default function RootLayout() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <OtaUpdateNotifier />
-        <Navigation />
+        <FeatureUpdatesProvider>
+          <OtaUpdateNotifier />
+          <FeatureUpdateNotifier />
+          <Navigation />
+        </FeatureUpdatesProvider>
       </AuthProvider>
     </ThemeProvider>
   )

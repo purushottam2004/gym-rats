@@ -13,6 +13,7 @@ import { Platform, Pressable, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
 import { BusyOverlay, LoadingBlock } from '../../components/BrandLoader'
 import { DayControls } from '../../components/DayControls'
+import { TabFeaturesButton } from '../../components/TabFeaturesButton'
 import { DeleteConfirmButton } from '../../components/DeleteConfirmButton'
 import { InfoButton } from '../../components/InfoButton'
 import { InfoListModal, type InfoListRow } from '../../components/InfoListModal'
@@ -248,7 +249,12 @@ export default function DietScreen() {
             <TabChrome
               icon={Utensils}
               title="Diet"
-              trailing={<DayControls day={day} onChange={setDay} />}
+              trailing={
+                <>
+                  <DayControls day={day} onChange={setDay} />
+                  <TabFeaturesButton tab="diet" title="Diet features" />
+                </>
+              }
             />
             <View style={screen.card}>
               <View style={screen.iconActionRow}>

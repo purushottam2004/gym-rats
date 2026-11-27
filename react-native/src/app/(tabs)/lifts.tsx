@@ -13,6 +13,7 @@ import { useAuth } from '../../auth/AuthProvider'
 import { AddSetModal } from '../../components/AddSetModal'
 import { BusyOverlay, LoadingBlock } from '../../components/BrandLoader'
 import { DayControls } from '../../components/DayControls'
+import { TabFeaturesButton } from '../../components/TabFeaturesButton'
 import { DeleteConfirmButton } from '../../components/DeleteConfirmButton'
 import { OrdinalNumber } from '../../components/OrdinalNumber'
 import { Screen } from '../../components/Screen'
@@ -151,7 +152,10 @@ export default function LiftsScreen() {
               icon={Dumbbell}
               title="Lifts"
               trailing={
-                <DayControls day={day} onChange={setDay} similarLinks={similarLinks} />
+                <>
+                  <DayControls day={day} onChange={setDay} similarLinks={similarLinks} />
+                  <TabFeaturesButton tab="lifts" title="Lifts features" />
+                </>
               }
             />
             <View style={screen.card}>

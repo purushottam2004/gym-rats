@@ -6,6 +6,7 @@ import { useAuth } from '../../auth/AuthProvider'
 import { LoadingBlock } from '../../components/BrandLoader'
 import { ConfirmModal } from '../../components/ConfirmModal'
 import { DayControls } from '../../components/DayControls'
+import { TabFeaturesButton } from '../../components/TabFeaturesButton'
 import { PostCard } from '../../components/PostCard'
 import { PostCommentsModal } from '../../components/PostCommentsModal'
 import { ReactionPickerModal } from '../../components/ReactionPickerModal'
@@ -108,7 +109,12 @@ export default function PostsScreen() {
             <TabChrome
               icon={ImageIcon}
               title="Posts"
-              trailing={<DayControls day={day} onChange={setDay} />}
+              trailing={
+                <>
+                  <DayControls day={day} onChange={setDay} />
+                  <TabFeaturesButton tab="posts" title="Posts features" />
+                </>
+              }
             />
             <View style={screen.card}>
               <View style={screen.iconActionRow}>

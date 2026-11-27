@@ -14,6 +14,7 @@ import {
   type Weekday,
 } from './habitSchedule'
 import { parseReminderTime } from './habitReminders'
+import { isFeatureTab, type FeatureRow } from './featureUpdates'
 import type { ReactionRow } from './postSocial'
 import {
   bytesToBase64,
@@ -1499,4 +1500,65 @@ export async function uploadImage(
   })
   fail(error)
   return path
+}
+
+export type { FeatureRow, FeatureTab } from './featureUpdates'
+
+/** All published features with this user's read receipts (null read_at = unread). */
+export async function loadFeatures(userId: string): Promise<FeatureRow[]> {
+  const [{ data: features, error: featuresError }, { data: reads, error: readsError }] =
+    await Promise.all([
+      db()
+        .from('features')
+        .select('id, tab, title, summary, body, sort_order, published_at')
+        .order('sort_order', { ascending: true })
+        .order('published_at', { ascending: false }),
+      db().from('feature_reads').select('feature_id, read_at').eq('user_id', userId),
+    ])
+  fail(featuresError)
+  fail(readsError)
+
+  const readAtById = new Map<string, string>()
+  for (const row of reads ?? []) {
+    const featureId = row.feature_id as string
+    const readAt = row.read_at as string | null
+    if (featureId && readAt) readAtById.set(featureId, readAt)
+  }
+
+  return (features ?? [])
+    .map((row) => {
+      const tab = String(row.tab ?? '')
+      if (!isFeatureTab(tab)) return null
+      return {
+        id: row.id as string,
+        tab,
+        title: String(row.title ?? ''),
+        summary: String(row.summary ?? ''),
+        body: String(row.body ?? ''),
+        sort_order: Number(row.sort_order ?? 0),
+        published_at: String(row.published_at ?? ''),
+        read_at: readAtById.get(row.id as string) ?? null,
+      } satisfies FeatureRow
+    })
+    .filter((row): row is FeatureRow => row != null)
+}
+
+/** Mark a feature read for the signed-in user (idempotent upsert via conflict ignore). */
+export async function markFeatureRead(featureId: string): Promise<string> {
+  const { data: userData, error: userError } = await db().auth.getUser()
+  fail(userError)
+  const userId = userData.user?.id
+  if (!userId) throw new Error('Not signed in')
+
+  const readAt = new Date().toISOString()
+  const { error } = await db().from('feature_reads').upsert(
+    {
+      user_id: userId,
+      feature_id: featureId,
+      read_at: readAt,
+    },
+    { onConflict: 'user_id,feature_id', ignoreDuplicates: true },
+  )
+  fail(error)
+  return readAt
 }
