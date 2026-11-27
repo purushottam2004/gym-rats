@@ -30,11 +30,15 @@ export function parseReminderEveryMinutes(raw: string): number | null {
   return value
 }
 
+/** Default complete-intake checkpoint when Notify me turns on with no checkpoints. */
+export const DEFAULT_COMPLETE_INTAKE_CHECKPOINT_TIME = '22:00'
+
 export type NutrientGoalReminderSettings = {
   remind_enabled: boolean
+  /** @deprecated Unused by the planner; checkpoints own fire times. */
   remind_first_time: ReminderTime | null
   remind_every_minutes: number | null
-  /** Day min target used for full-goal reminders; null disables full-goal fires. */
+  /** Day min target; required for enabling reminders. */
   min_amount: number | null
 }
 
@@ -47,12 +51,12 @@ export type NutrientGoalMilestone = {
 }
 
 export type NutrientReminderFire = {
-  /** `nutrient:{nutrientId}:{iso}:{kind}:{key}` */
+  /** `nutrient:{nutrientId}:{iso}:milestone:{milestoneId}` or `…:r:{n}` for repeats */
   identifier: string
   date: Date
   day: string
-  kind: 'full' | 'milestone'
-  /** Full-goal index (0 = first) or milestone sort key. */
+  kind: 'milestone'
+  /** 0 = checkpoint time; >0 = every-N follow-up after that checkpoint. */
   index: number
   threshold_amount: number
 }
@@ -90,78 +94,23 @@ export function nutrientTargetMet(progress: number, threshold: number): boolean 
 }
 
 /**
- * Full min-target fires (habit-style): first on each lookahead day; follow-ups only
- * today while progress is still below min_amount.
- */
-export function planNutrientFullTargetFires(input: {
-  nutrientId: string
-  settings: NutrientGoalReminderSettings
-  now: Date
-  today: string
-  progressToday: number
-}): NutrientReminderFire[] {
-  const { nutrientId, settings, now, today, progressToday } = input
-  if (!settings.remind_enabled || !settings.remind_first_time || settings.min_amount == null) {
-    return []
-  }
-  if (!(settings.min_amount > 0)) return []
-
-  const fires: NutrientReminderFire[] = []
-  const first = settings.remind_first_time
-  const every = settings.remind_every_minutes
-  const completeToday = nutrientTargetMet(progressToday, settings.min_amount)
-
-  for (let offset = 0; offset < LOOKAHEAD_DAYS; offset += 1) {
-    const day = shiftIsoDate(today, offset)
-    const firstAt = atLocalTime(day, first)
-    if (firstAt.getTime() > now.getTime()) {
-      fires.push({
-        identifier: `nutrient:${nutrientId}:${day}:full:0`,
-        date: firstAt,
-        day,
-        kind: 'full',
-        index: 0,
-        threshold_amount: settings.min_amount,
-      })
-    }
-
-    if (offset !== 0 || completeToday || every == null) continue
-
-    const dayEnd = endOfLocalDay(day)
-    let next = new Date(firstAt.getTime() + every * 60_000)
-    let index = 1
-    while (next.getTime() <= dayEnd.getTime() && index < MAX_FIRES_PER_DAY) {
-      if (next.getTime() > now.getTime()) {
-        fires.push({
-          identifier: `nutrient:${nutrientId}:${day}:full:${index}`,
-          date: new Date(next.getTime()),
-          day,
-          kind: 'full',
-          index,
-          threshold_amount: settings.min_amount,
-        })
-      }
-      next = new Date(next.getTime() + every * 60_000)
-      index += 1
-    }
-  }
-
-  return fires
-}
-
-/**
- * Checkpoint fires: at each milestone time, if today's progress is still below
- * the threshold (future days always schedule).
+ * Checkpoint fires: at each milestone time while reminders are on.
+ * Optional every-N repeats after each unmet checkpoint (today only) while intake
+ * is still below that checkpoint's threshold.
  */
 export function planNutrientMilestoneFires(input: {
   nutrientId: string
+  settings: NutrientGoalReminderSettings
   milestones: NutrientGoalMilestone[]
   now: Date
   today: string
   progressToday: number
 }): NutrientReminderFire[] {
-  const { nutrientId, milestones, now, today, progressToday } = input
+  const { nutrientId, settings, milestones, now, today, progressToday } = input
+  if (!settings.remind_enabled) return []
+
   const fires: NutrientReminderFire[] = []
+  const every = settings.remind_every_minutes
   const ordered = milestones
     .filter((row) => row.nutrient_id === nutrientId && row.threshold_amount > 0)
     .slice()
@@ -179,15 +128,37 @@ export function planNutrientMilestoneFires(input: {
         continue
       }
       const at = atLocalTime(day, milestone.remind_at)
-      if (at.getTime() <= now.getTime()) continue
-      fires.push({
-        identifier: `nutrient:${nutrientId}:${day}:milestone:${milestone.id}`,
-        date: at,
-        day,
-        kind: 'milestone',
-        index: milestone.sort_order,
-        threshold_amount: milestone.threshold_amount,
-      })
+      if (at.getTime() > now.getTime()) {
+        fires.push({
+          identifier: `nutrient:${nutrientId}:${day}:milestone:${milestone.id}`,
+          date: at,
+          day,
+          kind: 'milestone',
+          index: 0,
+          threshold_amount: milestone.threshold_amount,
+        })
+      }
+
+      if (offset !== 0 || every == null) continue
+      if (nutrientTargetMet(progressToday, milestone.threshold_amount)) continue
+
+      const dayEnd = endOfLocalDay(day)
+      let next = new Date(at.getTime() + every * 60_000)
+      let index = 1
+      while (next.getTime() <= dayEnd.getTime() && index < MAX_FIRES_PER_DAY) {
+        if (next.getTime() > now.getTime()) {
+          fires.push({
+            identifier: `nutrient:${nutrientId}:${day}:milestone:${milestone.id}:r:${index}`,
+            date: new Date(next.getTime()),
+            day,
+            kind: 'milestone',
+            index,
+            threshold_amount: milestone.threshold_amount,
+          })
+        }
+        next = new Date(next.getTime() + every * 60_000)
+        index += 1
+      }
     }
   }
 
@@ -202,15 +173,11 @@ export function planNutrientTargetFires(input: {
   today: string
   progressToday: number
 }): NutrientReminderFire[] {
-  return [
-    ...planNutrientFullTargetFires(input),
-    ...planNutrientMilestoneFires(input),
-  ].sort((a, b) => a.date.getTime() - b.date.getTime())
+  return planNutrientMilestoneFires(input).sort((a, b) => a.date.getTime() - b.date.getTime())
 }
 
 export function normalizeNutrientReminderInput(input: {
   enabled: boolean
-  firstTimeText: string
   everyMinutesText: string
   minAmount: number | null
 }):
@@ -218,7 +185,7 @@ export function normalizeNutrientReminderInput(input: {
   | {
       ok: true
       remind_enabled: true
-      remind_first_time: string
+      remind_first_time: null
       remind_every_minutes: number | null
     }
   | { ok: false; error: string } {
@@ -233,16 +200,12 @@ export function normalizeNutrientReminderInput(input: {
   if (input.minAmount == null || !(input.minAmount > 0)) {
     return { ok: false, error: 'Set a min target before enabling nutrient reminders' }
   }
-  const first = parseReminderTime(input.firstTimeText)
-  if (!first) {
-    return { ok: false, error: 'First reminder time must look like 08:00' }
-  }
   const everyText = input.everyMinutesText.trim()
   if (!everyText) {
     return {
       ok: true,
       remind_enabled: true,
-      remind_first_time: formatReminderTime(first),
+      remind_first_time: null,
       remind_every_minutes: null,
     }
   }
@@ -256,7 +219,7 @@ export function normalizeNutrientReminderInput(input: {
   return {
     ok: true,
     remind_enabled: true,
-    remind_first_time: formatReminderTime(first),
+    remind_first_time: null,
     remind_every_minutes: every,
   }
 }
@@ -265,6 +228,14 @@ export type MilestoneDraft = {
   key: string
   timeText: string
   amountText: string
+}
+
+export function defaultCompleteIntakeCheckpoint(minAmount: number): MilestoneDraft {
+  return {
+    key: `m-default-${Date.now()}`,
+    timeText: DEFAULT_COMPLETE_INTAKE_CHECKPOINT_TIME,
+    amountText: String(minAmount),
+  }
 }
 
 export function normalizeMilestoneDrafts(

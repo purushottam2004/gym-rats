@@ -88,8 +88,8 @@ values
     'a1000001-0001-4000-8000-000000000003',
     'diet',
     'Nutrient target reminders',
-    'Get nudged toward min goals, including mid-day checkpoints.',
-    'On Nutrient goals, turn on reminders for any nutrient with a min. Set a first notification and optional repeats while you are still short of the day''s target. Add checkpoints such as “by 3:00 PM meet 1200 kcal” so progress is paced through the day. Notifications are local on this device.',
+    'Get nudged at checkpoints toward min goals, with optional repeats.',
+    'On Nutrient goals, turn on reminders for any nutrient with a min. That adds a 10:00 PM checkpoint for the full min target (or add your own). Optional “every N minutes” repeats after each unmet checkpoint while you are still short. Notifications are local on this device.',
     30,
     '2026-11-27T12:00:00Z'
   )

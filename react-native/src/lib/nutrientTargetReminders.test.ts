@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
+  DEFAULT_COMPLETE_INTAKE_CHECKPOINT_TIME,
+  defaultCompleteIntakeCheckpoint,
   normalizeMilestoneDrafts,
   normalizeNutrientReminderInput,
   nutrientTargetMet,
@@ -21,39 +23,44 @@ describe('normalizeNutrientReminderInput', () => {
   it('requires a min target when enabling', () => {
     const result = normalizeNutrientReminderInput({
       enabled: true,
-      firstTimeText: '08:00',
       everyMinutesText: '',
       minAmount: null,
     })
     assert.equal(result.ok, false)
   })
 
-  it('accepts first + optional every', () => {
+  it('accepts optional every without a first-at time', () => {
     const once = normalizeNutrientReminderInput({
       enabled: true,
-      firstTimeText: '08:00',
       everyMinutesText: '',
       minAmount: 2000,
     })
     assert.deepEqual(once, {
       ok: true,
       remind_enabled: true,
-      remind_first_time: '08:00',
+      remind_first_time: null,
       remind_every_minutes: null,
     })
 
     const every = normalizeNutrientReminderInput({
       enabled: true,
-      firstTimeText: '8:30',
       everyMinutesText: '45',
       minAmount: 2000,
     })
     assert.deepEqual(every, {
       ok: true,
       remind_enabled: true,
-      remind_first_time: '08:30',
+      remind_first_time: null,
       remind_every_minutes: 45,
     })
+  })
+})
+
+describe('defaultCompleteIntakeCheckpoint', () => {
+  it('uses 10 PM and the full min amount', () => {
+    const row = defaultCompleteIntakeCheckpoint(1200)
+    assert.equal(row.timeText, DEFAULT_COMPLETE_INTAKE_CHECKPOINT_TIME)
+    assert.equal(row.amountText, '1200')
   })
 })
 
@@ -109,6 +116,12 @@ describe('planNutrientTargetFires', () => {
   it('schedules unmet milestones and skips met ones for today', () => {
     const fires = planNutrientMilestoneFires({
       nutrientId: 'n1',
+      settings: {
+        remind_enabled: true,
+        remind_first_time: null,
+        remind_every_minutes: null,
+        min_amount: 2000,
+      },
       milestones,
       now,
       today,
@@ -119,22 +132,50 @@ describe('planNutrientTargetFires', () => {
     assert.equal(todayFires[0]?.threshold_amount, 1800)
   })
 
-  it('plans full-target follow-ups while incomplete', () => {
+  it('does not schedule when reminders are off', () => {
+    const fires = planNutrientMilestoneFires({
+      nutrientId: 'n1',
+      settings: {
+        remind_enabled: false,
+        remind_first_time: null,
+        remind_every_minutes: null,
+        min_amount: 2000,
+      },
+      milestones,
+      now,
+      today,
+      progressToday: 0,
+    })
+    assert.equal(fires.length, 0)
+  })
+
+  it('applies every-N repeats after each unmet checkpoint today', () => {
     const fires = planNutrientTargetFires({
       nutrientId: 'n1',
       settings: {
         remind_enabled: true,
-        remind_first_time: { hour: 9, minute: 0 },
+        remind_first_time: null,
         remind_every_minutes: 60,
         min_amount: 2000,
       },
-      milestones: [],
+      milestones: [
+        {
+          id: 'm1',
+          nutrient_id: 'n1',
+          remind_at: { hour: 12, minute: 0 },
+          threshold_amount: 1000,
+          sort_order: 0,
+        },
+      ],
       now,
       today,
       progressToday: 500,
     })
-    const todayFull = fires.filter((fire) => fire.day === today && fire.kind === 'full')
-    assert.ok(todayFull.length >= 1)
-    assert.ok(todayFull.every((fire) => fire.date.getTime() > now.getTime()))
+    const todayFires = fires.filter((fire) => fire.day === today)
+    assert.ok(todayFires.length >= 2)
+    assert.ok(todayFires.every((fire) => fire.threshold_amount === 1000))
+    assert.ok(todayFires.every((fire) => fire.date.getTime() > now.getTime()))
+    assert.equal(todayFires[0]?.index, 0)
+    assert.ok(todayFires.some((fire) => fire.index > 0))
   })
 })

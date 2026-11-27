@@ -151,11 +151,9 @@ export async function syncNutrientReminderNotifications(input: {
       for (const fire of fires) {
         const amountLabel = formatAmount(fire.threshold_amount, unit)
         const body =
-          fire.kind === 'milestone'
-            ? `Checkpoint: aim for at least ${amountLabel} by now.`
-            : fire.index > 0
-              ? `Still short of today's ${amountLabel} target.`
-              : `Time to work toward today's ${amountLabel} target.`
+          fire.index > 0
+            ? `Still short of the ${amountLabel} checkpoint.`
+            : `Checkpoint: aim for at least ${amountLabel} by now.`
 
         await Notifications.scheduleNotificationAsync({
           identifier: fire.identifier,

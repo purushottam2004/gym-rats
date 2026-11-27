@@ -17,6 +17,7 @@ import {
 import { localDate } from '../lib/localDate'
 import { syncNutrientRemindersForUser } from '../lib/nutrientReminderSync'
 import {
+  defaultCompleteIntakeCheckpoint,
   normalizeMilestoneDrafts,
   normalizeNutrientReminderInput,
   type MilestoneDraft,
@@ -27,7 +28,6 @@ type NutrientDraft = {
   min: string
   max: string
   remindEnabled: boolean
-  firstTime: string
   everyMinutes: string
   milestones: MilestoneDraft[]
 }
@@ -37,7 +37,6 @@ function emptyDraft(): NutrientDraft {
     min: '',
     max: '',
     remindEnabled: false,
-    firstTime: '12:00',
     everyMinutes: '',
     milestones: [],
   }
@@ -49,6 +48,14 @@ function newMilestoneKey(): string {
 
 function draftNeedsScheduleOpen(draft: NutrientDraft): boolean {
   return draft.remindEnabled || draft.milestones.length > 0
+}
+
+function parsePositiveAmount(raw: string): number | null {
+  const trimmed = raw.trim()
+  if (!trimmed) return null
+  const amount = Number(trimmed)
+  if (!(amount > 0)) return null
+  return amount
 }
 
 export default function NutrientGoalsScreen() {
@@ -86,9 +93,6 @@ export default function NutrientGoalsScreen() {
               min: goal?.min_amount != null ? String(goal.min_amount) : '',
               max: goal?.max_amount != null ? String(goal.max_amount) : '',
               remindEnabled: Boolean(goal?.remind_enabled),
-              firstTime: goal?.remind_first_time
-                ? formatReminderTime(goal.remind_first_time)
-                : '12:00',
               everyMinutes:
                 goal?.remind_every_minutes != null ? String(goal.remind_every_minutes) : '',
               milestones,
@@ -140,6 +144,45 @@ export default function NutrientGoalsScreen() {
     }))
   }
 
+  function setRemindEnabled(nutrientId: string, enabled: boolean) {
+    const draft = drafts[nutrientId] ?? emptyDraft()
+    if (!enabled) {
+      patchDraft(nutrientId, { remindEnabled: false, milestones: [], everyMinutes: '' })
+      return
+    }
+
+    const minAmount = parsePositiveAmount(draft.min)
+    if (minAmount == null) {
+      setError('Set a min target before enabling reminders')
+      return
+    }
+
+    const milestones =
+      draft.milestones.length > 0
+        ? draft.milestones
+        : [defaultCompleteIntakeCheckpoint(minAmount)]
+    patchDraft(nutrientId, { remindEnabled: true, milestones })
+    setOpenSchedule((current) => ({ ...current, [nutrientId]: true }))
+    setError(null)
+  }
+
+  function addCheckpoint(nutrientId: string) {
+    const draft = drafts[nutrientId] ?? emptyDraft()
+    const minAmount = parsePositiveAmount(draft.min)
+    patchDraft(nutrientId, {
+      remindEnabled: true,
+      milestones: [
+        ...draft.milestones,
+        {
+          key: newMilestoneKey(),
+          timeText: '15:00',
+          amountText: minAmount != null ? String(Math.round(minAmount / 2)) : '',
+        },
+      ],
+    })
+    setOpenSchedule((current) => ({ ...current, [nutrientId]: true }))
+  }
+
   async function saveGoals() {
     if (!userId || busy) return
     setBusy(true)
@@ -153,18 +196,29 @@ export default function NutrientGoalsScreen() {
           throw new Error(`${nutrient.name} min cannot be greater than max`)
         }
 
+        let milestonesDraft = draft.milestones
+        const remindEnabled = draft.remindEnabled || draft.milestones.length > 0
+        if (remindEnabled && milestonesDraft.length === 0) {
+          if (min_amount == null) {
+            throw new Error(`${nutrient.name}: set a min target before enabling reminders`)
+          }
+          milestonesDraft = [defaultCompleteIntakeCheckpoint(min_amount)]
+        }
+
         const remind = normalizeNutrientReminderInput({
-          enabled: draft.remindEnabled,
-          firstTimeText: draft.firstTime,
+          enabled: remindEnabled,
           everyMinutesText: draft.everyMinutes,
           minAmount: min_amount,
         })
         if (!remind.ok) throw new Error(`${nutrient.name}: ${remind.error}`)
 
-        const milestones = normalizeMilestoneDrafts(draft.milestones, nutrient.name)
+        const milestones = normalizeMilestoneDrafts(milestonesDraft, nutrient.name)
         if (!milestones.ok) throw new Error(milestones.error)
         if (milestones.milestones.length > 0 && min_amount == null) {
           throw new Error(`${nutrient.name}: set a min target before adding checkpoints`)
+        }
+        if (remind.remind_enabled && milestones.milestones.length === 0) {
+          throw new Error(`${nutrient.name}: add a checkpoint or turn reminders off`)
         }
 
         return {
@@ -172,7 +226,7 @@ export default function NutrientGoalsScreen() {
           min_amount,
           max_amount,
           remind_enabled: remind.remind_enabled,
-          remind_first_time: remind.remind_first_time,
+          remind_first_time: null,
           remind_every_minutes: remind.remind_every_minutes,
           milestones: milestones.milestones,
         }
@@ -213,7 +267,7 @@ export default function NutrientGoalsScreen() {
         const hasMin = draft.min.trim().length > 0
         const scheduleOpen = Boolean(openSchedule[nutrient.id])
         const scheduleSummary = [
-          draft.remindEnabled ? 'Reminders on' : null,
+          draft.remindEnabled || draft.milestones.length > 0 ? 'Reminders on' : null,
           draft.milestones.length > 0
             ? `${draft.milestones.length} checkpoint${draft.milestones.length === 1 ? '' : 's'}`
             : null,
@@ -276,41 +330,36 @@ export default function NutrientGoalsScreen() {
                   <>
                     <Pressable
                       accessibilityRole="switch"
-                      accessibilityState={{ checked: draft.remindEnabled }}
+                      accessibilityState={{
+                        checked: draft.remindEnabled || draft.milestones.length > 0,
+                      }}
                       onPress={() =>
-                        patchDraft(nutrient.id, { remindEnabled: !draft.remindEnabled })
+                        setRemindEnabled(
+                          nutrient.id,
+                          !(draft.remindEnabled || draft.milestones.length > 0),
+                        )
                       }
                       style={({ pressed }) => [screen.row, pressed && screen.rowPressed]}
                     >
                       <Text style={[screen.rowTitle, screen.rowMain]}>Notify me</Text>
-                      <Text style={screen.muted}>{draft.remindEnabled ? 'On' : 'Off'}</Text>
+                      <Text style={screen.muted}>
+                        {draft.remindEnabled || draft.milestones.length > 0 ? 'On' : 'Off'}
+                      </Text>
                     </Pressable>
 
-                    {draft.remindEnabled ? (
-                      <>
-                        <View style={screen.row}>
-                          <Text style={[screen.rowTitle, screen.rowMain]}>First at</Text>
-                          <TimePickerField
-                            onChange={(value) =>
-                              patchDraft(nutrient.id, { firstTime: value })
-                            }
-                            style={{ width: 112, paddingVertical: 6, textAlign: 'center' }}
-                            value={draft.firstTime}
-                          />
-                        </View>
-                        <View style={screen.row}>
-                          <Text style={[screen.rowTitle, screen.rowMain]}>Every (min)</Text>
-                          <AppTextInput
-                            keyboardType="number-pad"
-                            onChangeText={(value) =>
-                              patchDraft(nutrient.id, { everyMinutes: value })
-                            }
-                            placeholder="once"
-                            style={[screen.input, screen.goalBoundInput]}
-                            value={draft.everyMinutes}
-                          />
-                        </View>
-                      </>
+                    {draft.remindEnabled || draft.milestones.length > 0 ? (
+                      <View style={screen.row}>
+                        <Text style={[screen.rowTitle, screen.rowMain]}>Every (min)</Text>
+                        <AppTextInput
+                          keyboardType="number-pad"
+                          onChangeText={(value) =>
+                            patchDraft(nutrient.id, { everyMinutes: value })
+                          }
+                          placeholder="once"
+                          style={[screen.input, screen.goalBoundInput]}
+                          value={draft.everyMinutes}
+                        />
+                      </View>
                     ) : null}
 
                     {draft.milestones.map((milestone, index) => (
@@ -321,7 +370,10 @@ export default function NutrientGoalsScreen() {
                             onChange={(value) => {
                               const next = draft.milestones.slice()
                               next[index] = { ...milestone, timeText: value }
-                              patchDraft(nutrient.id, { milestones: next })
+                              patchDraft(nutrient.id, {
+                                remindEnabled: true,
+                                milestones: next,
+                              })
                             }}
                             value={milestone.timeText}
                           />
@@ -333,7 +385,10 @@ export default function NutrientGoalsScreen() {
                             onChangeText={(value) => {
                               const next = draft.milestones.slice()
                               next[index] = { ...milestone, amountText: value }
-                              patchDraft(nutrient.id, { milestones: next })
+                              patchDraft(nutrient.id, {
+                                remindEnabled: true,
+                                milestones: next,
+                              })
                             }}
                             placeholder="amount"
                             style={screen.input}
@@ -344,13 +399,15 @@ export default function NutrientGoalsScreen() {
                           accessibilityLabel="Remove checkpoint"
                           accessibilityRole="button"
                           hitSlop={8}
-                          onPress={() =>
+                          onPress={() => {
+                            const next = draft.milestones.filter(
+                              (row) => row.key !== milestone.key,
+                            )
                             patchDraft(nutrient.id, {
-                              milestones: draft.milestones.filter(
-                                (row) => row.key !== milestone.key,
-                              ),
+                              milestones: next,
+                              remindEnabled: next.length > 0 ? true : draft.remindEnabled,
                             })
-                          }
+                          }}
                           style={{ paddingTop: 18 }}
                         >
                           <Trash2 color={colors.danger} size={18} strokeWidth={2} />
@@ -360,14 +417,7 @@ export default function NutrientGoalsScreen() {
 
                     <Pressable
                       accessibilityRole="button"
-                      onPress={() =>
-                        patchDraft(nutrient.id, {
-                          milestones: [
-                            ...draft.milestones,
-                            { key: newMilestoneKey(), timeText: '15:00', amountText: '' },
-                          ],
-                        })
-                      }
+                      onPress={() => addCheckpoint(nutrient.id)}
                       style={({ pressed }) => [screen.add, pressed && screen.rowPressed]}
                     >
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
