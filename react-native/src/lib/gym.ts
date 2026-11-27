@@ -15,6 +15,7 @@ import {
 } from './habitSchedule'
 import { parseReminderTime } from './habitReminders'
 import { isFeatureTab, type FeatureRow } from './featureUpdates'
+import type { NutrientGoalMilestone } from './nutrientTargetReminders'
 import type { ReactionRow } from './postSocial'
 import {
   bytesToBase64,
@@ -185,12 +186,27 @@ export type NutrientGoal = {
   max_amount: number | null
   name: string
   unit: string
+  remind_enabled: boolean
+  remind_first_time: { hour: number; minute: number } | null
+  remind_every_minutes: number | null
+}
+
+export type NutrientGoalSaveRow = {
+  nutrient_id: string
+  min_amount: number | null
+  max_amount: number | null
+  remind_enabled: boolean
+  remind_first_time: string | null
+  remind_every_minutes: number | null
+  milestones: { remind_at: string; threshold_amount: number; sort_order: number }[]
 }
 
 export async function loadNutrientGoals(userId: string): Promise<NutrientGoal[]> {
   const { data, error } = await db()
     .from('nutrient_goals')
-    .select('nutrient_id, min_amount, max_amount, nutrient:nutrients(id, name, unit)')
+    .select(
+      'nutrient_id, min_amount, max_amount, remind_enabled, remind_first_time, remind_every_minutes, nutrient:nutrients(id, name, unit)',
+    )
     .eq('user_id', userId)
   fail(error)
   return (data ?? []).map((row) => {
@@ -201,16 +217,52 @@ export async function loadNutrientGoals(userId: string): Promise<NutrientGoal[]>
       max_amount: row.max_amount == null ? null : Number(row.max_amount),
       name: nutrient.name,
       unit: nutrient.unit,
+      remind_enabled: Boolean(row.remind_enabled),
+      remind_first_time: parseReminderTime(
+        row.remind_first_time == null ? null : String(row.remind_first_time),
+      ),
+      remind_every_minutes:
+        row.remind_every_minutes == null ? null : Number(row.remind_every_minutes),
     }
   })
 }
 
-/** Replace the caller's goals. Blank / non-positive clears a bound; row kept if either bound set. */
+export async function loadNutrientGoalMilestones(
+  userId: string,
+): Promise<NutrientGoalMilestone[]> {
+  const { data, error } = await db()
+    .from('nutrient_goal_milestones')
+    .select('id, nutrient_id, remind_at, threshold_amount, sort_order')
+    .eq('user_id', userId)
+    .order('sort_order', { ascending: true })
+    .order('remind_at', { ascending: true })
+  fail(error)
+  return (data ?? [])
+    .map((row) => {
+      const remindAt = parseReminderTime(String(row.remind_at ?? ''))
+      if (!remindAt) return null
+      return {
+        id: row.id as string,
+        nutrient_id: row.nutrient_id as string,
+        remind_at: remindAt,
+        threshold_amount: Number(row.threshold_amount),
+        sort_order: Number(row.sort_order ?? 0),
+      } satisfies NutrientGoalMilestone
+    })
+    .filter((row): row is NutrientGoalMilestone => row != null)
+}
+
+/** Replace the caller's goals + milestones. Blank / non-positive clears a bound; row kept if either bound set. */
 export async function saveNutrientGoals(
   userId: string,
-  amounts: { nutrient_id: string; min_amount: number | null; max_amount: number | null }[],
+  amounts: NutrientGoalSaveRow[],
 ): Promise<void> {
   const keep = amounts.filter((row) => row.min_amount != null || row.max_amount != null)
+  const { error: delMilestonesError } = await db()
+    .from('nutrient_goal_milestones')
+    .delete()
+    .eq('user_id', userId)
+  fail(delMilestonesError)
   const { error: delError } = await db().from('nutrient_goals').delete().eq('user_id', userId)
   fail(delError)
   if (keep.length === 0) return
@@ -220,9 +272,27 @@ export async function saveNutrientGoals(
       nutrient_id: row.nutrient_id,
       min_amount: row.min_amount,
       max_amount: row.max_amount,
+      remind_enabled: row.remind_enabled,
+      remind_first_time: row.remind_first_time,
+      remind_every_minutes: row.remind_every_minutes,
     })),
   )
   fail(error)
+
+  const milestoneRows = keep.flatMap((row) =>
+    row.milestones.map((milestone) => ({
+      user_id: userId,
+      nutrient_id: row.nutrient_id,
+      remind_at: milestone.remind_at,
+      threshold_amount: milestone.threshold_amount,
+      sort_order: milestone.sort_order,
+    })),
+  )
+  if (milestoneRows.length === 0) return
+  const { error: milestoneError } = await db()
+    .from('nutrient_goal_milestones')
+    .insert(milestoneRows)
+  fail(milestoneError)
 }
 
 export async function loadFoods(forUserId?: string): Promise<Food[]> {

@@ -34,6 +34,7 @@ import {
   type NutrientGoal,
 } from '../../lib/gym'
 import { localDate } from '../../lib/localDate'
+import { syncNutrientRemindersForUser } from '../../lib/nutrientReminderSync'
 import {
   foodBasisLabel,
   foodTypeNutrition,
@@ -93,6 +94,7 @@ export default function DietScreen() {
       setRows(nextRows)
       setGoals(nextGoals)
       setError(null)
+      void syncNutrientRemindersForUser(userId, day)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load diet')
     } finally {

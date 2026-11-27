@@ -1,10 +1,12 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
+import { useAuth } from '../auth/AuthProvider'
 import { AppTextInput } from '../components/AppTextInput'
 import { Screen } from '../components/Screen'
 import { useScreenStyles } from '../theme/ThemeProvider'
 import { loadNutrients, logOtherIntake, type Nutrient } from '../lib/gym'
+import { syncNutrientRemindersForUser } from '../lib/nutrientReminderSync'
 import { consumeOtherFoodDraft, type OtherFoodDraft } from '../lib/otherFoodDraft'
 
 function takeInitialDraft(): OtherFoodDraft | null {
@@ -13,6 +15,7 @@ function takeInitialDraft(): OtherFoodDraft | null {
 
 export default function LogOtherScreen() {
   const screen = useScreenStyles()
+  const { session } = useAuth()
   const { day } = useLocalSearchParams<{ day: string }>()
   const router = useRouter()
   const [draft] = useState(takeInitialDraft)
@@ -51,6 +54,8 @@ export default function LogOtherScreen() {
         return
       }
       await logOtherIntake({ name, day, nutrients: chosen })
+      const userId = session?.user.id
+      if (userId) void syncNutrientRemindersForUser(userId, day)
       router.back()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save')

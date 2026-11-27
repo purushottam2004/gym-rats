@@ -5,11 +5,14 @@ import { Pressable, Text, View } from 'react-native'
 import { AppTextInput } from '../components/AppTextInput'
 import { Screen } from '../components/Screen'
 import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
+import { useAuth } from '../auth/AuthProvider'
 import { loadFoods, logIntake, measureLabel, type Food } from '../lib/gym'
+import { syncNutrientRemindersForUser } from '../lib/nutrientReminderSync'
 
 export default function AddFoodScreen() {
   const screen = useScreenStyles()
   const { colors } = useTheme()
+  const { session } = useAuth()
   const { day } = useLocalSearchParams<{ day: string }>()
   const router = useRouter()
   const [foods, setFoods] = useState<Food[]>([])
@@ -38,6 +41,8 @@ export default function AddFoodScreen() {
     }
     try {
       await logIntake(foodId, value, day)
+      const userId = session?.user.id
+      if (userId) void syncNutrientRemindersForUser(userId, day)
       router.back()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save')

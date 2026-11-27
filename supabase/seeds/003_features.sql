@@ -83,5 +83,14 @@ values
     'Edit your display name and photo from Profile. Appearance can follow the system or stay locked to light or dark. Sign-out is also here when you need to switch accounts.',
     10,
     '2026-11-27T00:00:00Z'
+  ),
+  (
+    'a1000001-0001-4000-8000-000000000003',
+    'diet',
+    'Nutrient target reminders',
+    'Get nudged toward min goals, including mid-day checkpoints.',
+    'On Nutrient goals, turn on reminders for any nutrient with a min. Set a first notification and optional repeats while you are still short of the day''s target. Add checkpoints such as “by 3:00 PM meet 1200 kcal” so progress is paced through the day. Notifications are local on this device.',
+    30,
+    '2026-11-27T12:00:00Z'
   )
 on conflict (id) do nothing;
