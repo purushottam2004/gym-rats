@@ -1853,6 +1853,11 @@ export async function updateBookChapterTitle(input: {
   fail(error)
 }
 
+export async function deleteBookChapter(chapterId: string): Promise<void> {
+  const { error } = await db().from('book_chapters').delete().eq('id', chapterId)
+  fail(error)
+}
+
 export async function setBookChapterCompleted(
   chapterId: string,
   completed: boolean,

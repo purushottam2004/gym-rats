@@ -1,10 +1,11 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
-import { Check, Circle, CircleCheck, Clock, Pencil } from 'lucide-react-native'
+import { Check, Circle, CircleCheck, Clock, Pencil, Trash2 } from 'lucide-react-native'
 import { useCallback, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
 import { AppTextInput } from '../../components/AppTextInput'
 import { LoadingBlock } from '../../components/BrandLoader'
+import { ConfirmModal } from '../../components/ConfirmModal'
 import { HabitSwipeRow } from '../../components/HabitSwipeRow'
 import { OrdinalNumber } from '../../components/OrdinalNumber'
 import { ScheduleChapterModal } from '../../components/ScheduleChapterModal'
@@ -20,6 +21,7 @@ import {
   addBookChapter,
   clearBookChapterSchedule,
   deleteBook,
+  deleteBookChapter,
   loadBook,
   loadBookAudiences,
   loadBookChapters,
@@ -59,6 +61,7 @@ export default function BookDetailScreen() {
   const [scheduleSaving, setScheduleSaving] = useState(false)
   const [editingChapterId, setEditingChapterId] = useState<string | null>(null)
   const [editingChapterTitle, setEditingChapterTitle] = useState('')
+  const [pendingDeleteChapter, setPendingDeleteChapter] = useState<BookChapter | null>(null)
   const [newChapterTitle, setNewChapterTitle] = useState('')
   const [hydrated, setHydrated] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -271,6 +274,26 @@ export default function BookDetailScreen() {
     }
   }
 
+  async function confirmDeleteChapter() {
+    if (!pendingDeleteChapter) return
+    const chapterId = pendingDeleteChapter.id
+    setSaving(true)
+    try {
+      await deleteBookChapter(chapterId)
+      setPendingDeleteChapter(null)
+      setEditingChapterId(null)
+      setEditingChapterTitle('')
+      if (scheduleChapterId === chapterId) setScheduleChapterId(null)
+      const next = chapters.filter((chapter) => chapter.id !== chapterId)
+      setChapters(next)
+      if (book) void syncBookReminderNotifications({ books: [book], chapters: next })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not delete chapter')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   async function addChapter() {
     if (!book) return
     const chapterTitle = newChapterTitle.trim()
@@ -299,6 +322,7 @@ export default function BookDetailScreen() {
   }
 
   return (
+    <View style={{ flex: 1 }}>
     <Screen>
       <Text style={screen.title}>{book?.title ?? 'Book'}</Text>
       {error ? <Text style={screen.error}>{error}</Text> : null}
@@ -528,7 +552,6 @@ export default function BookDetailScreen() {
                         { gap: 8 },
                       ]}
                     >
-                      {clockButton}
                       <OrdinalNumber
                         accessibilityLabel={`chapter ${chapterNumber}`}
                         value={chapterNumber}
@@ -540,6 +563,15 @@ export default function BookDetailScreen() {
                         style={[screen.input, screen.rowMain, { marginBottom: 0 }]}
                         value={editingChapterTitle}
                       />
+                      <Pressable
+                        accessibilityLabel="Delete chapter"
+                        accessibilityRole="button"
+                        disabled={saving}
+                        hitSlop={8}
+                        onPress={() => setPendingDeleteChapter(chapter)}
+                      >
+                        <Trash2 color={colors.danger} size={18} strokeWidth={1.75} />
+                      </Pressable>
                       <Pressable
                         accessibilityLabel="Save chapter title"
                         accessibilityRole="button"
@@ -625,5 +657,17 @@ export default function BookDetailScreen() {
         </>
       )}
     </Screen>
+    <ConfirmModal
+      visible={pendingDeleteChapter !== null}
+      title="Delete chapter?"
+      message={
+        pendingDeleteChapter
+          ? `Remove “${pendingDeleteChapter.title}” from this book? This cannot be undone.`
+          : ''
+      }
+      onCancel={() => setPendingDeleteChapter(null)}
+      onConfirm={() => void confirmDeleteChapter()}
+    />
+    </View>
   )
 }
