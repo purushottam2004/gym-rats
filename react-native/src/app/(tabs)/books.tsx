@@ -2,7 +2,7 @@ import * as ImagePicker from 'expo-image-picker'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { BookOpen, Camera, Plus } from 'lucide-react-native'
 import { useCallback, useMemo, useState } from 'react'
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
 import { BusyOverlay, LoadingBlock } from '../../components/BrandLoader'
 import { DayControls } from '../../components/DayControls'
@@ -81,22 +81,46 @@ export default function BooksScreen() {
   )
   const dueTitle = day === today ? 'Due today' : `Scheduled ${day}`
 
-  async function capturePhoto() {
-    if (photoBusy) return
+  async function openCamera(): Promise<PendingPhoto | null> {
+    if (photoBusy) return null
     const permission = await ImagePicker.requestCameraPermissionsAsync()
     if (!permission.granted) {
       setToast({ kind: 'error', message: 'Camera permission is required' })
-      return
+      return null
     }
     const result = await ImagePicker.launchCameraAsync({
       quality: 0.7,
       exif: false,
     })
-    if (result.canceled || !result.assets[0]) return
-    setPhotos((current) => [
-      ...current,
-      { uri: result.assets[0]!.uri, mimeType: result.assets[0]!.mimeType },
-    ])
+    if (result.canceled || !result.assets[0]) return null
+    return {
+      uri: result.assets[0].uri,
+      mimeType: result.assets[0].mimeType,
+    }
+  }
+
+  async function capturePhoto() {
+    const photo = await openCamera()
+    if (!photo) return
+    setPhotos((current) => [...current, photo])
+    setReviewOpen(true)
+  }
+
+  /** Keep existing shots and append another (cover + TOC pages). */
+  async function takeMorePhotos() {
+    const photo = await openCamera()
+    if (!photo) return
+    setPhotos((current) => [...current, photo])
+    setReviewOpen(true)
+  }
+
+  /** Replace only the latest shot. */
+  async function retakeLastPhoto() {
+    const photo = await openCamera()
+    if (!photo) return
+    setPhotos((current) =>
+      current.length === 0 ? [photo] : [...current.slice(0, -1), photo],
+    )
     setReviewOpen(true)
   }
 
@@ -272,33 +296,21 @@ export default function BooksScreen() {
       <PhotoConfirmModal
         visible={reviewOpen && photos.length > 0}
         imageUri={photos[photos.length - 1]?.uri ?? null}
-        body="We will read title, author, and TOC from your photos and open New book so you can edit before saving. Add more shots first if you need cover + contents pages."
+        photoCount={photos.length}
+        body="We will read title, author, and TOC from your photos and open New book so you can edit before saving. Take more pictures for cover + contents pages, then Continue."
         onCancel={() => {
           setReviewOpen(false)
           setPhotos([])
         }}
         onRetake={() => {
-          void capturePhoto()
+          void retakeLastPhoto()
         }}
+        onTakeMore={() => {
+          void takeMorePhotos()
+        }}
+        takeMoreLabel="Take more pictures"
         onContinue={() => void processPhotos()}
       />
-
-      {photos.length > 1 && reviewOpen ? (
-        <View style={styles.strip} pointerEvents="box-none">
-          <Text style={screen.muted}>{photos.length} photos — Process uses all of them</Text>
-          <View style={styles.stripRow}>
-            {photos.map((photo) => (
-              <Image key={photo.uri} source={{ uri: photo.uri }} style={styles.thumb} />
-            ))}
-            <Pressable
-              onPress={() => void capturePhoto()}
-              style={({ pressed }) => [screen.secondaryButton, pressed && { opacity: 0.85 }]}
-            >
-              <Text style={screen.secondaryButtonText}>Add photo</Text>
-            </Pressable>
-          </View>
-        </View>
-      ) : null}
 
       <BusyOverlay visible={photoBusy} label="Reading book…" />
       <Toast
@@ -314,23 +326,5 @@ export default function BooksScreen() {
 const styles = StyleSheet.create({
   actionRow: {
     justifyContent: 'flex-start',
-  },
-  strip: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    bottom: 100,
-    gap: 8,
-  },
-  stripRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    alignItems: 'center',
-  },
-  thumb: {
-    width: 44,
-    height: 44,
-    borderRadius: 6,
   },
 })
