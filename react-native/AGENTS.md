@@ -37,14 +37,18 @@ Run lint and typecheck before declaring any task done.
 Use EAS to build, sign, and submit the app in the cloud (`eas build`, `eas submit`) and to ship over-the-air updates — no local Xcode or Android Studio required. Run EAS CLI as `bunx eas-cli <command>` in Bun projects, or `npx eas-cli@latest <command>` otherwise; substitute that for bare `eas` in docs examples.
 Docs: https://docs.expo.dev/eas/index.md
 
-### Production OTA (do not skip)
+### Production OTA (mandatory for agent JS/asset fixes)
 
-This app uses `runtimeVersion.policy: fingerprint`. Publishing `eas update` from a Cloud Agent often creates a **new** fingerprint that installed phones do not have, so the OTA never applies.
+Root **[../AGENTS.md](../AGENTS.md)** also requires this. This app uses `runtimeVersion.policy: fingerprint`. Publishing `eas update` from a Cloud Agent often creates a **new** fingerprint that installed phones do not have, so the OTA never applies.
 
-1. For production JS OTAs run **only** `pnpm update:production --message "…"` (wraps `scripts/publish-production-ota.sh`).
-2. That script pins to [`ota-target-runtimes.json`](./ota-target-runtimes.json). **After every Release install**, update that JSON to the new binary’s fingerprints and commit it (the install script writes the iOS hash; you still commit). Do not publish OTAs against a stale JSON.
-3. Never treat a green Expo “Published!” as success until the publish used those target runtimes (or you intentionally rebuilt the binary and updated the JSON).
-4. Web / Vercel is not Expo OTA — do not expect `eas update` to change `v2logs` or other web hosts.
+1. Land the JS/asset change on **`origin/main` first** (agents push to `main` only — no PR).
+2. Then from this directory run **only** `pnpm update:production --message "…"` (wraps `scripts/publish-production-ota.sh`).
+3. That script **must** pin to the hashes in [`ota-target-runtimes.json`](./ota-target-runtimes.json) — the runtime fingerprints of the Release binaries currently installed on phones. Do not invent hashes; do not use this machine’s `fingerprint:generate` as the publish target.
+4. **Forbidden:** bare `eas update --channel production` (or any publish under the agent box fingerprint). Phones silently ignore it.
+5. **After every Release install**, update that JSON to the new binary’s fingerprints and commit it to `main` (the install script writes the iOS hash; you still commit). Do not publish OTAs against a stale JSON.
+6. Never treat a green Expo “Published!” as success until the publish used those pinned target runtimes (or you intentionally rebuilt the binary and updated the JSON).
+7. Web / Vercel is not Expo OTA — do not expect `eas update` to change `v2logs` or other web hosts.
+8. Do not tell the user a mobile JS fix shipped until step 2 succeeded, or say explicitly that OTA was not run and why.
 
 ## Rules
 

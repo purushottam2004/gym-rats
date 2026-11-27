@@ -26,7 +26,9 @@ pnpm update:production --message "short description"
 
 `pnpm update:production` runs [`scripts/publish-production-ota.sh`](./scripts/publish-production-ota.sh). It **pins** the publish to the iOS/Android hashes in [`ota-target-runtimes.json`](./ota-target-runtimes.json) (what installed Release phones already have). Do **not** call bare `eas update --channel production` from a Cloud Agent / CI box — that machine’s fingerprint is usually different, so Expo accepts the update and phones silently ignore it.
 
-**Whenever you install a Release binary** (local `install-ios-release.sh` / `pnpm ios:release-device`, or an EAS device build you put on a phone), update [`ota-target-runtimes.json`](./ota-target-runtimes.json) to that binary’s fingerprints and **commit it**. The install script updates the iOS hash for you; confirm the file changed and include it in the same PR or follow-up commit. Do not leave the JSON pointing at an old install — later OTAs will publish “successfully” and phones will ignore them.
+**Agents:** after pushing JS/asset fixes to `main`, running this OTA is mandatory before calling the mobile change shipped (see root [../AGENTS.md](../AGENTS.md)). The publish target is always the hashes already in `ota-target-runtimes.json` — never a fingerprint generated on the agent VM.
+
+**Whenever you install a Release binary** (local `install-ios-release.sh` / `pnpm ios:release-device`, or an EAS device build you put on a phone), update [`ota-target-runtimes.json`](./ota-target-runtimes.json) to that binary’s fingerprints and **commit it to `main`**. The install script updates the iOS hash for you; confirm the file changed and include it in the same push. Do not leave the JSON pointing at an old install — later OTAs will publish “successfully” and phones will ignore them.
 
 Then either publish with those pinned hashes (`pnpm update:production --message "…"`) or, only from the same tree that built the binary, `pnpm update:production --message "…" --current-fingerprint`.
 
@@ -45,4 +47,6 @@ Do not add an `ios/` or `android/` directory by hand. Expo generates them. The r
 
 ## Branches & PRs
 
-Follow monorepo [../CONTRIBUTING.md](../CONTRIBUTING.md) (`feature/*`, `bugs/*`, `chore/*`). Do not push to `main` / `stage` unless you own releases.
+**Agents:** ignore human branch prefixes. Per root [../AGENTS.md](../AGENTS.md), commit and push to **`main` only**, then run `pnpm update:production` for JS/asset fixes (pinned to [`ota-target-runtimes.json`](./ota-target-runtimes.json)). Do not open a PR to land agent work.
+
+**Humans:** follow monorepo [../CONTRIBUTING.md](../CONTRIBUTING.md) (`feature/*`, `bugs/*`, `chore/*`) unless you own releases and are pushing to `main` / `stage` on purpose.

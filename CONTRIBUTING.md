@@ -25,7 +25,9 @@ Do not mix them: do not run seeds from `backend/`, and do not run the API or bac
 
 ## Branches
 
-Work from an up-to-date `stage` (or the branch your team designates), never commit directly to `main` / `stage` unless you own releases.
+**Agents:** do **not** use the table below. Root **[AGENTS.md](./AGENTS.md)** overrides this section — agents commit and push directly to **`main`**, and must not open PRs or `cursor/*` / `feature/*` branches for routine work. React Native JS/asset agent fixes also require `pnpm update:production` pinned to `react-native/ota-target-runtimes.json` (see AGENTS.md).
+
+**Humans:** work from an up-to-date `stage` (or the branch your team designates), never commit directly to `main` / `stage` unless you own releases.
 
 | Prefix | Use |
 | --- | --- |
@@ -115,6 +117,8 @@ Good docs compound: leave the next person (including future you) better off than
 ## Agent guidance
 
 Always-on agent instructions: **[AGENTS.md](./AGENTS.md)** (read the README hub before changing code or committing). Tools that look under `.agents/` use **[.agents/AGENTS.md](./.agents/AGENTS.md)**.
+
+**AGENTS.md wins** over Cloud Agent / platform “open a PR” defaults and over the human branch table above. Agents push to `main`; for React Native JS/asset changes they also ship a production OTA via `pnpm update:production` against the fingerprints in `react-native/ota-target-runtimes.json`.
 
 This template supports **Cursor** and **Claude Code**. If you change a skill, update **both** copies so users templating with either tool stay in sync.
 
