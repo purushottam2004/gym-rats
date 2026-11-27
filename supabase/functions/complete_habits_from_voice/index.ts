@@ -317,35 +317,40 @@ export default {
       if (readError) {
         return jsonErr(readError.message);
       }
-      let current = (existing?.count as number | undefined) ?? 0;
+      const current = (existing?.count as number | undefined) ?? 0;
       const existingCompletedAt =
         (existing as { completed_at?: string | null } | null)?.completed_at ?? null;
 
       const hasFoodLink =
         Boolean(habit.food_id) && habit.food_amount != null && Number(habit.food_amount) > 0;
-      let linkedMaxIndex = 0;
-      let linkedCount = 0;
+
+      // Food-linked Habits allocate the Diet slot in one locked RPC.
       if (hasFoodLink) {
-        const { data: linkedRows, error: linkedError } = await ctx.supabase
-          .from("intakes")
-          .select("source_habit_frequency_index")
-          .eq("source_habit_id", habit.id)
-          .eq("logged_on", loggedOn);
-        if (linkedError) {
-          return jsonErr(linkedError.message);
+        const { data: bumped, error: bumpError } = await ctx.supabase.rpc(
+          "bump_habit_linked_intake",
+          {
+            p_habit_id: habit.id,
+            p_logged_on: loggedOn,
+          },
+        );
+        if (bumpError) {
+          console.error("habit food bump failed", bumpError);
+          continue;
         }
-        linkedCount = (linkedRows ?? []).length;
-        for (const row of linkedRows ?? []) {
-          const idx = row.source_habit_frequency_index as number | null;
-          if (typeof idx === "number" && idx > linkedMaxIndex) linkedMaxIndex = idx;
+        const row = Array.isArray(bumped) ? bumped[0] : bumped;
+        const dayCount = Number((row as { day_count?: number } | null)?.day_count);
+        if (!Number.isFinite(dayCount) || dayCount < 1) {
+          continue;
         }
-        // Habit count must match linked Diet slots before adding the next one.
-        if (linkedCount !== current) {
-          current = linkedCount;
-        }
+        completed.push({
+          habit_id: habit.id,
+          habit_name: habit.name,
+          day_count: dayCount,
+        });
+        continue;
       }
 
-      const next = hasFoodLink ? linkedMaxIndex + 1 : current + 1;
+      const next = current + 1;
 
       let progressAfter = next;
       if (habit.recurrence === "per_week") {
@@ -392,48 +397,6 @@ export default {
       );
       if (upsertError) {
         return jsonErr(upsertError.message);
-      }
-
-      if (hasFoodLink && habit.food_id) {
-        const frequencyIndex = next;
-        const { error: intakeError } = await ctx.supabase.from("intakes").insert({
-          user_id: userId,
-          food_id: habit.food_id,
-          amount: habit.food_amount,
-          logged_on: loggedOn,
-          source_habit_id: habit.id,
-          source_habit_frequency_index: frequencyIndex,
-        });
-        if (intakeError) {
-          console.error("habit food log failed", intakeError);
-          // Roll count back so Habit progress never outruns linked Diet rows.
-          if (linkedMaxIndex <= 0) {
-            const { error: rollbackError } = await ctx.supabase
-              .from("habit_day_counts")
-              .delete()
-              .eq("habit_id", habit.id)
-              .eq("logged_on", loggedOn);
-            if (rollbackError) {
-              console.error("habit food rollback failed", rollbackError);
-            }
-          } else {
-            const { error: rollbackError } = await ctx.supabase.from("habit_day_counts").upsert(
-              {
-                habit_id: habit.id,
-                user_id: userId,
-                logged_on: loggedOn,
-                count: linkedMaxIndex,
-                updated_at: new Date().toISOString(),
-                completed_at: null,
-              },
-              { onConflict: "habit_id,logged_on" },
-            );
-            if (rollbackError) {
-              console.error("habit food rollback failed", rollbackError);
-            }
-          }
-          continue;
-        }
       }
 
       completed.push({

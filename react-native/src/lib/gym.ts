@@ -1342,32 +1342,23 @@ export async function bumpHabitDayCount(input: {
     return { count: next }
   }
 
-  // +1 with food link: next sequential frequency index, then insert the Diet row.
-  const linked = await loadHabitLinkedIntakeStats(input.habitId, input.day)
-  const frequencyIndex = linked.maxIndex + 1
-  const next = await setHabitDayCount({
-    habitId: input.habitId,
-    day: input.day,
-    count: frequencyIndex,
-    habit,
-  })
-
+  // +1 with food link: DB allocates the next slot under a day-count row lock
+  // (packs gaps, inserts intake, syncs count) so concurrent deletes cannot leave holes.
   try {
-    await logIntake(habit.food_id, habit.food_amount, input.day, {
-      sourceHabitId: habit.id,
-      frequencyIndex,
+    const { data, error } = await db().rpc('bump_habit_linked_intake', {
+      p_habit_id: input.habitId,
+      p_logged_on: input.day,
     })
+    fail(error)
+    const row = Array.isArray(data) ? data[0] : data
+    const next = Number((row as { day_count?: number } | null)?.day_count)
+    if (!Number.isFinite(next) || next < 1) {
+      throw new Error('Could not log linked food')
+    }
     return { count: next, foodLogged: true }
   } catch (err) {
-    // Roll count back so Habit progress never outruns linked Diet rows.
-    await setHabitDayCount({
-      habitId: input.habitId,
-      day: input.day,
-      count: linked.count,
-      habit,
-    })
     return {
-      count: linked.count,
+      count: await readHabitDayCount(input.habitId, input.day),
       foodLogError:
         err instanceof Error && err.message.trim()
           ? err.message.trim()
