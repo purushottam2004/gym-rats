@@ -3,18 +3,21 @@ import { Circle, CircleCheck } from 'lucide-react-native'
 import { useCallback, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { AppTextInput } from '../components/AppTextInput'
+import { DayControls } from '../components/DayControls'
 import { Screen } from '../components/Screen'
 import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
 import { loadLifts, loadMuscles, logSet, type Lift, type Muscle } from '../lib/gym'
 import { liftCatalogGroupsWithLifts } from '../lib/liftCatalog'
+import { localDate } from '../lib/localDate'
 
 const SET_NUMBERS = [1, 2, 3, 4, 5] as const
 
 export default function AddSetScreen() {
   const screen = useScreenStyles()
   const { colors } = useTheme()
-  const { day } = useLocalSearchParams<{ day: string }>()
+  const { day: dayParam } = useLocalSearchParams<{ day: string }>()
   const router = useRouter()
+  const [day, setDay] = useState(() => dayParam || localDate())
   const [lifts, setLifts] = useState<Lift[]>([])
   const [muscles, setMuscles] = useState<Muscle[]>([])
   const [liftId, setLiftId] = useState<string | null>(null)
@@ -25,6 +28,7 @@ export default function AddSetScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      if (dayParam) setDay(dayParam)
       void Promise.all([loadLifts(), loadMuscles()])
         .then(([nextLifts, nextMuscles]) => {
           setLifts(nextLifts)
@@ -32,7 +36,7 @@ export default function AddSetScreen() {
           setLiftId((current) => current ?? nextLifts[0]?.id ?? null)
         })
         .catch((err: unknown) => setError(err instanceof Error ? err.message : 'Could not load lifts'))
-    }, []),
+    }, [dayParam]),
   )
 
   const groups = useMemo(() => liftCatalogGroupsWithLifts(lifts, muscles), [lifts, muscles])
@@ -62,6 +66,14 @@ export default function AddSetScreen() {
 
   return (
     <Screen
+      header={
+        <View style={screen.tabChrome}>
+          <Text style={[screen.tabChromeTitle, { flexShrink: 1 }]} numberOfLines={1}>
+            Add a set
+          </Text>
+          <DayControls day={day} onChange={setDay} />
+        </View>
+      }
       footer={
         <View style={{ gap: 10 }}>
           <Pressable
@@ -126,8 +138,6 @@ export default function AddSetScreen() {
         </View>
       }
     >
-      <Text style={screen.title}>Add a set</Text>
-      <Text style={screen.muted}>{day}</Text>
       {groups.map((group) => (
         <View key={group.key} style={screen.card}>
           <View style={[screen.row, screen.rowFirst]}>
