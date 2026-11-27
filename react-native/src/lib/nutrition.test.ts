@@ -195,10 +195,26 @@ describe('nutrientBandFill', () => {
     assert.ok(met)
     assert.equal(met.progress, 1)
     assert.ok(midBand)
+    // Min–max band: width is vs min (full once min is met); color warms past min.
+    assert.equal(midBand.progress, 1)
     assert.notEqual(midBand.fillColor, met.fillColor)
     assert.ok(over)
     assert.equal(over.progress, 1)
     assert.equal(over.fillColor, '#fca5a5')
+  })
+
+  it('sizes min–max bars against min and only warms color after min', () => {
+    const below = nutrientBandFill(50, 100, 1500)
+    const atMin = nutrientBandFill(100, 100, 1500)
+    const pastMin = nutrientBandFill(342, 100, 1500)
+    assert.ok(below)
+    assert.equal(below.progress, 0.5)
+    assert.ok(atMin)
+    assert.equal(atMin.progress, 1)
+    assert.ok(pastMin)
+    assert.equal(pastMin.progress, 1)
+    assert.notEqual(pastMin.fillColor, atMin.fillColor)
+    assert.notEqual(pastMin.fillColor, below.fillColor)
   })
 })
 

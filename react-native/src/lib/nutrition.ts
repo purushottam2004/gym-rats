@@ -96,7 +96,10 @@ export type NutritionProgressLine = NutritionLine & {
   max: number | null
   /** 0–1 bar width; null when there is no goal band. */
   progress: number | null
-  /** Fill: yellow→green to min, then green→orange→red toward max. */
+  /**
+   * Fill color: yellow→green while approaching min; only after min does the
+   * color warm green→orange→red toward max.
+   */
   fillColor: string | null
 }
 
@@ -127,7 +130,10 @@ function colorPastMin(t: number): string {
   return mixRgb(FILL_ORANGE, FILL_RED, (t - 0.5) / 0.5)
 }
 
-/** Yellow→green toward min; past min, green→orange→red toward max; over max = red. */
+/**
+ * Yellow→green toward min (bar width = total/min). Once min is met the bar stays
+ * full and only the color changes (green→orange→red toward max). Over max = red.
+ */
 export function nutrientBandFill(
   total: number,
   min: number | null,
@@ -140,13 +146,15 @@ export function nutrientBandFill(
   }
 
   if (min != null && max != null) {
-    const width = clamp01(total / max)
+    // Width is always vs min so the bar is full at the lower bound.
+    const width = clamp01(total / min)
     if (total < min) {
       return { progress: width, fillColor: mixRgb(FILL_YELLOW, FILL_GREEN, total / min) }
     }
+    // Past min: bar stays full; color alone tracks position toward max.
     const span = max - min
     const past = span > 0 ? (total - min) / span : 1
-    return { progress: width, fillColor: colorPastMin(past) }
+    return { progress: 1, fillColor: colorPastMin(past) }
   }
 
   if (min != null) {
