@@ -18,6 +18,7 @@ import { isFeatureTab, type FeatureRow } from './featureUpdates'
 import type { NutrientGoalMilestone } from './nutrientTargetReminders'
 import type { ReactionRow } from './postSocial'
 import type { Book, BookChapter } from './bookSchedule'
+import { invokeEdgeFunctionWithRetry } from './edgeFunctionRetry'
 import {
   bytesToBase64,
   parseBookPhotoEstimateResponse,
@@ -741,14 +742,16 @@ export async function estimateFoodFromPhoto(input: {
     input.mimeType?.trim() ||
     (headerMime && headerMime.startsWith('image/') ? headerMime : 'image/jpeg')
 
-  const { data, error } = await db().functions.invoke('estimate_food_from_photo', {
-    body: {
-      image_base64: bytesToBase64(bytes),
-      mime_type: mime,
-    },
-  })
-
-  return resultFromFunctionsInvoke(data, error, parseFoodPhotoEstimateResponse)
+  return invokeEdgeFunctionWithRetry(
+    () =>
+      db().functions.invoke('estimate_food_from_photo', {
+        body: {
+          image_base64: bytesToBase64(bytes),
+          mime_type: mime,
+        },
+      }),
+    parseFoodPhotoEstimateResponse,
+  )
 }
 
 export async function deleteSet(id: string): Promise<void> {
@@ -1903,11 +1906,13 @@ export async function estimateBookFromPhotos(input: {
     images.push({ image_base64: bytesToBase64(bytes), mime_type: mime })
   }
 
-  const { data, error } = await db().functions.invoke('estimate_book_from_photos', {
-    body: { images },
-  })
-
-  return resultFromFunctionsInvoke(data, error, parseBookPhotoEstimateResponse)
+  return invokeEdgeFunctionWithRetry(
+    () =>
+      db().functions.invoke('estimate_book_from_photos', {
+        body: { images },
+      }),
+    parseBookPhotoEstimateResponse,
+  )
 }
 
 export type { FeatureRow, FeatureTab } from './featureUpdates'

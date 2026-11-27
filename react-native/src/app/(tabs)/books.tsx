@@ -297,7 +297,7 @@ export default function BooksScreen() {
         visible={reviewOpen && photos.length > 0}
         imageUri={photos[photos.length - 1]?.uri ?? null}
         photoCount={photos.length}
-        body="We will read title, author, and TOC from your photos and open New book so you can edit before saving. Take more pictures for cover + contents pages, then Continue."
+        body="We will read title, author, and TOC from your photos and open New book so you can edit before saving. Take more pictures for cover + contents pages, then Submit."
         onCancel={() => {
           setReviewOpen(false)
           setPhotos([])

@@ -60,7 +60,7 @@ export function PhotoConfirmModal({
                 onPress={onContinue}
                 style={({ pressed }) => [screen.confirmPrimary, pressed && screen.rowPressed]}
               >
-                <Text style={screen.confirmPrimaryText}>Continue</Text>
+                <Text style={screen.confirmPrimaryText}>Submit</Text>
               </Pressable>
             </View>
             {onTakeMore ? (
