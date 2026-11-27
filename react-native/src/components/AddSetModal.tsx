@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Modal, Pressable, Text, View } from 'react-native'
+import { KeyboardAvoidingView, Modal, Platform, Pressable, Text, View } from 'react-native'
 import { logSet } from '../lib/gym'
 import { type SetAttempt } from '../lib/nextSetAttempt'
 import { AppTextInput } from './AppTextInput'
@@ -62,7 +62,10 @@ export function AddSetModal({
 
   return (
     <Modal animationType="fade" transparent visible={visible} onRequestClose={onCancel}>
-      <View style={screen.modalBackdrop}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={screen.modalBackdrop}
+      >
         <View style={screen.confirmCard}>
           <Text style={screen.sectionTitle}>Add a set</Text>
           <Text style={screen.body}>{liftName}</Text>
@@ -132,7 +135,7 @@ export function AddSetModal({
             </Pressable>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   )
 }
