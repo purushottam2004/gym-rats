@@ -225,6 +225,12 @@ describe('nutrientBandFill', () => {
     assert.ok(met)
     assert.equal(met.fillColor, '#166534')
   })
+
+  it('keeps the dark-theme over-max ramp dark (not pastel)', () => {
+    const over = nutrientBandFill(200, 50, 100, '#166534')
+    assert.ok(over)
+    assert.equal(over.fillColor, '#991b1b')
+  })
 })
 
 describe('contrastTextForFill', () => {
