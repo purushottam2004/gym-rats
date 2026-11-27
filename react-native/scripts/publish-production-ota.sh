@@ -102,10 +102,23 @@ echo "==> Target runtimes from ota-target-runtimes.json (installed binaries)"
 echo "    ios=$IOS_RUNTIME"
 echo "    android=$ANDROID_RUNTIME"
 
-# Warn if this machine's fingerprint already matches (normal path possible).
-CURRENT_IOS="$("${EAS[@]}" fingerprint:generate --platform ios --environment production --json --non-interactive 2>/dev/null | python3 -c 'import json,sys; r=sys.stdin.read(); i=r.find("{"); print(json.loads(r[i:]).get("hash",""))' || true)"
-if [[ -n "$CURRENT_IOS" && "$CURRENT_IOS" == "$IOS_RUNTIME" ]]; then
-  echo "==> This machine's iOS fingerprint already matches the target — publishing normally"
+# Only skip pinning when *both* platforms already match the installed binaries.
+# Matching iOS alone is not enough — Cloud Agents often share the iOS hash while
+# Android differs; publishing "normally" then lands Android under a fingerprint
+# phones ignore.
+fingerprint_hash() {
+  local platform="$1"
+  "${EAS[@]}" fingerprint:generate --platform "$platform" --environment production --json --non-interactive 2>/dev/null \
+    | python3 -c 'import json,sys; r=sys.stdin.read(); i=r.find("{"); print(json.loads(r[i:]).get("hash",""))' \
+    || true
+}
+
+CURRENT_IOS="$(fingerprint_hash ios)"
+CURRENT_ANDROID="$(fingerprint_hash android)"
+
+if [[ -n "$CURRENT_IOS" && "$CURRENT_IOS" == "$IOS_RUNTIME" \
+   && -n "$CURRENT_ANDROID" && "$CURRENT_ANDROID" == "$ANDROID_RUNTIME" ]]; then
+  echo "==> This machine's iOS + Android fingerprints already match the targets — publishing normally"
   exec "${EAS[@]}" update \
     --channel production \
     --environment production \
@@ -114,9 +127,12 @@ if [[ -n "$CURRENT_IOS" && "$CURRENT_IOS" == "$IOS_RUNTIME" ]]; then
 fi
 
 if [[ -n "$CURRENT_IOS" && "$CURRENT_IOS" != "$IOS_RUNTIME" ]]; then
-  echo "warning: this machine fingerprint ($CURRENT_IOS) != target ios ($IOS_RUNTIME)"
-  echo "         Pinning publish to the target so installed phones receive the update."
+  echo "warning: this machine ios fingerprint ($CURRENT_IOS) != target ($IOS_RUNTIME)"
 fi
+if [[ -n "$CURRENT_ANDROID" && "$CURRENT_ANDROID" != "$ANDROID_RUNTIME" ]]; then
+  echo "warning: this machine android fingerprint ($CURRENT_ANDROID) != target ($ANDROID_RUNTIME)"
+fi
+echo "         Pinning publish to ota-target-runtimes.json so installed phones receive the update."
 
 echo "==> Pinning temporary platform runtimeVersion values for publish only"
 cp app.json app.json.ota-bak
