@@ -65,6 +65,8 @@ export type NutrientReminderFire = {
 }
 
 const MAX_FIRES_PER_DAY = 24
+/** Cap every-N follow-ups scheduled ahead so intake updates can cancel stale nags. */
+export const MAX_EVERY_FOLLOWUPS_SCHEDULED = 2
 const LOOKAHEAD_DAYS = 7
 
 function localDateFromParts(year: number, monthIndex: number, day: number): string {
@@ -142,12 +144,15 @@ export function planNutrientMilestoneFires(input: {
         })
       }
 
+      // Every-N nags only for today, and only a short ahead window. Scheduling the
+      // whole day up front left stale "still short" fires after the user logged enough.
       if (offset !== 0 || every == null) continue
       if (nutrientTargetMet(progressToday, milestone.threshold_amount)) continue
 
       const dayEnd = endOfLocalDay(day)
       let next = new Date(at.getTime() + every * 60_000)
       let index = 1
+      let scheduledFollowUps = 0
       while (next.getTime() <= dayEnd.getTime() && index < MAX_FIRES_PER_DAY) {
         if (next.getTime() > now.getTime()) {
           fires.push({
@@ -158,6 +163,8 @@ export function planNutrientMilestoneFires(input: {
             index,
             threshold_amount: milestone.threshold_amount,
           })
+          scheduledFollowUps += 1
+          if (scheduledFollowUps >= MAX_EVERY_FOLLOWUPS_SCHEDULED) break
         }
         next = new Date(next.getTime() + every * 60_000)
         index += 1

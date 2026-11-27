@@ -34,6 +34,7 @@ import { syncHabitReminderNotifications } from '../../lib/habitReminderNotificat
 import { formatHabitCompletedAt } from '../../lib/habitReminders'
 import { applyHabitDayCountDelta, habitSectionCardsForDay } from '../../lib/habitSchedule'
 import { localDate } from '../../lib/localDate'
+import { syncNutrientRemindersForUser } from '../../lib/nutrientReminderSync'
 import { useScreenStyles, useTheme } from '../../theme/ThemeProvider'
 
 function recordingMimeType(): string {
@@ -163,6 +164,9 @@ export default function HabitsScreen() {
           kind: 'error',
           message: `Habit updated, but food was not logged: ${result.foodLogError}`,
         })
+      } else if (userId && (result.foodLogged || delta < 0)) {
+        // Food link +1 logs intake; −1 may delete it — either way refresh nutrient nags.
+        void syncNutrientRemindersForUser(userId)
       }
     } catch (err) {
       if (countsRef.current === optimistic) {

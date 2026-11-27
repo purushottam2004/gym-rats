@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from '../auth/AuthProvider'
 import { FeatureUpdatesProvider } from '../auth/FeatureUpdatesProvider'
 import { BrandLoader } from '../components/BrandLoader'
 import { FeatureUpdateNotifier } from '../components/FeatureUpdateNotifier'
+import { NutrientReminderNotifier } from '../components/NutrientReminderNotifier'
 import { OtaUpdateNotifier } from '../components/OtaUpdateNotifier'
 import { ThemeProvider, useScreenStyles } from '../theme/ThemeProvider'
 
@@ -78,6 +79,7 @@ export default function RootLayout() {
         <FeatureUpdatesProvider>
           <OtaUpdateNotifier />
           <FeatureUpdateNotifier />
+          <NutrientReminderNotifier />
           <Navigation />
         </FeatureUpdatesProvider>
       </AuthProvider>

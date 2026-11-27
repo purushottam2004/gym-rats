@@ -55,7 +55,7 @@ export default function LogOtherScreen() {
       }
       await logOtherIntake({ name, day, nutrients: chosen })
       const userId = session?.user.id
-      if (userId) void syncNutrientRemindersForUser(userId, day)
+      if (userId) await syncNutrientRemindersForUser(userId)
       router.back()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save')

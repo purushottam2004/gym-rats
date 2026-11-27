@@ -156,7 +156,7 @@ describe('planNutrientTargetFires', () => {
     assert.equal(fires.length, 0)
   })
 
-  it('applies every-N repeats after each unmet checkpoint today', () => {
+  it('applies a short every-N window after each unmet checkpoint today', () => {
     const fires = planNutrientTargetFires({
       nutrientId: 'n1',
       settings: {
@@ -180,9 +180,38 @@ describe('planNutrientTargetFires', () => {
     })
     const todayFires = fires.filter((fire) => fire.day === today)
     assert.ok(todayFires.length >= 2)
+    assert.ok(todayFires.length <= 3)
     assert.ok(todayFires.every((fire) => fire.threshold_amount === 1000))
     assert.ok(todayFires.every((fire) => fire.date.getTime() > now.getTime()))
     assert.equal(todayFires[0]?.index, 0)
     assert.ok(todayFires.some((fire) => fire.index > 0))
+  })
+
+  it('stops scheduling once the checkpoint amount is already met', () => {
+    const fires = planNutrientTargetFires({
+      nutrientId: 'n1',
+      settings: {
+        remind_enabled: true,
+        remind_first_time: null,
+        remind_every_minutes: 30,
+        min_amount: 3000,
+      },
+      milestones: [
+        {
+          id: 'm1',
+          nutrient_id: 'n1',
+          remind_at: { hour: 14, minute: 0 },
+          threshold_amount: 1000,
+          sort_order: 0,
+        },
+      ],
+      now,
+      today,
+      progressToday: 1000,
+    })
+    assert.equal(
+      fires.filter((fire) => fire.day === today).length,
+      0,
+    )
   })
 })

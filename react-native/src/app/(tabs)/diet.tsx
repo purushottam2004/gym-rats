@@ -94,7 +94,7 @@ export default function DietScreen() {
       setRows(nextRows)
       setGoals(nextGoals)
       setError(null)
-      void syncNutrientRemindersForUser(userId, day)
+      void syncNutrientRemindersForUser(userId)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load diet')
     } finally {

@@ -42,7 +42,7 @@ export default function AddFoodScreen() {
     try {
       await logIntake(foodId, value, day)
       const userId = session?.user.id
-      if (userId) void syncNutrientRemindersForUser(userId, day)
+      if (userId) await syncNutrientRemindersForUser(userId)
       router.back()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save')
