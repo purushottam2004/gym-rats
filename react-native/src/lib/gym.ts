@@ -89,6 +89,8 @@ export type Intake = {
   /** Present when this Intake was created by completing a Habit. */
   source_habit_id: string | null
   source_habit_name: string | null
+  /** Frequency slot 1..n for Habit-linked intakes; null otherwise. */
+  source_habit_frequency_index: number | null
 }
 
 export type Muscle = {
@@ -379,7 +381,7 @@ export async function loadIntakes(userId: string, day: string): Promise<Intake[]
   const { data, error } = await db()
     .from('intakes')
     .select(
-      'id, amount, logged_on, source_habit_id, food:foods!intakes_food_id_fkey(id, name, measure, basis, is_other, food_nutrients(amount, nutrient:nutrients(id, name, unit))), source_habit:habits!intakes_source_habit_id_fkey(id, name)',
+      'id, amount, logged_on, source_habit_id, source_habit_frequency_index, food:foods!intakes_food_id_fkey(id, name, measure, basis, is_other, food_nutrients(amount, nutrient:nutrients(id, name, unit))), source_habit:habits!intakes_source_habit_id_fkey(id, name)',
     )
     .eq('user_id', userId)
     .eq('logged_on', day)
@@ -401,6 +403,10 @@ export async function loadIntakes(userId: string, day: string): Promise<Intake[]
       logged_on: row.logged_on as string,
       source_habit_id: (row.source_habit_id as string | null) ?? null,
       source_habit_name: sourceHabit?.name ?? null,
+      source_habit_frequency_index:
+        row.source_habit_frequency_index == null
+          ? null
+          : Number(row.source_habit_frequency_index),
       food: {
         id: food.id,
         name: food.name,
@@ -420,12 +426,20 @@ export async function logIntake(
   foodId: string,
   amount: number,
   day: string,
-  opts?: { sourceHabitId?: string },
+  opts?: { sourceHabitId?: string; frequencyIndex?: number },
 ): Promise<string> {
   const { data: userData, error: userError } = await db().auth.getUser()
   fail(userError)
   const userId = userData.user?.id
   if (!userId) throw new Error('Not signed in')
+  const sourceHabitId = opts?.sourceHabitId ?? null
+  const frequencyIndex =
+    sourceHabitId != null
+      ? (opts?.frequencyIndex ?? null)
+      : null
+  if (sourceHabitId != null && (frequencyIndex == null || frequencyIndex < 1)) {
+    throw new Error('Habit-linked intake needs a frequency slot')
+  }
   const { data, error } = await db()
     .from('intakes')
     .insert({
@@ -433,7 +447,8 @@ export async function logIntake(
       food_id: foodId,
       amount,
       logged_on: day,
-      source_habit_id: opts?.sourceHabitId ?? null,
+      source_habit_id: sourceHabitId,
+      source_habit_frequency_index: frequencyIndex,
     })
     .select('id')
     .single()
@@ -1240,6 +1255,31 @@ async function readHabitDayCount(habitId: string, day: string): Promise<number> 
   return (await readHabitDayCountRow(habitId, day)).count
 }
 
+/** Linked Diet intakes for a Habit on a day, ordered highest frequency index first. */
+async function loadHabitLinkedIntakeStats(
+  habitId: string,
+  day: string,
+): Promise<{ count: number; maxIndex: number; topId: string | null }> {
+  const { data, error } = await db()
+    .from('intakes')
+    .select('id, source_habit_frequency_index')
+    .eq('source_habit_id', habitId)
+    .eq('logged_on', day)
+    .order('source_habit_frequency_index', { ascending: false })
+  fail(error)
+  const rows = data ?? []
+  let maxIndex = 0
+  for (const row of rows) {
+    const idx = row.source_habit_frequency_index
+    if (typeof idx === 'number' && idx > maxIndex) maxIndex = idx
+  }
+  return {
+    count: rows.length,
+    maxIndex,
+    topId: rows[0]?.id != null ? (rows[0].id as string) : null,
+  }
+}
+
 /** Increment the selected day's count by delta (may be negative). Syncs linked Diet Intakes. */
 export async function bumpHabitDayCount(input: {
   habitId: string
@@ -1251,7 +1291,7 @@ export async function bumpHabitDayCount(input: {
   const userId = userData.user?.id
   if (!userId) throw new Error('Not signed in')
 
-  const current = await readHabitDayCount(input.habitId, input.day)
+  let current = await readHabitDayCount(input.habitId, input.day)
 
   if (input.delta === 0) {
     return { count: current }
@@ -1261,19 +1301,25 @@ export async function bumpHabitDayCount(input: {
   const habit = habits.find((row) => row.id === input.habitId)
   const hasFoodLink = Boolean(habit?.food_id && habit.food_amount != null)
 
-  // −1 with a food link: delete the Habit-created Intake; DB trigger decrements the count.
+  // Keep Habit count aligned with linked intake slots (1..n) before mutating.
+  if (hasFoodLink) {
+    const linked = await loadHabitLinkedIntakeStats(input.habitId, input.day)
+    if (linked.count !== current) {
+      current = await setHabitDayCount({
+        habitId: input.habitId,
+        day: input.day,
+        count: linked.count,
+        habit,
+      })
+    }
+  }
+
+  // −1 with a food link: delete the downmost slot (highest frequency index).
+  // DB trigger decrements the count and remappings remaining indices to 1..n.
   if (input.delta < 0 && hasFoodLink) {
-    const { data: linked, error: linkedError } = await db()
-      .from('intakes')
-      .select('id')
-      .eq('source_habit_id', input.habitId)
-      .eq('logged_on', input.day)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    fail(linkedError)
-    if (linked?.id) {
-      await deleteIntake(linked.id as string)
+    const linked = await loadHabitLinkedIntakeStats(input.habitId, input.day)
+    if (linked.topId) {
+      await deleteIntake(linked.topId)
       return { count: await readHabitDayCount(input.habitId, input.day) }
     }
     // No linked Intake left — still lower the Habit count.
@@ -1286,25 +1332,42 @@ export async function bumpHabitDayCount(input: {
     return { count: next }
   }
 
+  if (input.delta < 0 || !hasFoodLink || !habit?.food_id || habit.food_amount == null) {
+    const next = await setHabitDayCount({
+      habitId: input.habitId,
+      day: input.day,
+      count: current + input.delta,
+      habit,
+    })
+    return { count: next }
+  }
+
+  // +1 with food link: next sequential frequency index, then insert the Diet row.
+  const linked = await loadHabitLinkedIntakeStats(input.habitId, input.day)
+  const frequencyIndex = linked.maxIndex + 1
   const next = await setHabitDayCount({
     habitId: input.habitId,
     day: input.day,
-    count: current + input.delta,
+    count: frequencyIndex,
     habit,
   })
-
-  if (input.delta < 0 || !hasFoodLink || !habit?.food_id || habit.food_amount == null) {
-    return { count: next }
-  }
 
   try {
     await logIntake(habit.food_id, habit.food_amount, input.day, {
       sourceHabitId: habit.id,
+      frequencyIndex,
     })
     return { count: next, foodLogged: true }
   } catch (err) {
+    // Roll count back so Habit progress never outruns linked Diet rows.
+    await setHabitDayCount({
+      habitId: input.habitId,
+      day: input.day,
+      count: linked.count,
+      habit,
+    })
     return {
-      count: next,
+      count: linked.count,
       foodLogError:
         err instanceof Error && err.message.trim()
           ? err.message.trim()

@@ -317,10 +317,35 @@ export default {
       if (readError) {
         return jsonErr(readError.message);
       }
-      const current = (existing?.count as number | undefined) ?? 0;
+      let current = (existing?.count as number | undefined) ?? 0;
       const existingCompletedAt =
         (existing as { completed_at?: string | null } | null)?.completed_at ?? null;
-      const next = current + 1;
+
+      const hasFoodLink =
+        Boolean(habit.food_id) && habit.food_amount != null && Number(habit.food_amount) > 0;
+      let linkedMaxIndex = 0;
+      let linkedCount = 0;
+      if (hasFoodLink) {
+        const { data: linkedRows, error: linkedError } = await ctx.supabase
+          .from("intakes")
+          .select("source_habit_frequency_index")
+          .eq("source_habit_id", habit.id)
+          .eq("logged_on", loggedOn);
+        if (linkedError) {
+          return jsonErr(linkedError.message);
+        }
+        linkedCount = (linkedRows ?? []).length;
+        for (const row of linkedRows ?? []) {
+          const idx = row.source_habit_frequency_index as number | null;
+          if (typeof idx === "number" && idx > linkedMaxIndex) linkedMaxIndex = idx;
+        }
+        // Habit count must match linked Diet slots before adding the next one.
+        if (linkedCount !== current) {
+          current = linkedCount;
+        }
+      }
+
+      const next = hasFoodLink ? linkedMaxIndex + 1 : current + 1;
 
       let progressAfter = next;
       if (habit.recurrence === "per_week") {
@@ -369,17 +394,45 @@ export default {
         return jsonErr(upsertError.message);
       }
 
-      if (habit.food_id && habit.food_amount != null && Number(habit.food_amount) > 0) {
+      if (hasFoodLink && habit.food_id) {
+        const frequencyIndex = next;
         const { error: intakeError } = await ctx.supabase.from("intakes").insert({
           user_id: userId,
           food_id: habit.food_id,
           amount: habit.food_amount,
           logged_on: loggedOn,
           source_habit_id: habit.id,
+          source_habit_frequency_index: frequencyIndex,
         });
         if (intakeError) {
           console.error("habit food log failed", intakeError);
-          // Count already saved; surface food failure in the habit name note via completed payload.
+          // Roll count back so Habit progress never outruns linked Diet rows.
+          if (linkedMaxIndex <= 0) {
+            const { error: rollbackError } = await ctx.supabase
+              .from("habit_day_counts")
+              .delete()
+              .eq("habit_id", habit.id)
+              .eq("logged_on", loggedOn);
+            if (rollbackError) {
+              console.error("habit food rollback failed", rollbackError);
+            }
+          } else {
+            const { error: rollbackError } = await ctx.supabase.from("habit_day_counts").upsert(
+              {
+                habit_id: habit.id,
+                user_id: userId,
+                logged_on: loggedOn,
+                count: linkedMaxIndex,
+                updated_at: new Date().toISOString(),
+                completed_at: null,
+              },
+              { onConflict: "habit_id,logged_on" },
+            );
+            if (rollbackError) {
+              console.error("habit food rollback failed", rollbackError);
+            }
+          }
+          continue;
         }
       }
 

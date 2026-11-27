@@ -113,6 +113,32 @@ export function habitComplete(habit: Pick<Habit, 'frequency'>, done: number): bo
   return done >= habit.frequency
 }
 
+/**
+ * Next frequency slot for a Habit-linked Diet intake.
+ * Existing indices must already be contiguous 1..n (or empty).
+ */
+export function nextHabitFrequencyIndex(existingIndices: number[]): number {
+  let max = 0
+  for (const index of existingIndices) {
+    if (index > max) max = index
+  }
+  return max + 1
+}
+
+/**
+ * After deleting the intake at `deletedIndex`, remapping remaining slots to stay 1..n.
+ * Habit swipe −1 deletes the highest index; Diet may delete any slot.
+ */
+export function remapHabitFrequencyIndicesAfterDelete(
+  existingIndices: number[],
+  deletedIndex: number,
+): number[] {
+  return existingIndices
+    .filter((index) => index !== deletedIndex)
+    .map((index) => (index > deletedIndex ? index - 1 : index))
+    .sort((a, b) => a - b)
+}
+
 export type HabitDayRow = {
   habit: Habit
   done: number

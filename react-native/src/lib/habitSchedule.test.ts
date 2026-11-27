@@ -8,7 +8,9 @@ import {
   habitSectionCardsForDay,
   isHabitDueOnDay,
   mondayOfWeek,
+  nextHabitFrequencyIndex,
   OTHER_HABITS_SECTION_ID,
+  remapHabitFrequencyIndicesAfterDelete,
   weekDates,
   type Habit,
   type HabitDayCount,
@@ -173,6 +175,19 @@ describe('applyHabitDayCountDelta', () => {
         completed_at: nowIso,
       },
     ])
+  })
+
+  it('assigns the next sequential frequency index for linked intakes', () => {
+    assert.equal(nextHabitFrequencyIndex([]), 1)
+    assert.equal(nextHabitFrequencyIndex([1, 2]), 3)
+    assert.equal(nextHabitFrequencyIndex([2, 1, 3]), 4)
+  })
+
+  it('remappings remaining frequency indices to stay contiguous after a delete', () => {
+    assert.deepEqual(remapHabitFrequencyIndicesAfterDelete([1, 2, 3], 3), [1, 2])
+    assert.deepEqual(remapHabitFrequencyIndicesAfterDelete([1, 2, 3], 1), [1, 2])
+    assert.deepEqual(remapHabitFrequencyIndicesAfterDelete([1, 2, 3], 2), [1, 2])
+    assert.deepEqual(remapHabitFrequencyIndicesAfterDelete([1], 1), [])
   })
 
   it('removes the day row and clears completion when decrementing a daily habit to zero', () => {
