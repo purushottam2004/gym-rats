@@ -17,6 +17,7 @@ import {
 import { localDate } from '../lib/localDate'
 import { syncNutrientRemindersForUser } from '../lib/nutrientReminderSync'
 import {
+  DEFAULT_REMIND_EVERY_MINUTES,
   defaultCompleteIntakeCheckpoint,
   normalizeMilestoneDrafts,
   normalizeNutrientReminderInput,
@@ -37,7 +38,7 @@ function emptyDraft(): NutrientDraft {
     min: '',
     max: '',
     remindEnabled: false,
-    everyMinutes: '',
+    everyMinutes: String(DEFAULT_REMIND_EVERY_MINUTES),
     milestones: [],
   }
 }
@@ -94,7 +95,9 @@ export default function NutrientGoalsScreen() {
               max: goal?.max_amount != null ? String(goal.max_amount) : '',
               remindEnabled: Boolean(goal?.remind_enabled),
               everyMinutes:
-                goal?.remind_every_minutes != null ? String(goal.remind_every_minutes) : '',
+                goal?.remind_every_minutes != null
+                  ? String(goal.remind_every_minutes)
+                  : String(DEFAULT_REMIND_EVERY_MINUTES),
               milestones,
             } satisfies NutrientDraft,
           ]
@@ -147,7 +150,11 @@ export default function NutrientGoalsScreen() {
   function setRemindEnabled(nutrientId: string, enabled: boolean) {
     const draft = drafts[nutrientId] ?? emptyDraft()
     if (!enabled) {
-      patchDraft(nutrientId, { remindEnabled: false, milestones: [], everyMinutes: '' })
+      patchDraft(nutrientId, {
+        remindEnabled: false,
+        milestones: [],
+        everyMinutes: String(DEFAULT_REMIND_EVERY_MINUTES),
+      })
       return
     }
 
@@ -161,7 +168,13 @@ export default function NutrientGoalsScreen() {
       draft.milestones.length > 0
         ? draft.milestones
         : [defaultCompleteIntakeCheckpoint(minAmount)]
-    patchDraft(nutrientId, { remindEnabled: true, milestones })
+    patchDraft(nutrientId, {
+      remindEnabled: true,
+      milestones,
+      everyMinutes: draft.everyMinutes.trim()
+        ? draft.everyMinutes
+        : String(DEFAULT_REMIND_EVERY_MINUTES),
+    })
     setOpenSchedule((current) => ({ ...current, [nutrientId]: true }))
     setError(null)
   }
@@ -171,6 +184,9 @@ export default function NutrientGoalsScreen() {
     const minAmount = parsePositiveAmount(draft.min)
     patchDraft(nutrientId, {
       remindEnabled: true,
+      everyMinutes: draft.everyMinutes.trim()
+        ? draft.everyMinutes
+        : String(DEFAULT_REMIND_EVERY_MINUTES),
       milestones: [
         ...draft.milestones,
         {
@@ -355,7 +371,7 @@ export default function NutrientGoalsScreen() {
                           onChangeText={(value) =>
                             patchDraft(nutrient.id, { everyMinutes: value })
                           }
-                          placeholder="once"
+                          placeholder={String(DEFAULT_REMIND_EVERY_MINUTES)}
                           style={[screen.input, screen.goalBoundInput]}
                           value={draft.everyMinutes}
                         />

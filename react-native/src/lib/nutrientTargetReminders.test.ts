@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
   DEFAULT_COMPLETE_INTAKE_CHECKPOINT_TIME,
+  DEFAULT_REMIND_EVERY_MINUTES,
   defaultCompleteIntakeCheckpoint,
   normalizeMilestoneDrafts,
   normalizeNutrientReminderInput,
@@ -61,6 +62,12 @@ describe('defaultCompleteIntakeCheckpoint', () => {
     const row = defaultCompleteIntakeCheckpoint(1200)
     assert.equal(row.timeText, DEFAULT_COMPLETE_INTAKE_CHECKPOINT_TIME)
     assert.equal(row.amountText, '1200')
+  })
+})
+
+describe('DEFAULT_REMIND_EVERY_MINUTES', () => {
+  it('defaults to 30 minutes', () => {
+    assert.equal(DEFAULT_REMIND_EVERY_MINUTES, 30)
   })
 })
 

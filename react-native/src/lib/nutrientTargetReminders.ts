@@ -33,6 +33,9 @@ export function parseReminderEveryMinutes(raw: string): number | null {
 /** Default complete-intake checkpoint when Notify me turns on with no checkpoints. */
 export const DEFAULT_COMPLETE_INTAKE_CHECKPOINT_TIME = '22:00'
 
+/** Default repeat interval (minutes) when nutrient reminders turn on. */
+export const DEFAULT_REMIND_EVERY_MINUTES = 30
+
 export type NutrientGoalReminderSettings = {
   remind_enabled: boolean
   /** @deprecated Unused by the planner; checkpoints own fire times. */
