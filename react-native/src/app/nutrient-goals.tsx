@@ -1,5 +1,5 @@
 import { useFocusEffect } from 'expo-router'
-import { Plus, Trash2 } from 'lucide-react-native'
+import { ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { useAuth } from '../auth/AuthProvider'
@@ -47,6 +47,10 @@ function newMilestoneKey(): string {
   return `m-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
+function draftNeedsScheduleOpen(draft: NutrientDraft): boolean {
+  return draft.remindEnabled || draft.milestones.length > 0
+}
+
 export default function NutrientGoalsScreen() {
   const screen = useScreenStyles()
   const { colors } = useTheme()
@@ -54,6 +58,7 @@ export default function NutrientGoalsScreen() {
   const userId = session?.user.id
   const [nutrients, setNutrients] = useState<Nutrient[]>([])
   const [drafts, setDrafts] = useState<Record<string, NutrientDraft>>({})
+  const [openSchedule, setOpenSchedule] = useState<Record<string, boolean>>({})
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -65,33 +70,40 @@ export default function NutrientGoalsScreen() {
         loadNutrientGoals(userId),
         loadNutrientGoalMilestones(userId),
       ])
+      const nextDrafts = Object.fromEntries(
+        nextNutrients.map((nutrient) => {
+          const goal = nextGoals.find((row) => row.nutrient_id === nutrient.id)
+          const milestones = nextMilestones
+            .filter((row) => row.nutrient_id === nutrient.id)
+            .map((row) => ({
+              key: row.id,
+              timeText: formatReminderTime(row.remind_at),
+              amountText: String(row.threshold_amount),
+            }))
+          return [
+            nutrient.id,
+            {
+              min: goal?.min_amount != null ? String(goal.min_amount) : '',
+              max: goal?.max_amount != null ? String(goal.max_amount) : '',
+              remindEnabled: Boolean(goal?.remind_enabled),
+              firstTime: goal?.remind_first_time
+                ? formatReminderTime(goal.remind_first_time)
+                : '12:00',
+              everyMinutes:
+                goal?.remind_every_minutes != null ? String(goal.remind_every_minutes) : '',
+              milestones,
+            } satisfies NutrientDraft,
+          ]
+        }),
+      )
       setNutrients(nextNutrients)
-      setDrafts(
+      setDrafts(nextDrafts)
+      setOpenSchedule(
         Object.fromEntries(
-          nextNutrients.map((nutrient) => {
-            const goal = nextGoals.find((row) => row.nutrient_id === nutrient.id)
-            const milestones = nextMilestones
-              .filter((row) => row.nutrient_id === nutrient.id)
-              .map((row) => ({
-                key: row.id,
-                timeText: formatReminderTime(row.remind_at),
-                amountText: String(row.threshold_amount),
-              }))
-            return [
-              nutrient.id,
-              {
-                min: goal?.min_amount != null ? String(goal.min_amount) : '',
-                max: goal?.max_amount != null ? String(goal.max_amount) : '',
-                remindEnabled: Boolean(goal?.remind_enabled),
-                firstTime: goal?.remind_first_time
-                  ? formatReminderTime(goal.remind_first_time)
-                  : '12:00',
-                everyMinutes:
-                  goal?.remind_every_minutes != null ? String(goal.remind_every_minutes) : '',
-                milestones,
-              } satisfies NutrientDraft,
-            ]
-          }),
+          nextNutrients.map((nutrient) => [
+            nutrient.id,
+            draftNeedsScheduleOpen(nextDrafts[nutrient.id] ?? emptyDraft()),
+          ]),
         ),
       )
       setError(null)
@@ -118,6 +130,13 @@ export default function NutrientGoalsScreen() {
     setDrafts((current) => ({
       ...current,
       [nutrientId]: { ...(current[nutrientId] ?? emptyDraft()), ...patch },
+    }))
+  }
+
+  function toggleSchedule(nutrientId: string) {
+    setOpenSchedule((current) => ({
+      ...current,
+      [nutrientId]: !current[nutrientId],
     }))
   }
 
@@ -187,149 +206,177 @@ export default function NutrientGoalsScreen() {
       }
     >
       <Text style={screen.title}>Nutrient goals</Text>
-      <Text style={screen.muted}>
-        Optional min and/or max for Diet bands. Reminders and checkpoints need a min target.
-      </Text>
       {error ? <Text style={screen.error}>{error}</Text> : null}
 
       {nutrients.map((nutrient) => {
         const draft = drafts[nutrient.id] ?? emptyDraft()
         const hasMin = draft.min.trim().length > 0
+        const scheduleOpen = Boolean(openSchedule[nutrient.id])
+        const scheduleSummary = [
+          draft.remindEnabled ? 'Reminders on' : null,
+          draft.milestones.length > 0
+            ? `${draft.milestones.length} checkpoint${draft.milestones.length === 1 ? '' : 's'}`
+            : null,
+        ]
+          .filter(Boolean)
+          .join(' · ')
+
         return (
-          <View key={nutrient.id} style={{ gap: 10 }}>
-            <View style={screen.card}>
-              <View style={[screen.row, screen.rowFirst, screen.goalHeaderRow]}>
-                <View style={screen.rowMain}>
-                  <Text style={screen.rowTitle}>{nutrient.name}</Text>
-                  <Text style={screen.muted}>{nutrient.unit}</Text>
-                </View>
-                <AppTextInput
-                  keyboardType="decimal-pad"
-                  onChangeText={(value) => patchDraft(nutrient.id, { min: value })}
-                  placeholder="min"
-                  style={[screen.input, screen.goalBoundInput]}
-                  value={draft.min}
-                />
-                <AppTextInput
-                  keyboardType="decimal-pad"
-                  onChangeText={(value) => patchDraft(nutrient.id, { max: value })}
-                  placeholder="max"
-                  style={[screen.input, screen.goalBoundInput]}
-                  value={draft.max}
-                />
+          <View key={nutrient.id} style={screen.card}>
+            <View style={[screen.row, screen.rowFirst]}>
+              <View style={screen.rowMain}>
+                <Text style={screen.rowTitle}>{nutrient.name}</Text>
+                <Text style={screen.muted}>{nutrient.unit}</Text>
               </View>
+              <AppTextInput
+                keyboardType="decimal-pad"
+                onChangeText={(value) => {
+                  patchDraft(nutrient.id, { min: value })
+                  if (value.trim().length > 0 && draftNeedsScheduleOpen(draft)) {
+                    setOpenSchedule((current) => ({ ...current, [nutrient.id]: true }))
+                  }
+                }}
+                placeholder="min"
+                style={[screen.input, screen.goalBoundInput]}
+                value={draft.min}
+              />
+              <AppTextInput
+                keyboardType="decimal-pad"
+                onChangeText={(value) => patchDraft(nutrient.id, { max: value })}
+                placeholder="max"
+                style={[screen.input, screen.goalBoundInput]}
+                value={draft.max}
+              />
             </View>
 
             {hasMin ? (
               <>
-                <Text style={screen.label}>Reminders · {nutrient.name}</Text>
-                <Text style={screen.muted}>
-                  Local notifications on this device. First at the time you set; optional repeats
-                  while today&apos;s intake is still below the min.
-                </Text>
-                <View style={screen.card}>
-                  <Pressable
-                    accessibilityRole="switch"
-                    accessibilityState={{ checked: draft.remindEnabled }}
-                    onPress={() =>
-                      patchDraft(nutrient.id, { remindEnabled: !draft.remindEnabled })
-                    }
-                    style={[screen.row, screen.rowFirst]}
-                  >
-                    <Text style={[screen.rowTitle, screen.rowMain]}>Notify me</Text>
-                    <Text style={screen.muted}>{draft.remindEnabled ? 'On' : 'Off'}</Text>
-                  </Pressable>
-                </View>
-                {draft.remindEnabled ? (
-                  <>
-                    <Text style={screen.label}>First notification</Text>
-                    <TimePickerField
-                      onChange={(value) => patchDraft(nutrient.id, { firstTime: value })}
-                      value={draft.firstTime}
-                    />
-                    <Text style={screen.label}>Then every (minutes)</Text>
-                    <Text style={screen.muted}>
-                      Leave blank for a single reminder. Minimum 5 minutes.
-                    </Text>
-                    <AppTextInput
-                      keyboardType="number-pad"
-                      onChangeText={(value) =>
-                        patchDraft(nutrient.id, { everyMinutes: value })
-                      }
-                      placeholder="30"
-                      style={screen.input}
-                      value={draft.everyMinutes}
-                    />
-                  </>
-                ) : null}
-
-                <Text style={screen.label}>Checkpoints · {nutrient.name}</Text>
-                <Text style={screen.muted}>
-                  By this time, aim to have logged at least this much of today&apos;s min (for
-                  example 1200 {nutrient.unit} by 3:00 PM).
-                </Text>
-                {draft.milestones.map((milestone, index) => (
-                  <View
-                    key={milestone.key}
-                    style={[screen.card, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}
-                  >
-                    <View style={{ flex: 1, gap: 6 }}>
-                      <Text style={screen.muted}>By</Text>
-                      <TimePickerField
-                        onChange={(value) => {
-                          const next = draft.milestones.slice()
-                          next[index] = { ...milestone, timeText: value }
-                          patchDraft(nutrient.id, { milestones: next })
-                        }}
-                        value={milestone.timeText}
-                      />
-                    </View>
-                    <View style={{ flex: 1, gap: 6 }}>
-                      <Text style={screen.muted}>Meet ({nutrient.unit})</Text>
-                      <AppTextInput
-                        keyboardType="decimal-pad"
-                        onChangeText={(value) => {
-                          const next = draft.milestones.slice()
-                          next[index] = { ...milestone, amountText: value }
-                          patchDraft(nutrient.id, { milestones: next })
-                        }}
-                        placeholder="1200"
-                        style={screen.input}
-                        value={milestone.amountText}
-                      />
-                    </View>
-                    <Pressable
-                      accessibilityLabel="Remove checkpoint"
-                      accessibilityRole="button"
-                      hitSlop={8}
-                      onPress={() =>
-                        patchDraft(nutrient.id, {
-                          milestones: draft.milestones.filter((row) => row.key !== milestone.key),
-                        })
-                      }
-                      style={{ paddingTop: 18 }}
-                    >
-                      <Trash2 color={colors.danger} size={18} strokeWidth={2} />
-                    </Pressable>
-                  </View>
-                ))}
                 <Pressable
                   accessibilityRole="button"
-                  onPress={() =>
-                    patchDraft(nutrient.id, {
-                      milestones: [
-                        ...draft.milestones,
-                        { key: newMilestoneKey(), timeText: '15:00', amountText: '' },
-                      ],
-                    })
-                  }
-                  style={({ pressed }) => [screen.addCard, pressed && screen.rowPressed]}
+                  accessibilityState={{ expanded: scheduleOpen }}
+                  onPress={() => toggleSchedule(nutrient.id)}
+                  style={({ pressed }) => [screen.row, pressed && screen.rowPressed]}
                 >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Plus color={colors.accent} size={18} strokeWidth={2.25} />
-                    <Text style={screen.addText}>Add checkpoint</Text>
+                  <View style={screen.rowMain}>
+                    <Text style={screen.rowTitle}>Reminders & checkpoints</Text>
+                    {scheduleSummary ? (
+                      <Text style={screen.muted}>{scheduleSummary}</Text>
+                    ) : (
+                      <Text style={screen.muted}>Optional</Text>
+                    )}
                   </View>
+                  {scheduleOpen ? (
+                    <ChevronDown color={colors.textMuted} size={18} strokeWidth={2} />
+                  ) : (
+                    <ChevronRight color={colors.textMuted} size={18} strokeWidth={2} />
+                  )}
                 </Pressable>
+
+                {scheduleOpen ? (
+                  <>
+                    <Pressable
+                      accessibilityRole="switch"
+                      accessibilityState={{ checked: draft.remindEnabled }}
+                      onPress={() =>
+                        patchDraft(nutrient.id, { remindEnabled: !draft.remindEnabled })
+                      }
+                      style={({ pressed }) => [screen.row, pressed && screen.rowPressed]}
+                    >
+                      <Text style={[screen.rowTitle, screen.rowMain]}>Notify me</Text>
+                      <Text style={screen.muted}>{draft.remindEnabled ? 'On' : 'Off'}</Text>
+                    </Pressable>
+
+                    {draft.remindEnabled ? (
+                      <>
+                        <View style={screen.row}>
+                          <Text style={[screen.rowTitle, screen.rowMain]}>First at</Text>
+                          <TimePickerField
+                            onChange={(value) =>
+                              patchDraft(nutrient.id, { firstTime: value })
+                            }
+                            style={{ width: 112, paddingVertical: 6, textAlign: 'center' }}
+                            value={draft.firstTime}
+                          />
+                        </View>
+                        <View style={screen.row}>
+                          <Text style={[screen.rowTitle, screen.rowMain]}>Every (min)</Text>
+                          <AppTextInput
+                            keyboardType="number-pad"
+                            onChangeText={(value) =>
+                              patchDraft(nutrient.id, { everyMinutes: value })
+                            }
+                            placeholder="once"
+                            style={[screen.input, screen.goalBoundInput]}
+                            value={draft.everyMinutes}
+                          />
+                        </View>
+                      </>
+                    ) : null}
+
+                    {draft.milestones.map((milestone, index) => (
+                      <View key={milestone.key} style={screen.row}>
+                        <View style={{ flex: 1, gap: 6 }}>
+                          <Text style={screen.muted}>By</Text>
+                          <TimePickerField
+                            onChange={(value) => {
+                              const next = draft.milestones.slice()
+                              next[index] = { ...milestone, timeText: value }
+                              patchDraft(nutrient.id, { milestones: next })
+                            }}
+                            value={milestone.timeText}
+                          />
+                        </View>
+                        <View style={{ flex: 1, gap: 6 }}>
+                          <Text style={screen.muted}>Meet ({nutrient.unit})</Text>
+                          <AppTextInput
+                            keyboardType="decimal-pad"
+                            onChangeText={(value) => {
+                              const next = draft.milestones.slice()
+                              next[index] = { ...milestone, amountText: value }
+                              patchDraft(nutrient.id, { milestones: next })
+                            }}
+                            placeholder="amount"
+                            style={screen.input}
+                            value={milestone.amountText}
+                          />
+                        </View>
+                        <Pressable
+                          accessibilityLabel="Remove checkpoint"
+                          accessibilityRole="button"
+                          hitSlop={8}
+                          onPress={() =>
+                            patchDraft(nutrient.id, {
+                              milestones: draft.milestones.filter(
+                                (row) => row.key !== milestone.key,
+                              ),
+                            })
+                          }
+                          style={{ paddingTop: 18 }}
+                        >
+                          <Trash2 color={colors.danger} size={18} strokeWidth={2} />
+                        </Pressable>
+                      </View>
+                    ))}
+
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() =>
+                        patchDraft(nutrient.id, {
+                          milestones: [
+                            ...draft.milestones,
+                            { key: newMilestoneKey(), timeText: '15:00', amountText: '' },
+                          ],
+                        })
+                      }
+                      style={({ pressed }) => [screen.add, pressed && screen.rowPressed]}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Plus color={colors.accent} size={18} strokeWidth={2.25} />
+                        <Text style={screen.addText}>Add checkpoint</Text>
+                      </View>
+                    </Pressable>
+                  </>
+                ) : null}
               </>
             ) : null}
           </View>
