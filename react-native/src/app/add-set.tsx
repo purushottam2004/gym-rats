@@ -61,10 +61,73 @@ export default function AddSetScreen() {
   }
 
   return (
-    <Screen>
+    <Screen
+      footer={
+        <View style={{ gap: 10 }}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/new-lift')}
+            style={({ pressed }) => [screen.addCard, pressed && screen.rowPressed]}
+          >
+            <Text style={screen.addText}>New lift</Text>
+          </Pressable>
+          <Text style={screen.label}>Set Number</Text>
+          <View style={screen.setNumberRow}>
+            {SET_NUMBERS.map((n) => {
+              const selected = setNumber === n
+              return (
+                <Pressable
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected }}
+                  key={n}
+                  onPress={() => setSetNumber(n)}
+                  style={({ pressed }) => [
+                    screen.setNumberCircle,
+                    selected && screen.setNumberCircleSelected,
+                    pressed && !selected && screen.setNumberCirclePressed,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      screen.setNumberCircleText,
+                      selected && screen.setNumberCircleTextSelected,
+                    ]}
+                  >
+                    {n}
+                  </Text>
+                </Pressable>
+              )
+            })}
+          </View>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <View style={{ flex: 1, gap: 6 }}>
+              <Text style={screen.label}>Reps</Text>
+              <AppTextInput
+                keyboardType="number-pad"
+                onChangeText={setReps}
+                style={screen.input}
+                value={reps}
+              />
+            </View>
+            <View style={{ flex: 1, gap: 6 }}>
+              <Text style={screen.label}>Kilograms</Text>
+              <AppTextInput
+                keyboardType="decimal-pad"
+                onChangeText={setLoadKg}
+                style={screen.input}
+                value={loadKg}
+              />
+            </View>
+          </View>
+          {error ? <Text style={screen.error}>{error}</Text> : null}
+          <Pressable onPress={() => void save()} style={screen.save}>
+            <Text style={screen.buttonText}>Save</Text>
+          </Pressable>
+        </View>
+      }
+    >
       <Text style={screen.title}>Add a set</Text>
       <Text style={screen.muted}>{day}</Text>
-      {error ? <Text style={screen.error}>{error}</Text> : null}
       {groups.map((group) => (
         <View key={group.key} style={screen.card}>
           <View style={[screen.row, screen.rowFirst]}>
@@ -97,41 +160,6 @@ export default function AddSetScreen() {
           })}
         </View>
       ))}
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => router.push('/new-lift')}
-        style={({ pressed }) => [screen.addCard, pressed && screen.rowPressed]}
-      >
-        <Text style={screen.addText}>New lift</Text>
-      </Pressable>
-      <Text style={screen.label}>Set Number</Text>
-      <View style={screen.setNumberRow}>
-        {SET_NUMBERS.map((n) => {
-          const selected = setNumber === n
-          return (
-            <Pressable
-              accessibilityRole="radio"
-              accessibilityState={{ selected }}
-              key={n}
-              onPress={() => setSetNumber(n)}
-              style={({ pressed }) => [
-                screen.setNumberCircle,
-                selected && screen.setNumberCircleSelected,
-                pressed && !selected && screen.setNumberCirclePressed,
-              ]}
-            >
-              <Text style={[screen.setNumberCircleText, selected && screen.setNumberCircleTextSelected]}>{n}</Text>
-            </Pressable>
-          )
-        })}
-      </View>
-      <Text style={screen.label}>Reps</Text>
-      <AppTextInput keyboardType="number-pad" onChangeText={setReps} style={screen.input} value={reps} />
-      <Text style={screen.label}>Kilograms</Text>
-      <AppTextInput keyboardType="decimal-pad" onChangeText={setLoadKg} style={screen.input} value={loadKg} />
-      <Pressable onPress={() => void save()} style={screen.save}>
-        <Text style={screen.buttonText}>Save</Text>
-      </Pressable>
     </Screen>
   )
 }

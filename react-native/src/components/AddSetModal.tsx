@@ -93,24 +93,30 @@ export function AddSetModal({
               )
             })}
           </View>
-          <Text style={screen.label}>Reps</Text>
-          <AppTextInput
-            editable={!busy}
-            keyboardType="number-pad"
-            onChangeText={setReps}
-            placeholder="Reps"
-            style={screen.input}
-            value={reps}
-          />
-          <Text style={screen.label}>Kilograms</Text>
-          <AppTextInput
-            editable={!busy}
-            keyboardType="decimal-pad"
-            onChangeText={setLoadKg}
-            placeholder="kg"
-            style={screen.input}
-            value={loadKg}
-          />
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <View style={{ flex: 1, gap: 6 }}>
+              <Text style={screen.label}>Reps</Text>
+              <AppTextInput
+                editable={!busy}
+                keyboardType="number-pad"
+                onChangeText={setReps}
+                placeholder="Reps"
+                style={screen.input}
+                value={reps}
+              />
+            </View>
+            <View style={{ flex: 1, gap: 6 }}>
+              <Text style={screen.label}>Kilograms</Text>
+              <AppTextInput
+                editable={!busy}
+                keyboardType="decimal-pad"
+                onChangeText={setLoadKg}
+                placeholder="kg"
+                style={screen.input}
+                value={loadKg}
+              />
+            </View>
+          </View>
           {error ? <Text style={screen.error}>{error}</Text> : null}
           <View style={screen.confirmActions}>
             <Pressable
