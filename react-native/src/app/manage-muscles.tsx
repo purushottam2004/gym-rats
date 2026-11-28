@@ -1,4 +1,5 @@
 import { useFocusEffect, useRouter } from 'expo-router'
+import { Pencil } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { ConfirmModal } from '../components/ConfirmModal'
@@ -12,10 +13,11 @@ import {
   reorderMuscles,
   type Muscle,
 } from '../lib/gym'
-import { useScreenStyles } from '../theme/ThemeProvider'
+import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
 
 export default function ManageMusclesScreen() {
   const screen = useScreenStyles()
+  const { colors } = useTheme()
   const router = useRouter()
   const [muscles, setMuscles] = useState<Muscle[]>([])
   const [isAdmin, setIsAdmin] = useState(false)
@@ -94,22 +96,14 @@ export default function ManageMusclesScreen() {
         <Text style={screen.title}>Muscles</Text>
         <Text style={screen.muted}>
           Named groups for the Lift catalog. Unassigned lifts stay under Other lifts.
-          Anyone can add or reorder; only an Admin can delete.
+          Anyone can add or reorder; only an Admin can rename or delete.
         </Text>
         {error ? <Text style={screen.error}>{error}</Text> : null}
         <View style={screen.card}>
           {muscles.length > 0 ? (
             muscles.map((muscle, index) => (
               <View key={muscle.id} style={[screen.row, index === 0 && screen.rowFirst]}>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() =>
-                    router.push({ pathname: '/edit-muscle', params: { id: muscle.id } })
-                  }
-                  style={screen.rowMain}
-                >
-                  <Text style={screen.rowTitle}>{muscle.name}</Text>
-                </Pressable>
+                <Text style={[screen.rowTitle, screen.rowMain]}>{muscle.name}</Text>
                 <View style={screen.choiceTrail}>
                   <Pressable
                     accessibilityLabel={`Move ${muscle.name} up`}
@@ -133,6 +127,18 @@ export default function ManageMusclesScreen() {
                   >
                     <Text style={screen.rowMeta}>↓</Text>
                   </Pressable>
+                  {isAdmin ? (
+                    <Pressable
+                      accessibilityLabel={`Rename ${muscle.name}`}
+                      accessibilityRole="button"
+                      hitSlop={8}
+                      onPress={() =>
+                        router.push({ pathname: '/edit-muscle', params: { id: muscle.id } })
+                      }
+                    >
+                      <Pencil color={colors.accent} size={18} strokeWidth={2.25} />
+                    </Pressable>
+                  ) : null}
                   {isAdmin ? <TrashButton onPress={() => setPendingDelete(muscle)} /> : null}
                 </View>
               </View>

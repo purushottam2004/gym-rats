@@ -5,7 +5,12 @@ import { AppTextInput } from '../components/AppTextInput'
 import { BrandLoader, LoadingBlock } from '../components/BrandLoader'
 import { Screen } from '../components/Screen'
 import { Toast, type ToastKind } from '../components/Toast'
-import { createMuscle, loadMuscles, updateMuscle } from '../lib/gym'
+import {
+  createMuscle,
+  loadCurrentUserIsAdmin,
+  loadMuscles,
+  updateMuscle,
+} from '../lib/gym'
 import { useScreenStyles } from '../theme/ThemeProvider'
 
 export default function EditMuscleScreen() {
@@ -27,7 +32,13 @@ export default function EditMuscleScreen() {
       return
     }
     try {
-      const muscles = await loadMuscles()
+      const [muscles, isAdmin] = await Promise.all([loadMuscles(), loadCurrentUserIsAdmin()])
+      if (!isAdmin) {
+        setError('Only an Admin can rename a muscle')
+        setLoaded(true)
+        router.back()
+        return
+      }
       const muscle = muscles.find((row) => row.id === id)
       if (!muscle) {
         setError('Muscle not found')
@@ -40,7 +51,7 @@ export default function EditMuscleScreen() {
     } finally {
       setLoaded(true)
     }
-  }, [id])
+  }, [id, router])
 
   useFocusEffect(
     useCallback(() => {
