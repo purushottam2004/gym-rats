@@ -172,6 +172,21 @@ export async function loadProfile(userId: string): Promise<Profile> {
   return data as Profile
 }
 
+/** Whether the signed-in User may delete shared catalog rows that require Admin (e.g. Muscles). */
+export async function loadCurrentUserIsAdmin(): Promise<boolean> {
+  const { data: userData, error: userError } = await db().auth.getUser()
+  fail(userError)
+  const userId = userData.user?.id
+  if (!userId) return false
+  const { data, error } = await db()
+    .from('users')
+    .select('is_admin')
+    .eq('id', userId)
+    .single()
+  fail(error)
+  return Boolean((data as { is_admin?: boolean } | null)?.is_admin)
+}
+
 export async function saveDisplayName(userId: string, name: string): Promise<void> {
   const trimmed = name.trim()
   if (!trimmed) throw new Error('A display name is required')

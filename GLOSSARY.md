@@ -49,8 +49,12 @@ One recorded consumption by a User of one of their Foods on a Day: which Food, a
 _Avoid_: diet entry, meal, serving
 
 **Muscle**:
-A named body region on one global catalog every User shares. Muscles group Lifts in the Lift catalog the way Habit sections group Habits. Any signed-in User may add a name; names are unique ignoring letter case and outer spaces. A User may rename, reorder, or delete a Muscle; deleting it leaves its Lifts ungrouped under Other lifts.
+A named body region on one global catalog every User shares. Muscles group Lifts in the Lift catalog the way Habit sections group Habits. Any signed-in User may add a name; names are unique ignoring letter case and outer spaces. Any signed-in User may rename or reorder a Muscle. Only an Admin may delete a Muscle; deleting it leaves its Lifts ungrouped under Other lifts.
 _Avoid_: muscle group, body part, body region label
+
+**Admin**:
+A User flag (`users.is_admin`) for shared-catalog maintenance. An Admin may delete Muscles; other Users still add, rename, and reorder them. The flag is not editable from the app.
+_Avoid_: superuser, moderator (for this catalog privilege)
 
 **Lift**:
 An exercise on one global catalog every User shares. Any signed-in User may add a name; names are unique ignoring letter case and outer spaces, and cannot be changed after the Lift is created. A Lift may optionally sit under one Muscle; with none it appears under Other lifts, and the Muscle may be changed later. Any User may log a Set of any Lift in the catalog. Any User may delete a Lift only when no Set uses it.

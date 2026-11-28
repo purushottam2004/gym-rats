@@ -5,13 +5,20 @@ import { ConfirmModal } from '../components/ConfirmModal'
 import { Screen } from '../components/Screen'
 import { Toast, type ToastKind } from '../components/Toast'
 import { TrashButton } from '../components/TrashButton'
-import { deleteMuscle, loadMuscles, reorderMuscles, type Muscle } from '../lib/gym'
+import {
+  deleteMuscle,
+  loadCurrentUserIsAdmin,
+  loadMuscles,
+  reorderMuscles,
+  type Muscle,
+} from '../lib/gym'
 import { useScreenStyles } from '../theme/ThemeProvider'
 
 export default function ManageMusclesScreen() {
   const screen = useScreenStyles()
   const router = useRouter()
   const [muscles, setMuscles] = useState<Muscle[]>([])
+  const [isAdmin, setIsAdmin] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Muscle | null>(null)
   const [toast, setToast] = useState<{ kind: ToastKind; message: string } | null>(null)
@@ -19,7 +26,9 @@ export default function ManageMusclesScreen() {
 
   const load = useCallback(async () => {
     try {
-      setMuscles(await loadMuscles())
+      const [nextMuscles, admin] = await Promise.all([loadMuscles(), loadCurrentUserIsAdmin()])
+      setMuscles(nextMuscles)
+      setIsAdmin(admin)
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load muscles')
@@ -85,6 +94,7 @@ export default function ManageMusclesScreen() {
         <Text style={screen.title}>Muscles</Text>
         <Text style={screen.muted}>
           Named groups for the Lift catalog. Unassigned lifts stay under Other lifts.
+          Anyone can add or reorder; only an Admin can delete.
         </Text>
         {error ? <Text style={screen.error}>{error}</Text> : null}
         <View style={screen.card}>
@@ -123,7 +133,7 @@ export default function ManageMusclesScreen() {
                   >
                     <Text style={screen.rowMeta}>↓</Text>
                   </Pressable>
-                  <TrashButton onPress={() => setPendingDelete(muscle)} />
+                  {isAdmin ? <TrashButton onPress={() => setPendingDelete(muscle)} /> : null}
                 </View>
               </View>
             ))

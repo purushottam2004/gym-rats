@@ -33,7 +33,10 @@ def seed_users():
             }.items()
             if value
         }
+        if "is_admin" in profile:
+            updates["is_admin"] = bool(profile["is_admin"])
         if updates:
+            # Service-role seed: auth.uid() is null so the admin self-change trigger allows this.
             supabase.table("users").update(updates).eq("id", user_id).execute()
             print(f"  Updated {user['email']}: {updates}")
 

@@ -17,7 +17,14 @@ SEED_USER_ID = _seed_user_uuid(1)
 TEST_USER_ID = _seed_user_uuid(2)
 
 
-def _auth_user(*, email: str, name: str, user_id: str, username: str) -> dict:
+def _auth_user(
+    *,
+    email: str,
+    name: str,
+    user_id: str,
+    username: str,
+    is_admin: bool = False,
+) -> dict:
     return {
         "id": user_id,
         "email": email,
@@ -26,6 +33,7 @@ def _auth_user(*, email: str, name: str, user_id: str, username: str) -> dict:
         "profile": {
             "username": username,
             "display_name": name,
+            "is_admin": is_admin,
         },
     }
 
@@ -35,6 +43,7 @@ SEED_USER = _auth_user(
     name="Seed User",
     user_id=SEED_USER_ID,
     username="seed_user",
+    is_admin=True,
 )
 
 TEST_USER = _auth_user(
