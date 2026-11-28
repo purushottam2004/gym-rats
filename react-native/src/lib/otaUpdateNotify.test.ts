@@ -26,12 +26,12 @@ describe('otaDownloadedNotification / otaAppliedNotification', () => {
   it('includes a when clause when createdAt is set', () => {
     const createdAt = new Date('2026-11-26T08:00:00.000Z')
     const downloaded = otaDownloadedNotification(createdAt)
-    assert.equal(downloaded.title, 'Gym Rats update ready')
+    assert.equal(downloaded.title, 'Echo update ready')
     assert.match(downloaded.body, /downloaded and will open now/)
     assert.match(downloaded.body, /A new version \(/)
 
     const applied = otaAppliedNotification(createdAt)
-    assert.equal(applied.title, 'Gym Rats updated')
+    assert.equal(applied.title, 'Echo updated')
     assert.match(applied.body, /latest update \(/)
   })
 

@@ -73,7 +73,7 @@ describe('unread helpers', () => {
 describe('featureUpdateNotification', () => {
   it('summarizes one or many unread features', () => {
     const one = featureUpdateNotification([sample[0]!])
-    assert.equal(one.title, 'New in Gym Rats')
+    assert.equal(one.title, 'New in Echo')
     assert.match(one.body, /Swipe/)
 
     const many = featureUpdateNotification([sample[0]!, sample[2]!])

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Gym Rats",
+    "name": "Echo",
     "slug": "blankslate-react-native",
     "scheme": "blankslate",
     "version": "1.0.0",
@@ -25,14 +25,14 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Gym Rats uses photos you choose for your profile and posts.",
-          "cameraPermission": "Gym Rats uses the camera so you can photograph food to estimate nutrients."
+          "photosPermission": "Echo uses photos you choose for your profile and posts.",
+          "cameraPermission": "Echo uses the camera so you can photograph food to estimate nutrients."
         }
       ],
       [
         "expo-audio",
         {
-          "microphonePermission": "Gym Rats uses the microphone so you can speak a set to log it.",
+          "microphonePermission": "Echo uses the microphone so you can speak a set to log it.",
           "recordAudioAndroid": true,
           "enableBackgroundRecording": false
         }
@@ -62,35 +62,35 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Gym Rats uses the camera so you can photograph food and profile photos.",
-          "microphonePermission": "Gym Rats uses the microphone when recording video.",
+          "cameraPermission": "Echo uses the camera so you can photograph food and profile photos.",
+          "microphonePermission": "Echo uses the microphone when recording video.",
           "recordAudioAndroid": true
         }
       ],
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Gym Rats can use your location for gym check-ins and nearby features."
+          "locationWhenInUsePermission": "Echo can use your location for gym check-ins and nearby features."
         }
       ],
       [
         "expo-calendar",
         {
-          "calendarPermission": "Gym Rats can add habit reminders to your calendar."
+          "calendarPermission": "Echo can add habit reminders to your calendar."
         }
       ],
       [
         "expo-media-library",
         {
-          "photosPermission": "Gym Rats can save and read photos you choose for posts and food logs.",
-          "savePhotosPermission": "Gym Rats can save images to your photo library.",
+          "photosPermission": "Echo can save and read photos you choose for posts and food logs.",
+          "savePhotosPermission": "Echo can save images to your photo library.",
           "isAccessMediaLocationEnabled": false
         }
       ],
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "Gym Rats can use Face ID to protect your account on this device."
+          "faceIDPermission": "Echo can use Face ID to protect your account on this device."
         }
       ]
     ],
@@ -110,7 +110,7 @@
       "package": "com.purushottam.gymrats",
       "usesCleartextTraffic": true,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#F5F2EC",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"

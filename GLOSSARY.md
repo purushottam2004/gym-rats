@@ -1,6 +1,6 @@
-# Gym Rats
+# Echo
 
-People who train each have an account and a profile. They keep a private catalog of foods, share one global catalog of lifts, log what they ate and what they lifted, publish posts, and see each other when they share a group.
+People who train (and log the rest of life) each have an account and a profile. They keep a private catalog of foods, share one global catalog of lifts, log what they ate and what they lifted, track habits and books, publish posts, and see each other when they share a group.
 
 ## Language
 

@@ -102,7 +102,7 @@ npx eas-cli@latest fingerprint:generate --platform ios --environment production 
 
 JS and asset changes can ship to an already-installed iOS/Android binary without a store reinstall. Native module, permission, or Expo SDK changes still need a new binary.
 
-When a production (or preview) build downloads an OTA update, the app shows a **local** notification (“Gym Rats update ready” / “Gym Rats updated”) and reloads into the new JS. That uses `expo-notifications` with remote/APNs push disabled (`enableRemoteNotifications: false`). The same module powers **Habit reminders** (first time + optional repeats while incomplete). Allow notifications when the OS prompts. Reminder **time picking** uses `@react-native-community/datetimepicker` (iOS spinner with AM/PM when the device is 12-hour; Android clock dialog).
+When a production (or preview) build downloads an OTA update, the app shows a **local** notification (“Echo update ready” / “Echo updated”) and reloads into the new JS. That uses `expo-notifications` with remote/APNs push disabled (`enableRemoteNotifications: false`). The same module powers **Habit reminders** (first time + optional repeats while incomplete). Allow notifications when the OS prompts. Reminder **time picking** uses `@react-native-community/datetimepicker` (iOS spinner with AM/PM when the device is 12-hour; Android clock dialog).
 
 Habit reminder sync keeps only a short every-N window and the soonest fires under a shared cap (iOS allows ~64 pending local notifications across the whole app). Android needs `SCHEDULE_EXACT_ALARM` in the Release binary for wall-clock DATE triggers to fire on time — that permission is declared in `app.json` and requires a **new native build**, not OTA alone.
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build a Release Gym Rats binary wired to the Expo Update *production*
+# Build a Release Echo binary wired to the Expo Update *production*
 # channel, and install it on a connected physical iPhone.
 # No Metro — JS is embedded; later `eas update --channel production`
 # (or pnpm update:production) can OTA into this install when the
@@ -126,7 +126,7 @@ pick_device() {
   printf '%s\n' "$lines" | awk -F'\t' 'NR==1 {print $1}'
 }
 
-echo "==> Gym Rats iOS Release install"
+echo "==> Echo iOS Release install"
 echo "    project: $RN_DIR"
 
 require_cmd pnpm
@@ -182,7 +182,7 @@ echo "==> expo prebuild (ios, refresh Expo.plist)"
   cd "$RN_DIR"
   pnpm exec expo prebuild --platform ios --no-install
 )
-PLIST_PRE="$RN_DIR/ios/GymRats/Supporting/Expo.plist"
+PLIST_PRE="$RN_DIR/ios/Echo/Supporting/Expo.plist"
 if [[ -f "$PLIST_PRE" ]]; then
   enabled="$(/usr/libexec/PlistBuddy -c 'Print :EXUpdatesEnabled' "$PLIST_PRE" 2>/dev/null || echo false)"
   channel="$(/usr/libexec/PlistBuddy -c 'Print :EXUpdatesRequestHeaders:expo-channel-name' "$PLIST_PRE" 2>/dev/null || true)"
@@ -201,7 +201,7 @@ echo "==> expo run:ios (Release, production channel, no Metro)"
 )
 
 # Confirm native project kept the channel after prebuild/run
-PLIST="$RN_DIR/ios/GymRats/Supporting/Expo.plist"
+PLIST="$RN_DIR/ios/Echo/Supporting/Expo.plist"
 if [[ ! -f "$PLIST" ]]; then
   PLIST="$(find "$RN_DIR/ios" -name Expo.plist 2>/dev/null | head -1 || true)"
 fi
@@ -254,7 +254,7 @@ PY
 fi
 
 echo
-echo "Done. Unlock the phone and open Gym Rats."
+echo "Done. Unlock the phone and open Echo."
 echo "OTA: this binary listens on Expo channel 'production'."
 echo "Publish JS updates with: cd react-native && pnpm update:production --message '...'"
 echo "Fingerprint must match (runtimeVersion policy: fingerprint) or the update is skipped."

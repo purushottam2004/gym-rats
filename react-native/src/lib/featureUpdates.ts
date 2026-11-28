@@ -59,11 +59,11 @@ export function featureUpdateNotification(unread: FeatureRow[]): {
 } {
   const count = unread.length
   if (count <= 0) {
-    return { title: 'Gym Rats', body: 'You are up to date.' }
+    return { title: 'Echo', body: 'You are up to date.' }
   }
   if (count === 1) {
     return {
-      title: 'New in Gym Rats',
+      title: 'New in Echo',
       body: unread[0]?.title
         ? `${unread[0].title} — tap that tab’s title icon to read more.`
         : 'A new feature is ready. Tap a tab’s title icon to read more.',
@@ -75,7 +75,7 @@ export function featureUpdateNotification(unread: FeatureRow[]): {
     .filter(Boolean)
     .join(', ')
   return {
-    title: 'New in Gym Rats',
+    title: 'New in Echo',
     body: sample
       ? `${count} new features (${sample}${count > 2 ? ', …' : ''}). Tap a tab’s title icon to explore.`
       : `${count} new features. Tap a tab’s title icon to explore.`,

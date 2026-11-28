@@ -1,6 +1,6 @@
 # React Native
 
-Expo app for Gym Rats. One TypeScript codebase runs on iOS, Android, and the web. It signs in with Supabase and reads and writes the Gym Rats tables there. FastAPI is not part of this product.
+Expo app for Echo (life logging: diet, lifts, habits, books, groups, posts). One TypeScript codebase runs on iOS, Android, and the web. It signs in with Supabase and reads and writes the product tables there. FastAPI is not part of this product.
 
 The folder is `react-native/`. The npm package name is `blankslate-react-native`, because the name `react-native` is the library this app depends on.
 

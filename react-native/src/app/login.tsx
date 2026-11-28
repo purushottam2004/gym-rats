@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../auth/AuthProvider'
 import { AppTextInput } from '../components/AppTextInput'
 import { BrandLoader } from '../components/BrandLoader'
+import { APP_DISPLAY_NAME } from '../lib/brand'
 import { useTheme } from '../theme/ThemeProvider'
 
 export default function LoginScreen() {
@@ -47,7 +48,7 @@ export default function LoginScreen() {
         style={styles.fill}
       >
         <View style={styles.block}>
-          <Text style={styles.mark}>Gym Rats</Text>
+          <Text style={styles.mark}>{APP_DISPLAY_NAME}</Text>
           <Text style={styles.lead}>Sign in with the email and password you were given.</Text>
           <View style={styles.card}>
             <Text style={styles.label}>Email</Text>

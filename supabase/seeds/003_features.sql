@@ -62,7 +62,7 @@ values
     'habits',
     'Reminders and voice',
     'Local reminders while a habit is still incomplete.',
-    'Turn on reminders when editing a habit. Gym Rats schedules local notifications on this device. You can also use the mic on Habits to mark due habits complete from speech.',
+    'Turn on reminders when editing a habit. Echo schedules local notifications on this device. You can also use the mic on Habits to mark due habits complete from speech.',
     20,
     '2026-11-27T00:00:00Z'
   ),

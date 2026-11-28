@@ -10,6 +10,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native'
+import { APP_DISPLAY_NAME } from '../lib/brand'
 import { useTheme } from '../theme/ThemeProvider'
 
 type Size = 'sm' | 'md' | 'lg'
@@ -18,7 +19,7 @@ type Props = {
   /** Optional caption under the dots (e.g. "Loading groups"). */
   label?: string
   size?: Size
-  /** Show the Gym Rats wordmark above the dots (default for lg). */
+  /** Show the Echo wordmark above the dots (default for lg). */
   showMark?: boolean
   style?: StyleProp<ViewStyle>
 }
@@ -98,7 +99,7 @@ export function BrandLoader({ label, size = 'md', showMark, style }: Props) {
             },
           ]}
         >
-          Gym Rats
+          {APP_DISPLAY_NAME}
         </Text>
       ) : null}
       <View style={[styles.row, { gap }]}>

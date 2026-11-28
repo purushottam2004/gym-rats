@@ -11,7 +11,7 @@ export type OtaNotifyCopy = {
 export function otaDownloadedNotification(createdAt?: Date | null): OtaNotifyCopy {
   const when = formatUpdateWhen(createdAt)
   return {
-    title: 'Gym Rats update ready',
+    title: 'Echo update ready',
     body: when
       ? `A new version (${when}) was downloaded and will open now.`
       : 'A new version was downloaded and will open now.',
@@ -22,7 +22,7 @@ export function otaDownloadedNotification(createdAt?: Date | null): OtaNotifyCop
 export function otaAppliedNotification(createdAt?: Date | null): OtaNotifyCopy {
   const when = formatUpdateWhen(createdAt)
   return {
-    title: 'Gym Rats updated',
+    title: 'Echo updated',
     body: when ? `You are on the latest update (${when}).` : 'You are on the latest update.',
   }
 }
