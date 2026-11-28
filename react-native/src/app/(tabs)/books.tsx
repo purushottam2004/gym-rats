@@ -8,6 +8,7 @@ import { BusyOverlay, LoadingBlock } from '../../components/BrandLoader'
 import { DayControls } from '../../components/DayControls'
 import { HabitSectionHeader } from '../../components/HabitSectionHeader'
 import { HabitSwipeRow } from '../../components/HabitSwipeRow'
+import { OrdinalNumber } from '../../components/OrdinalNumber'
 import { PhotoConfirmModal } from '../../components/PhotoConfirmModal'
 import { ProfileAvatarButton } from '../../components/ProfileAvatarButton'
 import { Screen } from '../../components/Screen'
@@ -80,6 +81,25 @@ export default function BooksScreen() {
     () => chaptersByBookForDay({ chapters, booksById, day, today }),
     [chapters, booksById, day, today],
   )
+  /** 1-based TOC index per chapter (same as book detail circles). */
+  const chapterNumberById = useMemo(() => {
+    const byBook = new Map<string, BookChapter[]>()
+    for (const chapter of chapters) {
+      const list = byBook.get(chapter.book_id)
+      if (list) list.push(chapter)
+      else byBook.set(chapter.book_id, [chapter])
+    }
+    const numbers = new Map<string, number>()
+    for (const list of byBook.values()) {
+      list
+        .slice()
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .forEach((chapter, index) => {
+          numbers.set(chapter.id, index + 1)
+        })
+    }
+    return numbers
+  }, [chapters])
   const dueTitle = day === today ? 'Due today' : `Scheduled ${day}`
 
   async function openCamera(): Promise<PendingPhoto | null> {
@@ -291,6 +311,7 @@ export default function BooksScreen() {
                     {group.chapters.map((row) => {
                       const complete = chapterIsComplete(row)
                       const dueLabel = formatChapterDueLabel(row.due_time)
+                      const chapterNumber = chapterNumberById.get(row.id) ?? row.sort_order + 1
                       const name = `${row.title}${
                         row.overdue ? ' (overdue)' : dueLabel ? ` · ${dueLabel}` : ''
                       }`
@@ -302,6 +323,12 @@ export default function BooksScreen() {
                           target={1}
                           complete={complete}
                           completedLabel={formatHabitCompletedAt(row.completed_at)}
+                          leading={
+                            <OrdinalNumber
+                              accessibilityLabel={`chapter ${chapterNumber}`}
+                              value={chapterNumber}
+                            />
+                          }
                           onIncrement={() => void toggleChapter(row.id, true)}
                           onDecrement={() => void toggleChapter(row.id, false)}
                         />
