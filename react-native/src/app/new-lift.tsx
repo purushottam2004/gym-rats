@@ -149,11 +149,15 @@ export default function NewLiftScreen() {
 
   async function changePhoto() {
     if (!editing || !id || photoBusy) return
+    setLightboxOpen(false)
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
     if (!permission.granted) {
       setError('Photo access is required')
       return
     }
+    // Wait for any closing Modal (lightbox / busy) to finish before presenting
+    // the system picker — stacking presentations freezes the Edit Lift screen.
+    await new Promise<void>((resolve) => setTimeout(resolve, 50))
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       quality: 0.8,
@@ -217,7 +221,13 @@ export default function NewLiftScreen() {
                 if (imagePath) setLightboxOpen(true)
               }}
             >
-              <Avatar bucket="lift-images" name={name} path={imagePath} size={96} />
+              <Avatar
+                key={imagePath ?? 'no-lift-photo'}
+                bucket="lift-images"
+                name={name}
+                path={imagePath}
+                size={96}
+              />
             </Pressable>
             <Pressable
               accessibilityRole="button"

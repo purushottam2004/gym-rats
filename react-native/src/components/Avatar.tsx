@@ -24,6 +24,9 @@ export function Avatar({ path, name, size = 44, bucket = 'avatars' }: Props) {
   const cacheKey = path ? imageOwnerCacheKey(bucket, path) : null
   const previousUri = cacheKey ? peekCachedImageUri(cacheKey) : null
   const placeholderUri = previousUri && previousUri !== uri ? previousUri : null
+  // Recycle by full path/uri — owner-only keys reuse the native view across
+  // photo replacements and can lock up expo-image after a catalog photo change.
+  const recycleKey = path ? `${bucket}:${path}` : uri
 
   if (uri) {
     return (
@@ -36,7 +39,7 @@ export function Avatar({ path, name, size = 44, bucket = 'avatars' }: Props) {
         }}
         placeholder={placeholderUri ? { uri: placeholderUri } : undefined}
         placeholderContentFit="cover"
-        recyclingKey={cacheKey ?? uri}
+        recyclingKey={recycleKey ?? uri}
         source={{ uri }}
         style={{
           width: size,

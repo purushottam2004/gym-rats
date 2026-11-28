@@ -160,8 +160,11 @@ export function BusyOverlay({
   label?: string
 }) {
   const { colors } = useTheme()
+  // Unmount when hidden — leaving a transparent Modal mounted after dismiss can
+  // keep eating taps on iOS (feels like a freeze on the screen underneath).
+  if (!visible) return null
   return (
-    <Modal animationType="fade" transparent visible={visible}>
+    <Modal animationType="fade" transparent visible onRequestClose={() => {}}>
       <View style={[styles.overlay, { backgroundColor: colors.modalBackdrop }]}>
         <View style={[styles.overlayCard, { backgroundColor: colors.surface }]}>
           <BrandLoader label={label} showMark size="md" />

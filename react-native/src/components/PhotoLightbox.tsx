@@ -24,8 +24,10 @@ export function PhotoLightbox({
   const screen = useScreenStyles()
   const window = Dimensions.get('window')
 
+  if (!visible) return null
+
   return (
-    <Modal animationType="fade" transparent visible={visible} onRequestClose={onClose}>
+    <Modal animationType="fade" transparent visible onRequestClose={onClose}>
       <Pressable
         accessibilityLabel="Close photo"
         accessibilityRole="button"
@@ -44,7 +46,7 @@ export function PhotoLightbox({
             } as object)}
           />
         ) : (
-          <View style={screen.photoLightboxBody}>
+          <View style={screen.photoLightboxBody} pointerEvents="none">
             <Avatar bucket={bucket} name={name} path={path} size={220} />
             {name ? <Text style={screen.photoLightboxName}>{name}</Text> : null}
           </View>
