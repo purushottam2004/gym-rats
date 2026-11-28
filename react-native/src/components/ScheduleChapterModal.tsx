@@ -1,5 +1,5 @@
 import { Modal, Pressable, Text, View } from 'react-native'
-import { useScreenStyles } from '../theme/ThemeProvider'
+import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
 import { DatePickerField } from './DatePickerField'
 import { TimePickerField } from './TimePickerField'
 
@@ -32,9 +32,12 @@ export function ScheduleChapterModal({
   onCancel,
 }: Props) {
   const screen = useScreenStyles()
+  const { colors } = useTheme()
+
+  if (!visible) return null
 
   return (
-    <Modal animationType="fade" transparent visible={visible} onRequestClose={onCancel}>
+    <Modal animationType="fade" transparent visible onRequestClose={onCancel}>
       <View style={screen.modalBackdrop}>
         <View style={screen.confirmCard}>
           <Text style={screen.sectionTitle}>Schedule chapter</Text>
@@ -49,29 +52,55 @@ export function ScheduleChapterModal({
               <TimePickerField onChange={onChangeTime} value={time} />
             </View>
           </View>
-          <Pressable
-            disabled={saving}
-            onPress={onSave}
-            style={[screen.save, saving && screen.buttonDisabled]}
-          >
-            <Text style={screen.buttonText}>{saving ? 'Saving…' : 'Save schedule'}</Text>
-          </Pressable>
-          {canClear ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Pressable
+              accessibilityRole="button"
               disabled={saving}
-              onPress={onClear}
-              style={[screen.secondaryButton, saving && screen.buttonDisabled]}
+              onPress={onCancel}
+              style={({ pressed }) => [
+                screen.save,
+                {
+                  flex: 1,
+                  backgroundColor: colors.habitCompleteBorder,
+                },
+                (pressed || saving) && screen.buttonDisabled,
+              ]}
             >
-              <Text style={screen.secondaryButtonText}>Clear schedule</Text>
+              <Text style={[screen.buttonText, { color: '#14532d' }]}>Cancel</Text>
             </Pressable>
-          ) : null}
-          <Pressable
-            disabled={saving}
-            onPress={onCancel}
-            style={[screen.secondaryButton, saving && screen.buttonDisabled]}
-          >
-            <Text style={screen.secondaryButtonText}>Cancel</Text>
-          </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              disabled={saving || !canClear}
+              onPress={onClear}
+              style={({ pressed }) => [
+                screen.save,
+                {
+                  flex: 1,
+                  backgroundColor: '#ffffff',
+                },
+                (pressed || saving || !canClear) && screen.buttonDisabled,
+              ]}
+            >
+              <Text style={[screen.buttonText, { color: '#1c1917' }]}>Clear</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              disabled={saving}
+              onPress={onSave}
+              style={({ pressed }) => [
+                screen.save,
+                {
+                  flex: 1,
+                  backgroundColor: colors.danger,
+                },
+                (pressed || saving) && screen.buttonDisabled,
+              ]}
+            >
+              <Text style={[screen.buttonText, { color: '#ffffff' }]}>
+                {saving ? '…' : 'Save'}
+              </Text>
+            </Pressable>
+          </View>
         </View>
       </View>
     </Modal>
