@@ -128,6 +128,27 @@ export function chapterIsComplete(chapter: Pick<BookChapter, 'completed_at'>): b
   return chapter.completed_at != null
 }
 
+/** Overall chapter completion for a book (Your books green fill). */
+export function bookChapterProgress(chapters: Pick<BookChapter, 'completed_at'>[]): {
+  done: number
+  target: number
+  ratio: number
+  complete: boolean
+} {
+  const target = chapters.length
+  let done = 0
+  for (const chapter of chapters) {
+    if (chapterIsComplete(chapter)) done += 1
+  }
+  const ratio = target > 0 ? Math.min(1, done / target) : 0
+  return {
+    done,
+    target,
+    ratio,
+    complete: target > 0 && done >= target,
+  }
+}
+
 export function applyChapterCompletion(
   chapters: BookChapter[],
   chapterId: string,

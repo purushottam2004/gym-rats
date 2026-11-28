@@ -12,6 +12,7 @@ import { OrdinalNumber } from '../../components/OrdinalNumber'
 import { PhotoConfirmModal } from '../../components/PhotoConfirmModal'
 import { ProfileAvatarButton } from '../../components/ProfileAvatarButton'
 import { Screen } from '../../components/Screen'
+import { RatioProgressFill } from '../../components/RatioProgressFill'
 import { TabChrome } from '../../components/TabChrome'
 import { Toast, type ToastKind } from '../../components/Toast'
 import { setBookDraft } from '../../lib/bookDraft'
@@ -19,6 +20,7 @@ import { formatChapterDueLabel } from '../../lib/bookReminders'
 import { syncBookReminderNotifications } from '../../lib/bookReminderNotifications'
 import {
   applyChapterCompletion,
+  bookChapterProgress,
   chaptersByBookForDay,
   chapterIsComplete,
   type Book,
@@ -82,15 +84,19 @@ export default function BooksScreen() {
     [chapters, booksById, day, today],
   )
   /** 1-based TOC index per chapter (same as book detail circles). */
-  const chapterNumberById = useMemo(() => {
+  const chaptersByBookId = useMemo(() => {
     const byBook = new Map<string, BookChapter[]>()
     for (const chapter of chapters) {
       const list = byBook.get(chapter.book_id)
       if (list) list.push(chapter)
       else byBook.set(chapter.book_id, [chapter])
     }
+    return byBook
+  }, [chapters])
+
+  const chapterNumberById = useMemo(() => {
     const numbers = new Map<string, number>()
-    for (const list of byBook.values()) {
+    for (const list of chaptersByBookId.values()) {
       list
         .slice()
         .sort((a, b) => a.sort_order - b.sort_order)
@@ -99,7 +105,7 @@ export default function BooksScreen() {
         })
     }
     return numbers
-  }, [chapters])
+  }, [chaptersByBookId])
   const dueTitle = day === today ? 'Due today' : `Scheduled ${day}`
 
   async function openCamera(): Promise<PendingPhoto | null> {
@@ -255,24 +261,51 @@ export default function BooksScreen() {
                     </Text>
                   </View>
                 ) : (
-                  books.map((book, index) => (
-                    <Pressable
-                      key={book.id}
-                      onPress={() =>
-                        router.push({ pathname: '/book/[id]', params: { id: book.id } })
-                      }
-                      style={({ pressed }) => [
-                        screen.row,
-                        index === 0 && screen.rowFirst,
-                        pressed && screen.rowPressed,
-                      ]}
-                    >
-                      <View style={[screen.rowMain, { gap: 2 }]}>
-                        <Text style={screen.rowTitle}>{book.title}</Text>
-                        {book.author ? <Text style={screen.muted}>{book.author}</Text> : null}
-                      </View>
-                    </Pressable>
-                  ))
+                  books.map((book, index) => {
+                    const progress = bookChapterProgress(chaptersByBookId.get(book.id) ?? [])
+                    return (
+                      <Pressable
+                        key={book.id}
+                        onPress={() =>
+                          router.push({ pathname: '/book/[id]', params: { id: book.id } })
+                        }
+                        style={({ pressed }) => [
+                          screen.row,
+                          index === 0 && screen.rowFirst,
+                          pressed && screen.rowPressed,
+                          {
+                            backgroundColor: colors.surface,
+                            borderLeftWidth: progress.ratio > 0 ? 3 : 0,
+                            borderLeftColor:
+                              progress.ratio > 0 ? colors.habitCompleteBorder : 'transparent',
+                          },
+                        ]}
+                      >
+                        <RatioProgressFill
+                          ratio={progress.ratio}
+                          color={colors.habitCompleteBg}
+                        />
+                        <View style={[screen.rowMain, styles.bookRowContent, { gap: 2 }]}>
+                          <Text style={screen.rowTitle}>{book.title}</Text>
+                          {book.author ? <Text style={screen.muted}>{book.author}</Text> : null}
+                        </View>
+                        {progress.target > 0 ? (
+                          <Text
+                            style={[
+                              screen.rowMeta,
+                              styles.bookRowContent,
+                              (progress.complete || progress.ratio > 0) && {
+                                color: colors.habitCompleteText,
+                                fontWeight: '700',
+                              },
+                            ]}
+                          >
+                            {progress.done}/{progress.target}
+                          </Text>
+                        ) : null}
+                      </Pressable>
+                    )
+                  })
                 )}
               </View>
             </View>
@@ -375,5 +408,8 @@ export default function BooksScreen() {
 const styles = StyleSheet.create({
   actionRow: {
     justifyContent: 'flex-start',
+  },
+  bookRowContent: {
+    zIndex: 1,
   },
 })

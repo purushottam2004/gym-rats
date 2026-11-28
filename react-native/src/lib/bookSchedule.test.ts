@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
   applyChapterCompletion,
+  bookChapterProgress,
   chapterIsComplete,
   chaptersByBookForDay,
   chaptersForDay,
@@ -170,5 +171,33 @@ describe('chapter completion helpers', () => {
     assert.equal(chapterIsComplete(next[1]!), false)
     const undone = applyChapterCompletion(next, 'c1', null)
     assert.equal(chapterIsComplete(undone[0]!), false)
+  })
+})
+
+describe('bookChapterProgress', () => {
+  it('is empty with no chapters', () => {
+    const progress = bookChapterProgress([])
+    assert.equal(progress.done, 0)
+    assert.equal(progress.target, 0)
+    assert.equal(progress.ratio, 0)
+    assert.equal(progress.complete, false)
+  })
+
+  it('fills proportionally and completes when all chapters are done', () => {
+    const half = bookChapterProgress([
+      chapter({ id: 'c1', book_id: 'b1', title: 'A', completed_at: '2026-11-27T08:00:00.000Z' }),
+      chapter({ id: 'c2', book_id: 'b1', title: 'B' }),
+    ])
+    assert.equal(half.done, 1)
+    assert.equal(half.target, 2)
+    assert.equal(half.ratio, 0.5)
+    assert.equal(half.complete, false)
+
+    const done = bookChapterProgress([
+      chapter({ id: 'c1', book_id: 'b1', title: 'A', completed_at: '2026-11-27T08:00:00.000Z' }),
+      chapter({ id: 'c2', book_id: 'b1', title: 'B', completed_at: '2026-11-28T08:00:00.000Z' }),
+    ])
+    assert.equal(done.ratio, 1)
+    assert.equal(done.complete, true)
   })
 })
