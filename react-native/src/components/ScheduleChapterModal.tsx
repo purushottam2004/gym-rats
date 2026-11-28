@@ -64,12 +64,12 @@ export function ScheduleChapterModal({
                 screen.save,
                 {
                   flex: 1,
-                  backgroundColor: colors.habitCompleteBorder,
+                  backgroundColor: colors.danger,
                 },
                 (pressed || saving) && screen.buttonDisabled,
               ]}
             >
-              <Text style={[screen.buttonText, { color: '#14532d' }]}>Cancel</Text>
+              <Text style={[screen.buttonText, { color: '#ffffff' }]}>Cancel</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -94,12 +94,12 @@ export function ScheduleChapterModal({
                 screen.save,
                 {
                   flex: 1,
-                  backgroundColor: colors.danger,
+                  backgroundColor: colors.habitCompleteBorder,
                 },
                 (pressed || saving) && screen.buttonDisabled,
               ]}
             >
-              <Text style={[screen.buttonText, { color: '#ffffff' }]}>
+              <Text style={[screen.buttonText, { color: '#14532d' }]}>
                 {saving ? '…' : 'Save'}
               </Text>
             </Pressable>
