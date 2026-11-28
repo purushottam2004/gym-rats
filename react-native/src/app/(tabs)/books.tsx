@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { useAuth } from '../../auth/AuthProvider'
 import { BusyOverlay, LoadingBlock } from '../../components/BrandLoader'
 import { DayControls } from '../../components/DayControls'
+import { HabitSectionHeader } from '../../components/HabitSectionHeader'
 import { HabitSwipeRow } from '../../components/HabitSwipeRow'
 import { PhotoConfirmModal } from '../../components/PhotoConfirmModal'
 import { ProfileAvatarButton } from '../../components/ProfileAvatarButton'
@@ -17,7 +18,7 @@ import { formatChapterDueLabel } from '../../lib/bookReminders'
 import { syncBookReminderNotifications } from '../../lib/bookReminderNotifications'
 import {
   applyChapterCompletion,
-  chaptersForDay,
+  chaptersByBookForDay,
   chapterIsComplete,
   type Book,
   type BookChapter,
@@ -75,8 +76,8 @@ export default function BooksScreen() {
 
   const today = localDate()
   const booksById = useMemo(() => new Map(books.map((book) => [book.id, book])), [books])
-  const dayRows = useMemo(
-    () => chaptersForDay({ chapters, booksById, day, today }),
+  const dayGroups = useMemo(
+    () => chaptersByBookForDay({ chapters, booksById, day, today }),
     [chapters, booksById, day, today],
   )
   const dueTitle = day === today ? 'Due today' : `Scheduled ${day}`
@@ -258,36 +259,57 @@ export default function BooksScreen() {
 
             <View style={screen.section}>
               <Text style={screen.sectionTitle}>{dueTitle}</Text>
-              <View style={screen.card}>
-                {dayRows.length === 0 ? (
+              {dayGroups.length === 0 ? (
+                <View style={screen.card}>
                   <View style={[screen.row, screen.rowFirst]}>
                     <Text style={screen.muted}>
                       No chapters scheduled{day === today ? ' or overdue' : ''} for this day.
                     </Text>
                   </View>
-                ) : (
-                  dayRows.map((row, index) => {
-                    const complete = chapterIsComplete(row)
-                    const dueLabel = formatChapterDueLabel(row.due_time)
-                    const name = `${row.title} · ${row.book_title}${
-                      row.overdue ? ' (overdue)' : dueLabel ? ` · ${dueLabel}` : ''
-                    }`
-                    return (
-                      <HabitSwipeRow
-                        key={row.id}
-                        name={name}
-                        done={complete ? 1 : 0}
-                        target={1}
-                        complete={complete}
-                        completedLabel={formatHabitCompletedAt(row.completed_at)}
-                        first={index === 0}
-                        onIncrement={() => void toggleChapter(row.id, true)}
-                        onDecrement={() => void toggleChapter(row.id, false)}
+                </View>
+              ) : (
+                dayGroups.map((group) => (
+                  <View key={group.book_id} style={screen.card}>
+                    <Pressable
+                      accessibilityLabel={`Open ${group.book_title}`}
+                      accessibilityRole="button"
+                      onPress={() =>
+                        router.push({
+                          pathname: '/book/[id]',
+                          params: { id: group.book_id },
+                        })
+                      }
+                    >
+                      <HabitSectionHeader
+                        title={group.book_title}
+                        parts={group.chapters.map((row) => ({
+                          done: chapterIsComplete(row) ? 1 : 0,
+                          target: 1,
+                        }))}
                       />
-                    )
-                  })
-                )}
-              </View>
+                    </Pressable>
+                    {group.chapters.map((row) => {
+                      const complete = chapterIsComplete(row)
+                      const dueLabel = formatChapterDueLabel(row.due_time)
+                      const name = `${row.title}${
+                        row.overdue ? ' (overdue)' : dueLabel ? ` · ${dueLabel}` : ''
+                      }`
+                      return (
+                        <HabitSwipeRow
+                          key={row.id}
+                          name={name}
+                          done={complete ? 1 : 0}
+                          target={1}
+                          complete={complete}
+                          completedLabel={formatHabitCompletedAt(row.completed_at)}
+                          onIncrement={() => void toggleChapter(row.id, true)}
+                          onDecrement={() => void toggleChapter(row.id, false)}
+                        />
+                      )
+                    })}
+                  </View>
+                ))
+              )}
             </View>
           </>
         )}

@@ -3,6 +3,7 @@ import { describe, it } from 'node:test'
 import {
   applyChapterCompletion,
   chapterIsComplete,
+  chaptersByBookForDay,
   chaptersForDay,
   type Book,
   type BookChapter,
@@ -108,6 +109,53 @@ describe('chaptersForDay', () => {
       ],
     })
     assert.equal(rows.length, 0)
+  })
+})
+
+describe('chaptersByBookForDay', () => {
+  it('sections due chapters under each book title', () => {
+    const books = new Map([
+      ['b1', book({ id: 'b1', title: 'Dune' })],
+      ['b2', book({ id: 'b2', title: 'Foundation' })],
+    ])
+    const groups = chaptersByBookForDay({
+      booksById: books,
+      today: '2026-11-27',
+      day: '2026-11-27',
+      chapters: [
+        chapter({
+          id: 'c2',
+          book_id: 'b2',
+          title: 'Psychohistory',
+          scheduled_on: '2026-11-27',
+          due_time: '07:00',
+        }),
+        chapter({
+          id: 'c1b',
+          book_id: 'b1',
+          title: 'Ch 2',
+          scheduled_on: '2026-11-27',
+          due_time: '10:00',
+        }),
+        chapter({
+          id: 'c1a',
+          book_id: 'b1',
+          title: 'Ch 1',
+          scheduled_on: '2026-11-27',
+          due_time: '09:00',
+        }),
+      ],
+    })
+    assert.deepEqual(
+      groups.map((group) => ({
+        book: group.book_title,
+        chapters: group.chapters.map((row) => row.title),
+      })),
+      [
+        { book: 'Foundation', chapters: ['Psychohistory'] },
+        { book: 'Dune', chapters: ['Ch 1', 'Ch 2'] },
+      ],
+    )
   })
 })
 
