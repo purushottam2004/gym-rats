@@ -13,6 +13,7 @@ import {
 import { localDate } from './localDate'
 import {
   planHabitReminderFires,
+  selectHabitReminderFiresForSchedule,
   type HabitReminderSettings,
 } from './habitReminders'
 
@@ -81,6 +82,10 @@ export async function cancelAllHabitReminderNotifications(): Promise<void> {
 /**
  * Replace all Habit reminder schedules from the owner's active Habits.
  * Call after load / bump / save so completion cancels today's follow-ups.
+ *
+ * Plans every Habit, then keeps only the soonest fires under a shared cap so
+ * early reminders (Morning Brush at 8 AM) are not crowded out by hundreds of
+ * later every-N repeats from other Habits (iOS ~64 pending local notifications).
  */
 export async function syncHabitReminderNotifications(input: {
   habits: Habit[]
@@ -92,21 +97,28 @@ export async function syncHabitReminderNotifications(input: {
 
   try {
     const Notifications = await import('expo-notifications')
-    await cancelAllHabitReminderNotifications()
 
     const now = input.now ?? new Date()
     const today = input.today ?? localDate()
     const active = input.habits.filter((habit) => habit.active && habit.remind_enabled)
+
+    // Permission before cancel — otherwise a denied prompt would wipe schedules
+    // and leave nothing in their place.
+    if (active.length > 0) {
+      const permitted = await ensurePermission(Notifications)
+      if (!permitted) return
+    }
+
+    await cancelAllHabitReminderNotifications()
     if (active.length === 0) return
 
-    const permitted = await ensurePermission(Notifications)
-    if (!permitted) return
     await ensureHandlerAndChannel(Notifications)
 
-    for (const habit of active) {
+    const habitById = new Map(active.map((habit) => [habit.id, habit]))
+    const planned = active.flatMap((habit) => {
       const done = habitDoneOnDay(habit, input.counts, today)
       const completeToday = habitComplete(habit, done)
-      const fires = planHabitReminderFires({
+      return planHabitReminderFires({
         habitId: habit.id,
         settings: settingsFromHabit(habit),
         isDueOnDay: (day) => isHabitDueOnDay(habit, day),
@@ -114,9 +126,14 @@ export async function syncHabitReminderNotifications(input: {
         today,
         completeToday,
       })
+    })
+    const fires = selectHabitReminderFiresForSchedule(planned)
 
-      for (const fire of fires) {
-        const isFollowUp = fire.index > 0
+    for (const fire of fires) {
+      const habit = habitById.get(fire.habitId)
+      if (!habit) continue
+      const isFollowUp = fire.index > 0
+      try {
         await Notifications.scheduleNotificationAsync({
           identifier: fire.identifier,
           content: {
@@ -134,6 +151,8 @@ export async function syncHabitReminderNotifications(input: {
             ...(Platform.OS === 'android' ? { channelId: ANDROID_HABIT_CHANNEL } : {}),
           },
         })
+      } catch {
+        // One failed schedule must not abort the rest of the day's reminders.
       }
     }
   } catch {

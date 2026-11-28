@@ -90,6 +90,7 @@ function endOfLocalDay(isoDay: string): Date {
 export type HabitReminderFire = {
   /** Stable id for cancel/replace: `habit:{habitId}:{iso}:{index}` */
   identifier: string
+  habitId: string
   date: Date
   /** 0 = first reminder of the day; >0 = follow-up while incomplete. */
   index: number
@@ -97,12 +98,21 @@ export type HabitReminderFire = {
 }
 
 const MAX_FIRES_PER_DAY = 24
+/** Cap every-N follow-ups scheduled ahead (same idea as nutrient reminders). */
+export const MAX_EVERY_FOLLOWUPS_SCHEDULED = 2
 const LOOKAHEAD_DAYS = 7
+/**
+ * iOS allows ~64 pending local notifications total (habits + nutrients + books + …).
+ * Keep habit schedules under that so early fires (e.g. 8 AM brush) are not dropped
+ * when many habits each try to schedule a full day of repeats.
+ */
+export const MAX_SCHEDULED_HABIT_FIRES = 40
 
 /**
  * Concrete fire times for one Habit.
  * - First reminder on each due Day in the next week (if still in the future).
- * - Follow-ups only for *today*, and only while `completeToday` is false.
+ * - Follow-ups only for *today*, only while `completeToday` is false, and only a
+ *   short ahead window so resync can cancel stale nags after completion.
  */
 export function planHabitReminderFires(input: {
   habitId: string
@@ -127,25 +137,31 @@ export function planHabitReminderFires(input: {
     if (firstAt.getTime() > now.getTime()) {
       fires.push({
         identifier: `habit:${habitId}:${day}:0`,
+        habitId,
         date: firstAt,
         index: 0,
         day,
       })
     }
 
+    // Every-N nags only for today, and only a short ahead window.
     if (offset !== 0 || completeToday || every == null) continue
 
     const dayEnd = endOfLocalDay(day)
     let next = new Date(firstAt.getTime() + every * 60_000)
     let index = 1
+    let scheduledFollowUps = 0
     while (next.getTime() <= dayEnd.getTime() && index < MAX_FIRES_PER_DAY) {
       if (next.getTime() > now.getTime()) {
         fires.push({
           identifier: `habit:${habitId}:${day}:${index}`,
+          habitId,
           date: new Date(next.getTime()),
           index,
           day,
         })
+        scheduledFollowUps += 1
+        if (scheduledFollowUps >= MAX_EVERY_FOLLOWUPS_SCHEDULED) break
       }
       next = new Date(next.getTime() + every * 60_000)
       index += 1
@@ -153,6 +169,21 @@ export function planHabitReminderFires(input: {
   }
 
   return fires
+}
+
+/** Soonest fires first, capped so we stay under the OS pending-notification budget. */
+export function selectHabitReminderFiresForSchedule(
+  fires: HabitReminderFire[],
+  limit: number = MAX_SCHEDULED_HABIT_FIRES,
+): HabitReminderFire[] {
+  return fires
+    .slice()
+    .sort((a, b) => {
+      const byTime = a.date.getTime() - b.date.getTime()
+      if (byTime !== 0) return byTime
+      return a.identifier.localeCompare(b.identifier)
+    })
+    .slice(0, Math.max(0, limit))
 }
 
 /** Human-readable completion clock for a Habit row (device locale). */

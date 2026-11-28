@@ -5,10 +5,12 @@ import {
   formatReminderTime,
   formatReminderTimeDisplay,
   habitCompletedAtForDay,
+  MAX_EVERY_FOLLOWUPS_SCHEDULED,
   normalizeHabitReminderInput,
   parseReminderTime,
   planHabitReminderFires,
   reminderTimeToDate,
+  selectHabitReminderFiresForSchedule,
 } from './habitReminders.ts'
 
 describe('parseReminderTime / formatReminderTime', () => {
@@ -156,6 +158,61 @@ describe('planHabitReminderFires', () => {
     })
     assert.ok(!fires.some((fire) => fire.index === 0 && fire.day === '2026-11-25'))
     assert.ok(fires.some((fire) => fire.index === 1 && fire.date.getHours() === 8 && fire.date.getMinutes() === 30))
+  })
+
+  it('caps every-N follow-ups so a full day of nags is not pre-scheduled', () => {
+    const now = new Date(2026, 10, 25, 7, 0, 0, 0)
+    const fires = planHabitReminderFires({
+      habitId: 'h1',
+      settings: {
+        remind_enabled: true,
+        remind_first_time: { hour: 8, minute: 0 },
+        remind_every_minutes: 10,
+      },
+      isDueOnDay: (day) => day === '2026-11-25',
+      now,
+      today: '2026-11-25',
+      completeToday: false,
+    })
+    const followUps = fires.filter((fire) => fire.index > 0)
+    assert.equal(followUps.length, MAX_EVERY_FOLLOWUPS_SCHEDULED)
+    assert.ok(fires.some((fire) => fire.index === 0))
+  })
+})
+
+describe('selectHabitReminderFiresForSchedule', () => {
+  it('keeps the soonest fires so early habits beat later floods', () => {
+    const brush = planHabitReminderFires({
+      habitId: 'brush',
+      settings: {
+        remind_enabled: true,
+        remind_first_time: { hour: 8, minute: 0 },
+        remind_every_minutes: 30,
+      },
+      isDueOnDay: () => true,
+      now: new Date(2026, 10, 28, 7, 0, 0, 0),
+      today: '2026-11-28',
+      completeToday: false,
+    })
+    const kojic = planHabitReminderFires({
+      habitId: 'kojic',
+      settings: {
+        remind_enabled: true,
+        remind_first_time: { hour: 10, minute: 0 },
+        remind_every_minutes: 20,
+      },
+      isDueOnDay: () => true,
+      now: new Date(2026, 10, 28, 7, 0, 0, 0),
+      today: '2026-11-28',
+      completeToday: false,
+    })
+    // Limit 4: brush first + 2 follow-ups, then kojic's 10:00 first (not kojic's week flood).
+    const selected = selectHabitReminderFiresForSchedule([...kojic, ...brush], 4)
+    assert.equal(selected.length, 4)
+    assert.equal(selected[0]?.habitId, 'brush')
+    assert.equal(selected[0]?.date.getHours(), 8)
+    assert.equal(selected[0]?.index, 0)
+    assert.ok(selected.some((fire) => fire.habitId === 'kojic' && fire.index === 0))
   })
 })
 
