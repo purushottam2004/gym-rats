@@ -32,7 +32,7 @@ export function ScheduleChapterModal({
   onCancel,
 }: Props) {
   const screen = useScreenStyles()
-  const { colors } = useTheme()
+  const { colors, resolved } = useTheme()
 
   if (!visible) return null
 
@@ -80,6 +80,8 @@ export function ScheduleChapterModal({
                 {
                   flex: 1,
                   backgroundColor: '#ffffff',
+                  borderWidth: 1,
+                  borderColor: resolved === 'light' ? '#000000' : colors.border,
                 },
                 (pressed || saving || !canClear) && screen.buttonDisabled,
               ]}
