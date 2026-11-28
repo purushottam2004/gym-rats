@@ -1,9 +1,9 @@
 import * as ImagePicker from 'expo-image-picker'
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { Circle, CircleCheck, Pencil } from 'lucide-react-native'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
-import { AppTextInput } from '../components/AppTextInput'
+import { AppTextInput, type AppTextInputRef } from '../components/AppTextInput'
 import { Avatar } from '../components/Avatar'
 import { BrandLoader, BusyOverlay, LoadingBlock } from '../components/BrandLoader'
 import { PhotoLightbox } from '../components/PhotoLightbox'
@@ -31,6 +31,8 @@ export default function NewLiftScreen() {
   const params = useLocalSearchParams<{ id?: string }>()
   const id = typeof params.id === 'string' ? params.id : undefined
   const editing = Boolean(id)
+  const nameInputRef = useRef<AppTextInputRef>(null)
+  const focusNameAfterUnlock = useRef(false)
 
   const [name, setName] = useState('')
   const [savedName, setSavedName] = useState('')
@@ -39,6 +41,9 @@ export default function NewLiftScreen() {
   const [muscles, setMuscles] = useState<Muscle[]>([])
   const [isAdmin, setIsAdmin] = useState(false)
   const [nameEditable, setNameEditable] = useState(false)
+  const [nameSelection, setNameSelection] = useState<
+    { start: number; end: number } | undefined
+  >(undefined)
   const [loaded, setLoaded] = useState(!editing)
   const [busy, setBusy] = useState(false)
   const [photoBusy, setPhotoBusy] = useState(false)
@@ -83,6 +88,28 @@ export default function NewLiftScreen() {
       void load()
     }, [load]),
   )
+
+  useEffect(() => {
+    if (!nameEditable || !focusNameAfterUnlock.current) return
+    focusNameAfterUnlock.current = false
+    const end = name.length
+    setNameSelection({ start: end, end })
+    const frame = requestAnimationFrame(() => {
+      nameInputRef.current?.focus()
+    })
+    const clear = setTimeout(() => setNameSelection(undefined), 120)
+    return () => {
+      cancelAnimationFrame(frame)
+      clearTimeout(clear)
+    }
+  }, [nameEditable, name])
+
+  function focusNameAtEnd() {
+    const end = name.length
+    setNameSelection({ start: end, end })
+    nameInputRef.current?.focus()
+    setTimeout(() => setNameSelection(undefined), 120)
+  }
 
   const muscleChoices = useMemo<MuscleChoice[]>(
     () => [{ id: null, name: 'Other lifts' }, ...muscles.map((m) => ({ id: m.id, name: m.name }))],
@@ -214,19 +241,11 @@ export default function NewLiftScreen() {
 
         <Text style={screen.label}>Name</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          {editing && isAdmin ? (
-            <Pressable
-              accessibilityLabel="Edit lift name"
-              accessibilityRole="button"
-              hitSlop={8}
-              onPress={() => setNameEditable(true)}
-            >
-              <Pencil color={colors.accent} size={18} strokeWidth={2.25} />
-            </Pressable>
-          ) : null}
           <AppTextInput
+            ref={nameInputRef}
             editable={canEditName}
             onChangeText={setName}
+            selection={nameSelection}
             style={[
               screen.input,
               { flex: 1 },
@@ -234,6 +253,26 @@ export default function NewLiftScreen() {
             ]}
             value={name}
           />
+          {editing && isAdmin ? (
+            <Pressable
+              accessibilityLabel="Edit lift name"
+              accessibilityRole="button"
+              onPress={() => {
+                if (nameEditable) {
+                  focusNameAtEnd()
+                  return
+                }
+                focusNameAfterUnlock.current = true
+                setNameEditable(true)
+              }}
+              style={({ pressed }) => [
+                screen.iconActionButton,
+                pressed && screen.rowPressed,
+              ]}
+            >
+              <Pencil color={colors.accent} size={18} strokeWidth={2.25} />
+            </Pressable>
+          ) : null}
         </View>
 
         <Text style={screen.label}>Muscle</Text>
