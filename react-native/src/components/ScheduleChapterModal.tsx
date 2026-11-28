@@ -42,13 +42,16 @@ export function ScheduleChapterModal({
         <View style={screen.confirmCard}>
           <Text style={screen.sectionTitle}>Schedule chapter</Text>
           {/* Remount pickers when the target chapter changes so defaults stick. */}
-          <View key={chapterId ?? 'none'} style={{ gap: 12 }}>
-            <View>
+          <View
+            key={chapterId ?? 'none'}
+            style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}
+          >
+            <View style={{ flex: 1.2, gap: 6 }}>
               <Text style={screen.label}>Day</Text>
               <DatePickerField onChange={onChangeDay} value={day} />
             </View>
-            <View>
-              <Text style={screen.label}>Due time</Text>
+            <View style={{ flex: 1, gap: 6 }}>
+              <Text style={screen.label}>Due</Text>
               <TimePickerField onChange={onChangeTime} value={time} />
             </View>
           </View>

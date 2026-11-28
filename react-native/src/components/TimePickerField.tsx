@@ -1,7 +1,7 @@
 import DateTimePicker, {
   type DateTimePickerEvent,
 } from '@react-native-community/datetimepicker'
-import { useMemo, useState } from 'react'
+import { createElement, useMemo, useRef, useState } from 'react'
 import {
   Modal,
   Platform,
@@ -20,7 +20,6 @@ import {
   reminderTimeToDate,
 } from '../lib/habitReminders'
 import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
-import { AppTextInput } from './AppTextInput'
 
 type Props = {
   value: string
@@ -29,10 +28,13 @@ type Props = {
   style?: StyleProp<TextStyle>
 }
 
+type HtmlTimeInput = HTMLInputElement & {
+  showPicker?: () => void
+}
+
 /**
- * Reminder wall-clock field. Native opens the system time UI (iOS wheels with
- * AM/PM when the device is 12h; Android clock dialog). Web keeps `<input type="time">`.
- * Stored value stays `HH:MM` for Postgres / notification scheduling.
+ * Reminder wall-clock field. Native opens the system time UI; web uses the same
+ * pressable label and opens the browser time picker. Stored value stays `HH:MM`.
  */
 export function TimePickerField({
   value,
@@ -43,10 +45,11 @@ export function TimePickerField({
   const screen = useScreenStyles()
   const { colors, resolved } = useTheme()
   const [open, setOpen] = useState(false)
+  const webInputRef = useRef<HtmlTimeInput | null>(null)
 
   const parsed = useMemo(() => parseReminderTime(value) ?? { hour: 8, minute: 0 }, [value])
   const pickerDate = useMemo(() => reminderTimeToDate(parsed), [parsed])
-  const label = formatReminderTimeDisplay(parsed)
+  const label = value ? formatReminderTimeDisplay(parsed) : placeholder
 
   function applyDate(next: Date) {
     onChange(formatReminderTime(dateToReminderTime(next)))
@@ -62,26 +65,56 @@ export function TimePickerField({
     if (selected) applyDate(selected)
   }
 
+  function openWebPicker() {
+    const el = webInputRef.current
+    if (!el) return
+    try {
+      if (typeof el.showPicker === 'function') {
+        el.showPicker()
+        return
+      }
+    } catch {
+      // Fall through to click() when showPicker is blocked.
+    }
+    el.click()
+  }
+
   if (Platform.OS === 'web') {
     return (
-      <AppTextInput
-        accessibilityLabel="First notification time"
-        autoCapitalize="none"
-        autoCorrect={false}
-        onChangeText={onChange}
-        placeholder={placeholder}
-        style={[screen.input, style]}
-        value={value}
-        // RN Web maps this to <input type="time"> (browser clock / AM-PM UI).
-        {...({ type: 'time' } as object)}
-      />
+      <View style={styles.webWrap}>
+        <Pressable
+          accessibilityLabel="Due time"
+          accessibilityRole="button"
+          accessibilityHint="Opens the time picker"
+          onPress={openWebPicker}
+          style={({ pressed }) => [
+            screen.input,
+            styles.trigger,
+            pressed && screen.rowPressed,
+            style,
+          ]}
+        >
+          <Text style={[styles.triggerText, { color: colors.text }]}>{label}</Text>
+        </Pressable>
+        {createElement('input', {
+          ref: webInputRef,
+          type: 'time',
+          value: formatReminderTime(parsed),
+          onChange: (event: { target: { value: string } }) => {
+            if (event.target.value) onChange(event.target.value.slice(0, 5))
+          },
+          'aria-hidden': true,
+          tabIndex: -1,
+          style: webHiddenInputStyle,
+        })}
+      </View>
     )
   }
 
   return (
     <View>
       <Pressable
-        accessibilityLabel="First notification time"
+        accessibilityLabel="Due time"
         accessibilityRole="button"
         accessibilityHint="Opens the system time picker"
         onPress={() => setOpen(true)}
@@ -139,7 +172,23 @@ export function TimePickerField({
   )
 }
 
+const webHiddenInputStyle = {
+  position: 'absolute' as const,
+  opacity: 0,
+  width: 1,
+  height: 1,
+  left: 0,
+  top: 0,
+  pointerEvents: 'none' as const,
+  border: 'none',
+  padding: 0,
+  margin: 0,
+}
+
 const styles = StyleSheet.create({
+  webWrap: {
+    position: 'relative',
+  },
   trigger: {
     justifyContent: 'center',
   },
