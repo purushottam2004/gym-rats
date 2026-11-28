@@ -53,11 +53,11 @@ A named body region on one global catalog every User shares. Muscles group Lifts
 _Avoid_: muscle group, body part, body region label
 
 **Admin**:
-A User flag (`users.is_admin`) for shared-catalog maintenance. An Admin may rename or delete Muscles; other Users still add and reorder them. The flag is not editable from the app.
+A User flag (`users.is_admin`) for shared-catalog maintenance. An Admin may rename or delete Muscles, and may rename Lifts; other Users still add and reorder Muscles and may change a Lift’s Muscle. The flag is not editable from the app.
 _Avoid_: superuser, moderator (for this catalog privilege)
 
 **Lift**:
-An exercise on one global catalog every User shares. Any signed-in User may add a name; names are unique ignoring letter case and outer spaces, and cannot be changed after the Lift is created. A Lift may optionally sit under one Muscle; with none it appears under Other lifts, and the Muscle may be changed later. Any User may log a Set of any Lift in the catalog. Any User may delete a Lift only when no Set uses it.
+An exercise on one global catalog every User shares. Any signed-in User may add a name; names are unique ignoring letter case and outer spaces. Only an Admin may rename a Lift after it is created. A Lift may optionally sit under one Muscle; with none it appears under Other lifts, and the Muscle may be changed later. Any User may log a Set of any Lift in the catalog. Any User may delete a Lift only when no Set uses it.
 _Avoid_: lift entry, weight, exercise, exercise type
 
 **Set**:

@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker'
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
-import { Circle, CircleCheck } from 'lucide-react-native'
+import { Circle, CircleCheck, Pencil } from 'lucide-react-native'
 import { useCallback, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { AppTextInput } from '../components/AppTextInput'
@@ -11,10 +11,12 @@ import { Screen } from '../components/Screen'
 import { Toast, type ToastKind } from '../components/Toast'
 import {
   createLift,
+  loadCurrentUserIsAdmin,
   loadLifts,
   loadMuscles,
   saveLiftImagePath,
   updateLiftMuscle,
+  updateLiftName,
   uploadImage,
   type Muscle,
 } from '../lib/gym'
@@ -31,9 +33,12 @@ export default function NewLiftScreen() {
   const editing = Boolean(id)
 
   const [name, setName] = useState('')
+  const [savedName, setSavedName] = useState('')
   const [muscleId, setMuscleId] = useState<string | null>(null)
   const [imagePath, setImagePath] = useState<string | null>(null)
   const [muscles, setMuscles] = useState<Muscle[]>([])
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [nameEditable, setNameEditable] = useState(false)
   const [loaded, setLoaded] = useState(!editing)
   const [busy, setBusy] = useState(false)
   const [photoBusy, setPhotoBusy] = useState(false)
@@ -43,8 +48,12 @@ export default function NewLiftScreen() {
 
   const load = useCallback(async () => {
     try {
-      const nextMuscles = await loadMuscles()
+      const [nextMuscles, admin] = await Promise.all([
+        loadMuscles(),
+        loadCurrentUserIsAdmin(),
+      ])
       setMuscles(nextMuscles)
+      setIsAdmin(admin)
       if (id) {
         const lifts = await loadLifts()
         const lift = lifts.find((row) => row.id === id)
@@ -54,8 +63,12 @@ export default function NewLiftScreen() {
           return
         }
         setName(lift.name)
+        setSavedName(lift.name)
         setMuscleId(lift.muscle_id)
         setImagePath(lift.image_path)
+        setNameEditable(false)
+      } else {
+        setNameEditable(true)
       }
       setError(null)
     } catch (err) {
@@ -77,7 +90,8 @@ export default function NewLiftScreen() {
   )
 
   async function save() {
-    if (!editing && !name.trim()) {
+    const trimmed = name.trim()
+    if (!trimmed) {
       setError('A lift needs a name')
       return
     }
@@ -85,9 +99,12 @@ export default function NewLiftScreen() {
     setError(null)
     try {
       if (editing && id) {
+        if (isAdmin && trimmed !== savedName) {
+          await updateLiftName({ id, name: trimmed })
+        }
         await updateLiftMuscle({ id, muscleId })
       } else {
-        await createLift({ name, muscleId })
+        await createLift({ name: trimmed, muscleId })
       }
       router.back()
     } catch (err) {
@@ -137,6 +154,8 @@ export default function NewLiftScreen() {
     )
   }
 
+  const canEditName = !editing || (isAdmin && nameEditable)
+
   return (
     <View style={{ flex: 1 }}>
       <Screen
@@ -154,8 +173,10 @@ export default function NewLiftScreen() {
         <Text style={screen.title}>{editing ? 'Edit Lift' : 'New lift'}</Text>
         <Text style={screen.muted}>
           {editing
-            ? 'Name is fixed. Change the muscle to move this lift in the catalog.'
-            : 'Shared catalog. The name cannot be edited later; the muscle can.'}
+            ? isAdmin
+              ? 'Tap the pencil to rename. Change the muscle to move this lift in the catalog.'
+              : 'Name is fixed. Change the muscle to move this lift in the catalog.'
+            : 'Shared catalog. An Admin can rename later; anyone can change the muscle.'}
         </Text>
         {error ? <Text style={screen.error}>{error}</Text> : null}
 
@@ -192,12 +213,28 @@ export default function NewLiftScreen() {
         ) : null}
 
         <Text style={screen.label}>Name</Text>
-        <AppTextInput
-          editable={!editing}
-          onChangeText={setName}
-          style={[screen.input, editing && screen.buttonDisabled]}
-          value={name}
-        />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          {editing && isAdmin ? (
+            <Pressable
+              accessibilityLabel="Edit lift name"
+              accessibilityRole="button"
+              hitSlop={8}
+              onPress={() => setNameEditable(true)}
+            >
+              <Pencil color={colors.accent} size={18} strokeWidth={2.25} />
+            </Pressable>
+          ) : null}
+          <AppTextInput
+            editable={canEditName}
+            onChangeText={setName}
+            style={[
+              screen.input,
+              { flex: 1 },
+              editing && !canEditName && screen.buttonDisabled,
+            ]}
+            value={name}
+          />
+        </View>
 
         <Text style={screen.label}>Muscle</Text>
         <View style={[screen.card, { padding: 0, overflow: 'hidden' }]}>

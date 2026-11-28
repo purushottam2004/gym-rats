@@ -577,13 +577,22 @@ export async function createLift(input: {
   fail(error)
 }
 
-/** Assign or clear the Muscle for a Lift (name stays immutable). */
+/** Assign or clear the Muscle for a Lift. */
 export async function updateLiftMuscle(input: {
   id: string
   muscleId: string | null
 }): Promise<void> {
   const muscleId = await resolveMuscleId(input.muscleId)
   const { error } = await db().from('lifts').update({ muscle_id: muscleId }).eq('id', input.id)
+  fail(error)
+}
+
+/** Rename a Lift (Admin only; RLS / trigger enforce). */
+export async function updateLiftName(input: { id: string; name: string }): Promise<void> {
+  const { error } = await db()
+    .from('lifts')
+    .update({ name: input.name.trim() })
+    .eq('id', input.id)
   fail(error)
 }
 

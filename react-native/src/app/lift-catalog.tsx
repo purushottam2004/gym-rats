@@ -1,5 +1,4 @@
 import { useFocusEffect, useRouter } from 'expo-router'
-import { Pencil } from 'lucide-react-native'
 import { useCallback, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { Avatar } from '../components/Avatar'
@@ -12,22 +11,19 @@ import { TrashButton } from '../components/TrashButton'
 import {
   deleteLift,
   isLiftInUseError,
-  loadCurrentUserIsAdmin,
   loadLifts,
   loadMuscles,
   type Lift,
   type Muscle,
 } from '../lib/gym'
 import { liftCatalogGroups } from '../lib/liftCatalog'
-import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
+import { useScreenStyles } from '../theme/ThemeProvider'
 
 export default function LiftCatalogScreen() {
   const screen = useScreenStyles()
-  const { colors } = useTheme()
   const router = useRouter()
   const [lifts, setLifts] = useState<Lift[]>([])
   const [muscles, setMuscles] = useState<Muscle[]>([])
-  const [isAdmin, setIsAdmin] = useState(false)
   const [hydrated, setHydrated] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Lift | null>(null)
@@ -36,14 +32,9 @@ export default function LiftCatalogScreen() {
 
   const load = useCallback(async () => {
     try {
-      const [nextLifts, nextMuscles, admin] = await Promise.all([
-        loadLifts(),
-        loadMuscles(),
-        loadCurrentUserIsAdmin(),
-      ])
+      const [nextLifts, nextMuscles] = await Promise.all([loadLifts(), loadMuscles()])
       setLifts(nextLifts)
       setMuscles(nextMuscles)
-      setIsAdmin(admin)
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load lifts')
@@ -161,18 +152,6 @@ export default function LiftCatalogScreen() {
                       </Pressable>
                     </View>
                     <View style={screen.choiceTrail}>
-                      {isAdmin ? (
-                        <Pressable
-                          accessibilityLabel={`Edit ${lift.name}`}
-                          accessibilityRole="button"
-                          hitSlop={8}
-                          onPress={() =>
-                            router.push({ pathname: '/new-lift', params: { id: lift.id } })
-                          }
-                        >
-                          <Pencil color={colors.accent} size={18} strokeWidth={2.25} />
-                        </Pressable>
-                      ) : null}
                       <TrashButton
                         onPress={() =>
                           setPendingDelete({
