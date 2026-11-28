@@ -383,6 +383,35 @@ export function createScreenStyles(c: ThemeColors) {
       alignItems: 'center',
       gap: 10,
     },
+    /** Two-column selectable chips (e.g. muscle picker on Edit Lift). */
+    choiceGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      padding: 12,
+    },
+    choiceGridCell: {
+      width: '47.5%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 8,
+      borderRadius: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 12,
+      backgroundColor: c.pageBg,
+      borderWidth: 1,
+      borderColor: c.borderSubtle,
+    },
+    choiceGridCellSelected: {
+      backgroundColor: c.rowSelected,
+      borderColor: c.accent,
+    },
+    liftPhotoHeader: {
+      alignItems: 'center',
+      gap: 12,
+      marginBottom: 4,
+    },
     rowMeta: {
       fontSize: 17,
       color: c.text,

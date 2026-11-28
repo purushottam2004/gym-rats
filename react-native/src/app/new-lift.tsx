@@ -1,19 +1,26 @@
+import * as ImagePicker from 'expo-image-picker'
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { Circle, CircleCheck } from 'lucide-react-native'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { AppTextInput } from '../components/AppTextInput'
-import { LoadingBlock } from '../components/BrandLoader'
+import { Avatar } from '../components/Avatar'
+import { BrandLoader, BusyOverlay, LoadingBlock } from '../components/BrandLoader'
+import { PhotoLightbox } from '../components/PhotoLightbox'
 import { Screen } from '../components/Screen'
 import { Toast, type ToastKind } from '../components/Toast'
 import {
   createLift,
   loadLifts,
   loadMuscles,
+  saveLiftImagePath,
   updateLiftMuscle,
+  uploadImage,
   type Muscle,
 } from '../lib/gym'
 import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
+
+type MuscleChoice = { id: string | null; name: string }
 
 export default function NewLiftScreen() {
   const screen = useScreenStyles()
@@ -25,9 +32,12 @@ export default function NewLiftScreen() {
 
   const [name, setName] = useState('')
   const [muscleId, setMuscleId] = useState<string | null>(null)
+  const [imagePath, setImagePath] = useState<string | null>(null)
   const [muscles, setMuscles] = useState<Muscle[]>([])
   const [loaded, setLoaded] = useState(!editing)
   const [busy, setBusy] = useState(false)
+  const [photoBusy, setPhotoBusy] = useState(false)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [toast, setToast] = useState<{ kind: ToastKind; message: string } | null>(null)
 
@@ -45,6 +55,7 @@ export default function NewLiftScreen() {
         }
         setName(lift.name)
         setMuscleId(lift.muscle_id)
+        setImagePath(lift.image_path)
       }
       setError(null)
     } catch (err) {
@@ -58,6 +69,11 @@ export default function NewLiftScreen() {
     useCallback(() => {
       void load()
     }, [load]),
+  )
+
+  const muscleChoices = useMemo<MuscleChoice[]>(
+    () => [{ id: null, name: 'Other lifts' }, ...muscles.map((m) => ({ id: m.id, name: m.name }))],
+    [muscles],
   )
 
   async function save() {
@@ -84,6 +100,32 @@ export default function NewLiftScreen() {
       }
     } finally {
       setBusy(false)
+    }
+  }
+
+  async function changePhoto() {
+    if (!editing || !id || photoBusy) return
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!permission.granted) {
+      setError('Photo access is required')
+      return
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+    })
+    if (result.canceled || !result.assets[0]) return
+    setPhotoBusy(true)
+    setError(null)
+    try {
+      const path = await uploadImage('lift-images', id, result.assets[0].uri)
+      await saveLiftImagePath(id, path)
+      setImagePath(path)
+      setToast({ kind: 'success', message: 'Photo updated' })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not update photo')
+    } finally {
+      setPhotoBusy(false)
     }
   }
 
@@ -117,6 +159,38 @@ export default function NewLiftScreen() {
         </Text>
         {error ? <Text style={screen.error}>{error}</Text> : null}
 
+        {editing ? (
+          <View style={screen.liftPhotoHeader}>
+            <Pressable
+              accessibilityLabel={imagePath ? `View photo for ${name}` : `${name} has no photo`}
+              accessibilityRole="button"
+              disabled={!imagePath}
+              onPress={() => {
+                if (imagePath) setLightboxOpen(true)
+              }}
+            >
+              <Avatar bucket="lift-images" name={name} path={imagePath} size={96} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              disabled={photoBusy}
+              onPress={() => void changePhoto()}
+              style={({ pressed }) => [
+                screen.button,
+                photoBusy && screen.buttonDisabled,
+                pressed && screen.rowPressed,
+                { alignSelf: 'stretch' },
+              ]}
+            >
+              {photoBusy ? (
+                <BrandLoader size="sm" />
+              ) : (
+                <Text style={screen.buttonText}>{imagePath ? 'Change photo' : 'Add photo'}</Text>
+              )}
+            </Pressable>
+          </View>
+        ) : null}
+
         <Text style={screen.label}>Name</Text>
         <AppTextInput
           editable={!editing}
@@ -126,60 +200,57 @@ export default function NewLiftScreen() {
         />
 
         <Text style={screen.label}>Muscle</Text>
-        <View style={screen.card}>
-          <Pressable
-            accessibilityRole="radio"
-            accessibilityState={{ selected: muscleId == null }}
-            onPress={() => setMuscleId(null)}
-            style={({ pressed }) => [
-              screen.row,
-              screen.rowFirst,
-              muscleId == null && screen.rowSelected,
-              pressed && (muscleId == null ? screen.rowSelectedPressed : screen.rowPressed),
-            ]}
-          >
-            <Text style={[screen.rowTitle, muscleId == null && screen.rowTitleSelected]}>
-              Other lifts
-            </Text>
-            {muscleId == null ? (
-              <CircleCheck color={colors.accent} size={20} strokeWidth={2.25} />
-            ) : (
-              <Circle color={colors.border} size={20} strokeWidth={1.75} />
-            )}
-          </Pressable>
-          {muscles.map((muscle) => {
-            const selected = muscleId === muscle.id
-            return (
-              <Pressable
-                accessibilityRole="radio"
-                accessibilityState={{ selected }}
-                key={muscle.id}
-                onPress={() => setMuscleId(muscle.id)}
-                style={({ pressed }) => [
-                  screen.row,
-                  selected && screen.rowSelected,
-                  pressed && (selected ? screen.rowSelectedPressed : screen.rowPressed),
-                ]}
-              >
-                <Text style={[screen.rowTitle, selected && screen.rowTitleSelected]}>
-                  {muscle.name}
-                </Text>
-                {selected ? (
-                  <CircleCheck color={colors.accent} size={20} strokeWidth={2.25} />
-                ) : (
-                  <Circle color={colors.border} size={20} strokeWidth={1.75} />
-                )}
-              </Pressable>
-            )
-          })}
+        <View style={[screen.card, { padding: 0, overflow: 'hidden' }]}>
+          <View style={screen.choiceGrid}>
+            {muscleChoices.map((choice) => {
+              const selected = muscleId === choice.id
+              return (
+                <Pressable
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected }}
+                  key={choice.id ?? '__other__'}
+                  onPress={() => setMuscleId(choice.id)}
+                  style={({ pressed }) => [
+                    screen.choiceGridCell,
+                    selected && screen.choiceGridCellSelected,
+                    pressed && (selected ? screen.rowSelectedPressed : screen.rowPressed),
+                  ]}
+                >
+                  <Text
+                    numberOfLines={2}
+                    style={[
+                      screen.rowTitle,
+                      { flex: 1, fontSize: 15 },
+                      selected && screen.rowTitleSelected,
+                    ]}
+                  >
+                    {choice.name}
+                  </Text>
+                  {selected ? (
+                    <CircleCheck color={colors.accent} size={18} strokeWidth={2.25} />
+                  ) : (
+                    <Circle color={colors.border} size={18} strokeWidth={1.75} />
+                  )}
+                </Pressable>
+              )
+            })}
+          </View>
         </View>
       </Screen>
+      <PhotoLightbox
+        visible={lightboxOpen}
+        bucket="lift-images"
+        name={name}
+        path={imagePath}
+        onClose={() => setLightboxOpen(false)}
+      />
       <Toast
         visible={toast !== null}
         kind={toast?.kind ?? 'success'}
         message={toast?.message ?? ''}
         onHide={() => setToast(null)}
       />
+      <BusyOverlay visible={photoBusy} label="Updating photo…" />
     </View>
   )
 }

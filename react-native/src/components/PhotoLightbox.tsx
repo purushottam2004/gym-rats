@@ -6,7 +6,7 @@ type Props = {
   visible: boolean
   name?: string | null
   path?: string | null
-  bucket?: 'avatars' | 'group-avatars'
+  bucket?: 'avatars' | 'group-avatars' | 'lift-images'
   /** Full-bleed image URL (e.g. post photo). When set, Avatar path/bucket are ignored. */
   imageUri?: string | null
   onClose: () => void

@@ -1,8 +1,10 @@
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
+import { Avatar } from '../components/Avatar'
 import { LoadingBlock } from '../components/BrandLoader'
 import { ConfirmModal } from '../components/ConfirmModal'
+import { PhotoLightbox } from '../components/PhotoLightbox'
 import { Screen } from '../components/Screen'
 import { Toast, type ToastKind } from '../components/Toast'
 import { TrashButton } from '../components/TrashButton'
@@ -25,6 +27,7 @@ export default function LiftCatalogScreen() {
   const [hydrated, setHydrated] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Lift | null>(null)
+  const [lightboxLift, setLightboxLift] = useState<Lift | null>(null)
   const [toast, setToast] = useState<{ kind: ToastKind; message: string } | null>(null)
 
   const load = useCallback(async () => {
@@ -110,17 +113,55 @@ export default function LiftCatalogScreen() {
               {group.lifts.length > 0 ? (
                 group.lifts.map((lift) => (
                   <View key={lift.id} style={screen.row}>
-                    <Pressable
-                      accessibilityRole="button"
-                      onPress={() =>
-                        router.push({ pathname: '/new-lift', params: { id: lift.id } })
-                      }
-                      style={screen.rowMain}
-                    >
-                      <Text style={screen.rowTitle}>{lift.name}</Text>
-                    </Pressable>
+                    <View style={screen.memberRow}>
+                      <Pressable
+                        accessibilityLabel={
+                          lift.image_path
+                            ? `View photo for ${lift.name}`
+                            : `${lift.name} has no photo`
+                        }
+                        accessibilityRole="button"
+                        disabled={!lift.image_path}
+                        hitSlop={4}
+                        onPress={() => {
+                          if (lift.image_path) {
+                            setLightboxLift({
+                              id: lift.id,
+                              name: lift.name,
+                              muscle_id: lift.muscle_id,
+                              image_path: lift.image_path,
+                            })
+                          }
+                        }}
+                      >
+                        <Avatar
+                          bucket="lift-images"
+                          name={lift.name}
+                          path={lift.image_path}
+                          size={36}
+                        />
+                      </Pressable>
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() =>
+                          router.push({ pathname: '/new-lift', params: { id: lift.id } })
+                        }
+                        style={screen.rowMain}
+                      >
+                        <Text style={screen.rowTitle}>{lift.name}</Text>
+                      </Pressable>
+                    </View>
                     <View style={screen.choiceTrail}>
-                      <TrashButton onPress={() => setPendingDelete(lift)} />
+                      <TrashButton
+                        onPress={() =>
+                          setPendingDelete({
+                            id: lift.id,
+                            name: lift.name,
+                            muscle_id: lift.muscle_id,
+                            image_path: lift.image_path ?? null,
+                          })
+                        }
+                      />
                     </View>
                   </View>
                 ))
@@ -139,6 +180,13 @@ export default function LiftCatalogScreen() {
         message={pendingDelete ? `Remove ${pendingDelete.name} from the catalog?` : ''}
         onCancel={() => setPendingDelete(null)}
         onConfirm={() => void confirmDelete()}
+      />
+      <PhotoLightbox
+        visible={lightboxLift !== null}
+        bucket="lift-images"
+        name={lightboxLift?.name}
+        path={lightboxLift?.image_path}
+        onClose={() => setLightboxLift(null)}
       />
       <Toast
         visible={toast !== null}

@@ -40,6 +40,15 @@ values
     '2026-11-27T00:00:00Z'
   ),
   (
+    'a1000001-0001-4000-8000-000000000013',
+    'lifts',
+    'Photos on lifts',
+    'Attach a photo to each exercise in the catalog.',
+    'Open Lift catalog — each lift can show a circular photo beside its name (tap to enlarge). In Edit Lift, change the photo and pick a muscle from the two-column grid.',
+    30,
+    '2026-11-28T05:30:00Z'
+  ),
+  (
     'a1000001-0001-4000-8000-000000000021',
     'habits',
     'Swipe to complete',

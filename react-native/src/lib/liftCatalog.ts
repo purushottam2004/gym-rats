@@ -10,6 +10,7 @@ export type LiftWithMuscle = {
   id: string
   name: string
   muscle_id: string | null
+  image_path?: string | null
 }
 
 export const OTHER_LIFTS_MUSCLE_ID = '__other_lifts__'

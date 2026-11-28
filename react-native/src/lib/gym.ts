@@ -104,6 +104,8 @@ export type Lift = {
   id: string
   name: string
   muscle_id: string | null
+  /** Storage path in the lift-images bucket; null = no photo. */
+  image_path: string | null
 }
 
 export type SetLog = {
@@ -124,7 +126,7 @@ export type Group = {
   avatar_path: string | null
 }
 
-export type ImageBucket = 'avatars' | 'post-images' | 'group-avatars'
+export type ImageBucket = 'avatars' | 'post-images' | 'group-avatars' | 'lift-images'
 
 export type Member = Profile & { joined_at: string }
 
@@ -468,6 +470,7 @@ function mapLiftRow(row: Record<string, unknown>): Lift {
     id: row.id as string,
     name: row.name as string,
     muscle_id: (row.muscle_id as string | null) ?? null,
+    image_path: (row.image_path as string | null) ?? null,
   }
 }
 
@@ -536,10 +539,12 @@ async function resolveMuscleId(muscleId: string | null | undefined): Promise<str
   return muscleId
 }
 
+const LIFT_SELECT = 'id, name, muscle_id, image_path'
+
 export async function loadLifts(): Promise<Lift[]> {
   const { data, error } = await db()
     .from('lifts')
-    .select('id, name, muscle_id')
+    .select(LIFT_SELECT)
     .order('name')
   fail(error)
   return (data ?? []).map((row) => mapLiftRow(row as Record<string, unknown>))
@@ -567,6 +572,12 @@ export async function updateLiftMuscle(input: {
   fail(error)
 }
 
+/** Set or replace the catalog photo for a Lift (name stays immutable). */
+export async function saveLiftImagePath(liftId: string, path: string): Promise<void> {
+  const { error } = await db().from('lifts').update({ image_path: path }).eq('id', liftId)
+  fail(error)
+}
+
 export async function deleteLift(liftId: string): Promise<void> {
   const { error } = await db().from('lifts').delete().eq('id', liftId)
   fail(error)
@@ -582,7 +593,7 @@ export type WeekdayLift = Lift & {
 export async function loadWeekdayLifts(userId: string, weekday: number): Promise<Lift[]> {
   const { data, error } = await db()
     .from('weekday_lifts')
-    .select('position, lift:lifts!weekday_lifts_lift_id_fkey(id, name, muscle_id)')
+    .select(`position, lift:lifts!weekday_lifts_lift_id_fkey(${LIFT_SELECT})`)
     .eq('user_id', userId)
     .eq('weekday', weekday)
     .order('position', { ascending: true })
@@ -631,7 +642,7 @@ export async function loadSets(userId: string, day: string): Promise<SetLog[]> {
   const { data, error } = await db()
     .from('sets')
     .select(
-      'id, attempt, reps, load_kg, logged_on, created_at, lift:lifts!sets_lift_id_fkey(id, name, muscle_id)',
+      `id, attempt, reps, load_kg, logged_on, created_at, lift:lifts!sets_lift_id_fkey(${LIFT_SELECT})`,
     )
     .eq('user_id', userId)
     .eq('logged_on', day)
