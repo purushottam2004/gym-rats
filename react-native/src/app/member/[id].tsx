@@ -30,11 +30,13 @@ import {
   loadNutrientGoals,
   loadProfile,
   loadSets,
+  loadWeekdayLifts,
   measureLabel,
   type Habit,
   type HabitDayCount,
   type HabitSection,
   type Intake,
+  type Lift,
   type NutrientGoal,
   type Profile,
   type SetLog,
@@ -43,6 +45,7 @@ import { formatHabitCompletedAt } from '../../lib/habitReminders'
 import { habitSectionCardsForDay } from '../../lib/habitSchedule'
 import { liftCardsForDay } from '../../lib/liftCards'
 import { localDate } from '../../lib/localDate'
+import { weekdayFromDay } from '../../lib/weekday'
 import {
   foodBasisLabel,
   foodTypeNutrition,
@@ -66,6 +69,7 @@ export default function MemberScreen() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [intakes, setIntakes] = useState<Intake[]>([])
   const [sets, setSets] = useState<SetLog[]>([])
+  const [plannedLifts, setPlannedLifts] = useState<Lift[]>([])
   const [habits, setHabits] = useState<Habit[]>([])
   const [habitSections, setHabitSections] = useState<HabitSection[]>([])
   const [habitCounts, setHabitCounts] = useState<HabitDayCount[]>([])
@@ -83,6 +87,7 @@ export default function MemberScreen() {
         nextProfile,
         nextIntakes,
         nextSets,
+        nextPlanned,
         nextGoals,
         nextHabits,
         nextHabitSections,
@@ -92,6 +97,7 @@ export default function MemberScreen() {
         loadProfile(id),
         loadIntakes(id, day),
         loadSets(id, day),
+        loadWeekdayLifts(id, weekdayFromDay(day)),
         loadNutrientGoals(id),
         loadHabits(id),
         loadHabitSections(id),
@@ -102,6 +108,7 @@ export default function MemberScreen() {
       setProfile(nextProfile)
       setIntakes(nextIntakes)
       setSets(nextSets)
+      setPlannedLifts(nextPlanned)
       setGoals(nextGoals)
       setHabits(nextHabits)
       setHabitSections(nextHabitSections)
@@ -132,8 +139,8 @@ export default function MemberScreen() {
     () => habitSectionCardsForDay(habits, habitSections, habitCounts, day),
     [habits, habitSections, habitCounts, day],
   )
-  // Read-only day view: group logged sets by lift (no weekday plan / empty planned cards).
-  const liftCards = useMemo(() => liftCardsForDay(sets, []), [sets])
+  // Same as own Lifts tab: weekday plan cards even when no sets are logged yet.
+  const liftCards = useMemo(() => liftCardsForDay(sets, plannedLifts), [sets, plannedLifts])
   const bookDayRows = useMemo(() => {
     const booksById = new Map(books.map((book) => [book.id, book]))
     return chaptersForDay({
@@ -298,7 +305,7 @@ export default function MemberScreen() {
               ) : (
                 <View style={screen.card}>
                   <View style={[screen.row, screen.rowFirst]}>
-                    <Text style={screen.muted}>No sets logged for this day.</Text>
+                    <Text style={screen.muted}>No lifts planned or logged for this day.</Text>
                   </View>
                 </View>
               )}
