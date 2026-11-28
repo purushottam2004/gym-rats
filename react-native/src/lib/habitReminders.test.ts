@@ -178,6 +178,25 @@ describe('planHabitReminderFires', () => {
     assert.equal(followUps.length, MAX_EVERY_FOLLOWUPS_SCHEDULED)
     assert.ok(fires.some((fire) => fire.index === 0))
   })
+
+  it('skips muted days but still schedules later unmuted due days', () => {
+    const now = new Date(2026, 10, 25, 7, 0, 0, 0)
+    const fires = planHabitReminderFires({
+      habitId: 'h1',
+      settings: {
+        remind_enabled: true,
+        remind_first_time: { hour: 8, minute: 0 },
+        remind_every_minutes: 60,
+      },
+      isDueOnDay: () => true,
+      now,
+      today: '2026-11-25',
+      completeToday: false,
+      isMutedOnDay: (day) => day === '2026-11-25',
+    })
+    assert.ok(!fires.some((fire) => fire.day === '2026-11-25'))
+    assert.ok(fires.some((fire) => fire.day === '2026-11-26' && fire.index === 0))
+  })
 })
 
 describe('selectHabitReminderFiresForSchedule', () => {

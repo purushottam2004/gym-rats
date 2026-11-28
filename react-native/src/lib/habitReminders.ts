@@ -113,6 +113,8 @@ export const MAX_SCHEDULED_HABIT_FIRES = 40
  * - First reminder on each due Day in the next week (if still in the future).
  * - Follow-ups only for *today*, only while `completeToday` is false, and only a
  *   short ahead window so resync can cancel stale nags after completion.
+ * - Days muted via the Habits-tab bell (`isMutedOnDay`) are skipped entirely —
+ *   that is day-local only and does not change Habit remind_* settings.
  */
 export function planHabitReminderFires(input: {
   habitId: string
@@ -121,8 +123,10 @@ export function planHabitReminderFires(input: {
   now: Date
   today: string
   completeToday: boolean
+  /** When true for a day, skip first + follow-ups for that day only. */
+  isMutedOnDay?: (day: string) => boolean
 }): HabitReminderFire[] {
-  const { habitId, settings, isDueOnDay, now, today, completeToday } = input
+  const { habitId, settings, isDueOnDay, now, today, completeToday, isMutedOnDay } = input
   if (!settings.remind_enabled || !settings.remind_first_time) return []
 
   const fires: HabitReminderFire[] = []
@@ -132,6 +136,7 @@ export function planHabitReminderFires(input: {
   for (let offset = 0; offset < LOOKAHEAD_DAYS; offset += 1) {
     const day = shiftIsoDate(today, offset)
     if (!isDueOnDay(day)) continue
+    if (isMutedOnDay?.(day)) continue
 
     const firstAt = atLocalTime(day, first)
     if (firstAt.getTime() > now.getTime()) {

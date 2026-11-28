@@ -1,6 +1,6 @@
-import { Check, Undo2 } from 'lucide-react-native'
+import { Bell, BellOff, Check, Undo2 } from 'lucide-react-native'
 import { useState, type ReactNode } from 'react'
-import { Animated, PanResponder, StyleSheet, Text, View } from 'react-native'
+import { Animated, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native'
 import { habitProgressRatio } from '../lib/habitProgress'
 import { useScreenStyles, useTheme } from '../theme/ThemeProvider'
 import { RatioProgressFill } from './RatioProgressFill'
@@ -11,6 +11,14 @@ const SWIPE_MAX = 88
 const SWIPE_FLICK_DX = 24
 const SWIPE_FLICK_VX = 0.55
 
+type ReminderMuteControl = {
+  /** True when reminders are muted for the selected day only. */
+  muted: boolean
+  /** Habit has overall remind_enabled; when false the bell is shown off and disabled. */
+  remindersConfigured: boolean
+  onToggle: () => void
+}
+
 type Props = {
   name: string
   done: number
@@ -20,6 +28,8 @@ type Props = {
   completedLabel?: string | null
   /** Optional leading content (e.g. chapter ordinal badge). */
   leading?: ReactNode
+  /** Day-only reminder mute bell (left of the swipe row; does not change Habit settings). */
+  reminderMute?: ReminderMuteControl
   /** Replaces the done/target meta when set (e.g. pencil edit control). */
   trailing?: ReactNode
   first?: boolean
@@ -50,6 +60,7 @@ export function HabitSwipeRow({
   complete,
   completedLabel,
   leading,
+  reminderMute,
   trailing,
   first,
   readOnly,
@@ -60,6 +71,8 @@ export function HabitSwipeRow({
   const { colors } = useTheme()
   const [translateX] = useState(() => new Animated.Value(0))
   const progress = habitProgressRatio(done, target)
+  const muteInteractive = reminderMute != null && reminderMute.remindersConfigured
+  const muteShownOff = reminderMute != null && (!reminderMute.remindersConfigured || reminderMute.muted)
 
   const addScale = translateX.interpolate({
     inputRange: [0, SWIPE_THRESHOLD * 0.45, SWIPE_THRESHOLD, SWIPE_MAX],
@@ -118,8 +131,8 @@ export function HabitSwipeRow({
         },
       }).panHandlers
 
-  return (
-    <View style={[styles.clip, first && screen.rowFirst]}>
+  const swipe = (
+    <View style={[styles.clip, first && screen.rowFirst, reminderMute ? styles.clipFlex : null]}>
       {!readOnly ? (
         <View style={styles.underlay} pointerEvents="none">
           <View style={[styles.underlaySide, { backgroundColor: colors.habitCompleteBg }]}>
@@ -194,11 +207,60 @@ export function HabitSwipeRow({
       </Animated.View>
     </View>
   )
+
+  if (!reminderMute) return swipe
+
+  const MuteIcon = muteShownOff ? BellOff : Bell
+  return (
+    <View style={[styles.rowWithMute, first && screen.rowFirst]}>
+      <Pressable
+        accessibilityLabel={
+          !reminderMute.remindersConfigured
+            ? 'Reminders are off for this habit'
+            : muteShownOff
+              ? 'Reminders muted for this day — tap to turn on'
+              : 'Reminders on for this day — tap to mute today only'
+        }
+        accessibilityRole="button"
+        disabled={!muteInteractive}
+        hitSlop={8}
+        onPress={muteInteractive ? reminderMute.onToggle : undefined}
+        style={({ pressed }) => [
+          styles.muteButton,
+          pressed && muteInteractive && screen.rowPressed,
+          !muteInteractive && styles.muteDisabled,
+        ]}
+      >
+        <MuteIcon
+          color={muteShownOff ? colors.tabInactive : colors.accent}
+          size={20}
+          strokeWidth={2.1}
+        />
+      </Pressable>
+      {swipe}
+    </View>
+  )
 }
 
 const styles = StyleSheet.create({
+  rowWithMute: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+  muteButton: {
+    width: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingLeft: 10,
+  },
+  muteDisabled: {
+    opacity: 0.55,
+  },
   clip: {
     overflow: 'hidden',
+  },
+  clipFlex: {
+    flex: 1,
   },
   underlay: {
     position: 'absolute',

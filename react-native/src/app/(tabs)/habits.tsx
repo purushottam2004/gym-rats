@@ -31,6 +31,14 @@ import {
 } from '../../lib/gym'
 import { habitSectionProgress } from '../../lib/habitProgress'
 import { syncHabitReminderNotifications } from '../../lib/habitReminderNotifications'
+import {
+  isHabitReminderMutedOnDay,
+  loadHabitReminderMuteByDay,
+  pruneHabitReminderMutesBefore,
+  saveHabitReminderMuteByDay,
+  setHabitReminderMutedOnDay,
+  type HabitReminderMuteByDay,
+} from '../../lib/habitReminderMute'
 import { formatHabitCompletedAt } from '../../lib/habitReminders'
 import { applyHabitDayCountDelta, habitSectionCardsForDay } from '../../lib/habitSchedule'
 import { localDate } from '../../lib/localDate'
@@ -63,6 +71,9 @@ export default function HabitsScreen() {
   const [error, setError] = useState<string | null>(null)
   const [voiceBusy, setVoiceBusy] = useState(false)
   const [toast, setToast] = useState<{ kind: ToastKind; message: string } | null>(null)
+  const [reminderMutes, setReminderMutes] = useState<HabitReminderMuteByDay>(() =>
+    pruneHabitReminderMutesBefore(loadHabitReminderMuteByDay(), localDate()),
+  )
 
   const load = useCallback(async () => {
     if (!userId) return
@@ -75,6 +86,9 @@ export default function HabitsScreen() {
       setHabits(nextHabits)
       setSections(nextSections)
       replaceCounts(nextCounts)
+      const mutes = pruneHabitReminderMutesBefore(loadHabitReminderMuteByDay(), localDate())
+      setReminderMutes(mutes)
+      saveHabitReminderMuteByDay(mutes)
       setError(null)
       void syncHabitReminderNotifications({ habits: nextHabits, counts: nextCounts })
     } catch (err) {
@@ -83,6 +97,18 @@ export default function HabitsScreen() {
       setHydrated(true)
     }
   }, [userId, day, replaceCounts])
+
+  function toggleReminderMuteForDay(habitId: string) {
+    const next = setHabitReminderMutedOnDay(
+      reminderMutes,
+      habitId,
+      day,
+      !isHabitReminderMutedOnDay(reminderMutes, habitId, day),
+    )
+    setReminderMutes(next)
+    saveHabitReminderMuteByDay(next)
+    void syncHabitReminderNotifications({ habits, counts: countsRef.current })
+  }
 
   useFocusEffect(
     useCallback(() => {
@@ -299,6 +325,11 @@ export default function HabitsScreen() {
                   target={row.target}
                   complete={row.complete}
                   completedLabel={formatHabitCompletedAt(row.completed_at)}
+                  reminderMute={{
+                    muted: isHabitReminderMutedOnDay(reminderMutes, row.habit.id, day),
+                    remindersConfigured: row.habit.remind_enabled,
+                    onToggle: () => toggleReminderMuteForDay(row.habit.id),
+                  }}
                   onIncrement={() => void bump(row.habit.id, 1)}
                   onDecrement={() => void bump(row.habit.id, -1)}
                 />

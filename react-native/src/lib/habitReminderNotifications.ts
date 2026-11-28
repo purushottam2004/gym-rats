@@ -12,6 +12,12 @@ import {
 } from './habitSchedule'
 import { localDate } from './localDate'
 import {
+  isHabitReminderMutedOnDay,
+  loadHabitReminderMuteByDay,
+  pruneHabitReminderMutesBefore,
+  saveHabitReminderMuteByDay,
+} from './habitReminderMute'
+import {
   planHabitReminderFires,
   selectHabitReminderFiresForSchedule,
   type HabitReminderSettings,
@@ -114,6 +120,10 @@ export async function syncHabitReminderNotifications(input: {
 
     await ensureHandlerAndChannel(Notifications)
 
+    // Drop past mute days so local storage does not grow forever.
+    const muteMap = pruneHabitReminderMutesBefore(loadHabitReminderMuteByDay(), today)
+    saveHabitReminderMuteByDay(muteMap)
+
     const habitById = new Map(active.map((habit) => [habit.id, habit]))
     const planned = active.flatMap((habit) => {
       const done = habitDoneOnDay(habit, input.counts, today)
@@ -125,6 +135,7 @@ export async function syncHabitReminderNotifications(input: {
         now,
         today,
         completeToday,
+        isMutedOnDay: (day) => isHabitReminderMutedOnDay(muteMap, habit.id, day),
       })
     })
     const fires = selectHabitReminderFiresForSchedule(planned)
